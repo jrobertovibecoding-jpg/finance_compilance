@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import inspect
 
 from app.core.storage import ObjectStorageService
-from app.db.session import get_engine
+from app.db.session import get_engine, normalize_database_url
 from app.main import app
 
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
@@ -311,3 +311,25 @@ def test_etl_migracao_sqlite_para_saas_v2(tmp_path):
     )
     assert stats2["titulos"] == 0
     assert stats2["fornecedores"] == 0
+
+
+def test_normalize_database_url_e_healthcheck_v2(client):
+    assert (
+        normalize_database_url("postgres://u:p@h:5432/db?sslmode=require")
+        == "postgresql+psycopg://u:p@h:5432/db?sslmode=require"
+    )
+    assert (
+        normalize_database_url("postgresql://u:p@h:5432/db")
+        == "postgresql+psycopg://u:p@h:5432/db"
+    )
+    assert (
+        normalize_database_url("postgresql+psycopg://u:p@h:5432/db")
+        == "postgresql+psycopg://u:p@h:5432/db"
+    )
+    assert normalize_database_url("sqlite:///tmp/test.db") == "sqlite:///tmp/test.db"
+
+    resp = client.get("/health")
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["db"] == "ok"
+    assert body["db_v2"] == "ok"

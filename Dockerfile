@@ -3,7 +3,8 @@
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PORT=8000 \
-    WEB_CONCURRENCY=2
+    WEB_CONCURRENCY=2 \
+    DATABASE_PATH=/app/data/bimer_legacy.db
 
 WORKDIR /app
 
@@ -13,6 +14,7 @@ COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY --chown=appuser:appgroup backend/ .
+RUN mkdir -p /app/data && chown -R appuser:appgroup /app/data
 
 USER appuser
 

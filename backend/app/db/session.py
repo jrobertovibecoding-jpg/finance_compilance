@@ -1,6 +1,7 @@
 import os
 import logging
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Generator
 
 from sqlalchemy import create_engine, event, text
@@ -15,13 +16,25 @@ _ENGINE_CACHE: dict[str, Engine] = {}
 _SESSION_CACHE: dict[str, sessionmaker] = {}
 
 
+def normalize_database_url(url: str) -> str:
+    cleaned = (url or "").strip()
+    if cleaned.startswith("postgres://"):
+        return "postgresql+psycopg://" + cleaned[len("postgres://"):]
+    if cleaned.startswith("postgresql://"):
+        return "postgresql+psycopg://" + cleaned[len("postgresql://"):]
+    return cleaned
+
+
 def get_database_url() -> str:
     env_url = os.getenv("DATABASE_URL", "").strip()
     if env_url:
-        return env_url
+        return normalize_database_url(env_url)
     if config.DATABASE_URL:
-        return config.DATABASE_URL
-    default_sqlite = config.BASE_DIR.parent / "database" / "jr_fincloud_v2.db"
+        return normalize_database_url(config.DATABASE_URL)
+    if config.BASE_DIR.parent == Path(config.BASE_DIR.anchor):
+        default_sqlite = config.BASE_DIR / "data" / "jr_fincloud_v2.db"
+    else:
+        default_sqlite = config.BASE_DIR.parent / "database" / "jr_fincloud_v2.db"
     return f"sqlite:///{default_sqlite}"
 
 

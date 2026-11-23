@@ -33,7 +33,7 @@ from ...db.models import (
     Usuario,
     UsuarioTenantRole,
 )
-from ...db.session import get_db
+from ...db.session import get_db, set_rls_context
 from .deps import extrair_ip, registrar_audit_v2, slugify
 
 router = APIRouter(tags=["JR FinCloud v2 - Auth & Workspaces"])
@@ -127,6 +127,7 @@ def register_tenant(
     )
     db.add(tenant)
     db.flush()
+    set_rls_context(db, tenant.id)
 
     empresa = Empresa(
         tenant_id=tenant.id,
@@ -247,6 +248,7 @@ def login_v2(
         role_str = membership.role
 
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    set_rls_context(db, tenant_id)
     access_token, raw_refresh, _ = emitir_par_tokens(
         db=db,
         usuario=usuario,

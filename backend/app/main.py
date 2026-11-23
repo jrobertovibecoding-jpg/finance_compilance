@@ -3,10 +3,12 @@ import logging
 from fastapi import Depends, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 
 from .core.config import PROJECT_NAME, VERSION, API_PREFIX, API_V2_PREFIX, CORS_ORIGINS
 from .core.database import get_connection, init_db
 from .core.security import obter_usuario_logado
+from .db.session import get_engine
 from .api import titulos, previsoes, adiantamentos, auth, fornecedores
 from .api.auth import garantir_admin_inicial
 from .api.v2 import router as v2_router
@@ -91,7 +93,9 @@ def health_check():
         cur.execute("SELECT 1")
         cur.fetchone()
         conn.close()
-        return {"status": "healthy", "service": "jr-fincloud-api", "db": "ok"}
+        with get_engine().connect() as sa_conn:
+            sa_conn.execute(text("SELECT 1"))
+        return {"status": "healthy", "service": "jr-fincloud-api", "db": "ok", "db_v2": "ok"}
     except Exception as exc:
         logger.error("Healthcheck falhou ao conectar ao banco: %s", exc)
         return JSONResponse(

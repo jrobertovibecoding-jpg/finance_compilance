@@ -10,8 +10,15 @@ if os.getenv("TESTING", "").strip().lower() not in ("1", "true"):
 ENV = os.getenv("ENV", "development").strip().lower()
 
 # Procura o banco no caminho relativo local, na raiz do backend ou via variável de ambiente
+_default_legacy_db = (
+    BASE_DIR / "data" / "bimer.db"
+    if BASE_DIR.parent == Path(BASE_DIR.anchor)
+    else BASE_DIR.parent / "database" / "bimer.db"
+)
+
 candidatos_db = [
     os.getenv("DATABASE_PATH"),
+    str(BASE_DIR / "data" / "bimer.db"),
     str(BASE_DIR.parent / "database" / "bimer.db"),
     str(BASE_DIR / "bimer.db"),
     str(BASE_DIR / "database" / "bimer.db"),
@@ -19,7 +26,7 @@ candidatos_db = [
 
 DATABASE_PATH = next(
     (p for p in candidatos_db if p and Path(p).exists()),
-    str(BASE_DIR.parent / "database" / "bimer.db"),
+    str(_default_legacy_db),
 )
 
 CORS_ORIGINS = [
