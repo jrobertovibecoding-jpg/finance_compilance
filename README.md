@@ -1,4 +1,4 @@
-﻿# JR FinCloud — Plataforma SaaS Financeira, Contas a Pagar & Compliance Fiscal
+# JR FinCloud — Plataforma SaaS Financeira, Contas a Pagar & Compliance Fiscal
 
 Plataforma de gestão financeira e compliance fiscal desenhada para **Varejo Multi-Loja / Shopping Centers** e **Escritórios de BPO Financeiro & Contadores** (JR Solutions).
 
