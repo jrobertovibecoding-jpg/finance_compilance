@@ -6096,12 +6096,14 @@
     const res = decodificarLinhaDigitavel(input.value);
 
     if (res) {
+      const selForma = document.getElementById('forma_pagamento');
+      if (selForma && selForma.value !== 'BOLETO') selForma.value = 'BOLETO';
       badge.style.display = 'block';
       if (res.tipo === 'BOLETO_BANCARIO') {
         badge.style.background = '#dbeafe';
         badge.style.color = '#1e40af';
         badge.style.border = '1px solid #93c5fd';
-        badge.innerHTML = `<strong>${res.bancoNome}</strong> | Vencimento: <strong>${formatarData(res.vencimento)}</strong> | Valor: <strong>${formatarMoeda(res.valor)}</strong>`;
+        badge.innerHTML = `<strong>✓ Boleto associado ao lançamento</strong> • ${res.bancoNome} | Vencimento: <strong>${formatarData(res.vencimento)}</strong> | Valor: <strong>${formatarMoeda(res.valor)}</strong>`;
 
         if (res.valor > 0) {
           const inputBruto = document.getElementById('valor_bruto');
@@ -6118,7 +6120,7 @@
         badge.style.background = '#fef3c7';
         badge.style.color = '#92400e';
         badge.style.border = '1px solid #fcd34d';
-        badge.innerHTML = `<strong>${res.segmentoNome}</strong> | Valor: <strong>${formatarMoeda(res.valor)}</strong>`;
+        badge.innerHTML = `<strong>✓ Guia/Boleto associado ao lançamento</strong> • ${res.segmentoNome} | Valor: <strong>${formatarMoeda(res.valor)}</strong>`;
 
         if (res.valor > 0) {
           const inputBruto = document.getElementById('valor_bruto');
@@ -7208,7 +7210,7 @@
     const infNFe = _xmlPrimeiroElemento(doc, ['infNFe']);
     const isNFSe = Boolean(
       !infNFe && (
-        _xmlPrimeiroElemento(doc, ['CompNfse', 'Nfse', 'InfNfse', 'NFSe', 'infNFSe', 'PrestadorServico', 'Discriminacao', 'xDescServ'])
+        _xmlPrimeiroElemento(doc, ['CompNfse', 'Nfse', 'InfNfse', 'NFSe', 'infNFSe', 'PrestadorServico', 'prest', 'Discriminacao', 'xDescServ', 'nfse', 'nota_fiscal'])
       )
     );
 
@@ -7262,7 +7264,7 @@
       const dhEmi = _xmlExtrairDataISO(_xmlPrimeiroTexto(ide, ['dhEmi', 'dEmi']));
       const cnpjEmit = _xmlPrimeiroTexto(emit, ['CNPJ', 'CPF']);
       const xNome = _xmlPrimeiroTexto(emit, ['xNome', 'xFant']);
-      const vNF = _xmlParseValor(_xmlPrimeiroTexto(icmsTot, ['vNF']));
+      const vNF = _xmlParseValor(_xmlPrimeiroTexto(icmsTot, ['vNF', 'vProd']));
 
       const rawId = infNFe.getAttribute('Id') || '';
       chaveOuCod = rawId.replace(/^NFe/i, '');
@@ -7310,19 +7312,19 @@
         ajustarTipoDocumento();
       }
 
-      const infNfse = _xmlPrimeiroElemento(doc, ['InfNfse', 'infNFSe']) || doc.documentElement;
-      const prestador = _xmlPrimeiroElemento(infNfse, ['PrestadorServico', 'Prestador', 'emit']) || infNfse;
-      const valores = _xmlPrimeiroElemento(infNfse, ['Valores', 'ValoresNfse', 'valores']) || infNfse;
+      const infNfse = _xmlPrimeiroElemento(doc, ['InfNfse', 'infNFSe', 'nf', 'Nfse', 'NFSe']) || doc.documentElement;
+      const prestador = _xmlPrimeiroElemento(infNfse, ['PrestadorServico', 'Prestador', 'prest', 'emit']) || _xmlPrimeiroElemento(doc, ['PrestadorServico', 'Prestador', 'prest', 'emit']) || infNfse;
+      const valores = _xmlPrimeiroElemento(infNfse, ['Valores', 'ValoresNfse', 'valores', 'vServPrest']) || _xmlPrimeiroElemento(doc, ['Valores', 'ValoresNfse', 'valores', 'vServPrest']) || infNfse;
 
-      const nNFSe = _xmlPrimeiroTexto(infNfse, ['Numero', 'nNFSe', 'NumeroNFe', 'NumeroNota']);
-      const serie = _xmlPrimeiroTexto(infNfse, ['Serie', 'SerieRPS', 'SeriePrestacao']);
-      const dtEmissao = _xmlExtrairDataISO(_xmlPrimeiroTexto(infNfse, ['DataEmissao', 'dhEmi', 'DataEmissaoNFe', 'dhProc']));
-      const cnpjPrest = _xmlPrimeiroTexto(prestador, ['Cnpj', 'CNPJ', 'Cpf', 'CPF']);
-      const razaoPrest = _xmlPrimeiroTexto(prestador, ['RazaoSocial', 'xNome', 'NomeFantasia', 'RazaoSocialPrestador']);
-      const codVerif = _xmlPrimeiroTexto(infNfse, ['CodigoVerificacao', 'cVerif', 'CodigoAutenticidade']);
+      const nNFSe = _xmlPrimeiroTexto(infNfse, ['nNFSe', 'numero_nfse', 'NumeroNfse', 'NumeroNFe', 'NumeroNota', 'Numero', 'nDF']);
+      const serie = _xmlPrimeiroTexto(infNfse, ['Serie', 'SerieRPS', 'SeriePrestacao', 'serie_nfse']);
+      const dtEmissao = _xmlExtrairDataISO(_xmlPrimeiroTexto(infNfse, ['DataEmissao', 'dhEmi', 'DataEmissaoNFe', 'dhProc', 'data_nfse', 'DataFatoGerador']));
+      const cnpjPrest = _xmlPrimeiroTexto(prestador, ['Cnpj', 'CNPJ', 'Cpf', 'CPF', 'cpfcnpj']);
+      const razaoPrest = _xmlPrimeiroTexto(prestador, ['RazaoSocial', 'xNome', 'NomeFantasia', 'RazaoSocialPrestador', 'razao_social']);
+      const codVerif = _xmlPrimeiroTexto(infNfse, ['CodigoVerificacao', 'cVerif', 'CodigoAutenticidade', 'cod_verificador_autenticidade']);
       chaveOuCod = codVerif || (infNfse.getAttribute && infNfse.getAttribute('Id') ? infNfse.getAttribute('Id').replace(/^NFS/i, '') : '');
 
-      const vServ = _xmlParseValor(_xmlPrimeiroTexto(valores, ['ValorServicos', 'vServ', 'ValorTotalServicos', 'ValorLiquidoNfse']));
+      const vServ = _xmlParseValor(_xmlPrimeiroTexto(valores, ['ValorServicos', 'vServ', 'vServPrest', 'ValorTotalServicos', 'vLiq', 'ValorLiquidoNfse', 'ValorLiquido', 'valor_total', 'valor']));
       const issRetidoFlag = _xmlPrimeiroTexto(valores, ['IssRetido', 'tpRetISSQN']);
       let vIssRet = _xmlParseValor(_xmlPrimeiroTexto(valores, ['ValorIssRetido', 'vISSQNRet']));
       if (!vIssRet && (issRetidoFlag === '1' || issRetidoFlag === '2' || issRetidoFlag === '3' || issRetidoFlag.toLowerCase() === 'true')) {
@@ -7777,8 +7779,19 @@
     const item_lc116 = document.getElementById('item_lc116') ? document.getElementById('item_lc116').value.trim() : '';
 
     if (!favorecido || !cnpj || !numero_doc || valor_bruto <= 0) {
-      alert('PREENCHIMENTO OBRIGATÓRIO:\nInforme o Favorecido, CNPJ/CPF, Número do Documento e Valor Bruto.');
+      const faltando = [];
+      if (!favorecido) faltando.push('Razão Social / Favorecido');
+      if (!cnpj) faltando.push('CNPJ / CPF');
+      if (!numero_doc) faltando.push('Número do Documento');
+      if (valor_bruto <= 0) faltando.push('Valor Bruto (R$)');
+      alert('PREENCHIMENTO OBRIGATÓRIO:\nFalta preencher: ' + faltando.join(', ') + '.');
       trocarAba('aba-geral', document.querySelectorAll('.tab-btn')[0]);
+      setTimeout(() => {
+        if (!cnpj) document.getElementById('cnpj_favorecido')?.focus();
+        else if (!favorecido) document.getElementById('razao_favorecido')?.focus();
+        else if (!numero_doc) document.getElementById('numero_doc')?.focus();
+        else if (valor_bruto <= 0) document.getElementById('valor_bruto')?.focus();
+      }, 60);
       return;
     }
 
@@ -8507,16 +8520,18 @@
 
         <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 4px; padding: 10px;">
           <div style="font-size: 10px; font-weight: 800; color: #166534; text-transform: uppercase; margin-bottom: 6px;">Dados para Pagamento (${escapeHtml(formaUp)})</div>
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: ${item.linha_dig ? '6px' : '0'};">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
             <div><strong>Chave PIX / Dados Bancários:</strong> <span style="font-family: monospace; color: #0f172a;">${escapeHtml(dadosBanco || 'Não informado')}</span></div>
             ${dadosBanco ? `<button type="button" class="tool-btn primary" style="background: #16a34a; border-color: #15803d; padding: 3px 10px; font-size: 11px;" onclick="copiarPagamentoTitulo('${item.id}', 'dados')">${formaUp.includes('PIX') ? 'Copiar Chave PIX' : 'Copiar Dados Bancários'}</button>` : ''}
           </div>
-          ${item.linha_dig ? `
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding-top: 6px; border-top: 1px dashed #86efac;">
-              <div style="word-break: break-all;"><strong>Linha Digitável:</strong> <span style="font-family: monospace;">${escapeHtml(item.linha_dig)}</span></div>
-              <button type="button" class="tool-btn" style="background: #fef3c7; border-color: #fcd34d; color: #92400e; font-weight: 700; padding: 3px 10px; font-size: 11px;" onclick="copiarPagamentoTitulo('${item.id}', 'boleto')">Copiar Boleto</button>
+          <div style="padding-top: 8px; border-top: 1px dashed #86efac;">
+            <div style="font-size: 10px; font-weight: 800; color: #166534; margin-bottom: 4px;">ASSOCIAR / ALTERAR BOLETO (CÓDIGO DE BARRAS / LINHA DIGITÁVEL)</div>
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <input type="text" id="modal-det-linha-dig" value="${escapeHtml(item.linha_dig || '')}" placeholder="Cole a linha digitável do boleto (47 ou 48 dígitos)..." style="flex: 1; min-width: 240px; font-family: monospace; font-size: 11.5px; padding: 4px 8px; border: 1px solid #86efac; border-radius: 4px; background: #ffffff;">
+              <button type="button" class="tool-btn primary" style="background: #1d4ed8; border-color: #1e40af; padding: 4px 10px; font-size: 11px;" onclick="associarBoletoAoTitulo('${item.id}')">Associar Boleto</button>
+              ${item.linha_dig ? `<button type="button" class="tool-btn" style="background: #fef3c7; border-color: #fcd34d; color: #92400e; font-weight: 700; padding: 4px 10px; font-size: 11px;" onclick="copiarPagamentoTitulo('${item.id}', 'boleto')">Copiar Boleto</button>` : ''}
             </div>
-          ` : ''}
+          </div>
         </div>
       `;
     }
@@ -8545,6 +8560,63 @@
   function fecharModalDetalhesTitulo() {
     const modal = document.getElementById('jr-modal-detalhes-titulo');
     if (modal) modal.style.display = 'none';
+  }
+
+  async function associarBoletoAoTitulo(id) {
+    const inp = document.getElementById('modal-det-linha-dig');
+    const linha = (inp?.value || '').trim();
+    const item = (titulos || []).find(x => String(x.id) === String(id))
+      || (window._relatorioExemplosAtivos || []).find(x => String(x.id) === String(id));
+    if (!item) return;
+
+    const digitos = linha.replace(/\D/g, '');
+    if (linha && digitos.length !== 47 && digitos.length !== 48 && digitos.length !== 44) {
+      alert('Linha digitável / código de barras inválido. Informe 47 dígitos (boleto), 48 (concessionária) ou 44 (código de barras).');
+      inp?.focus();
+      return;
+    }
+
+    const res = linha ? decodificarLinhaDigitavel(linha) : null;
+    const novoForma = linha ? (res?.bancoId === '341' ? 'Boleto Itaú' : 'BOLETO') : (item.forma_pgto || 'BOLETO');
+    const novoVenc = (res?.vencimento && (!item.vencimento || item.vencimento === '-')) ? res.vencimento : item.vencimento;
+
+    const payload = {
+      vencimento: novoVenc,
+      cod_operacao: item.cod_operacao || '',
+      cnae: item.cnae || '',
+      item_lc116: item.item_lc116 || '',
+      categoria: item.categoria || item.ccusto || '',
+      ccusto: item.ccusto || item.categoria || '',
+      solicitante: item.solicitante || '',
+      cnpj: item.cnpj || '',
+      favorecido: item.favorecido || '',
+      valor: parseFloat(item.valor || item.valor_liquido || 0) || 0,
+      forma_pgto: novoForma,
+      descricao: item.descricao || item.historico || '',
+      historico: item.historico || item.descricao || '',
+      linha_dig: linha
+    };
+
+    try {
+      await apiFetch(`${API_BASE}/titulos/${encodeURIComponent(id)}/editar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {
+      console.warn('Persistindo código de barras via contingência local:', e);
+    }
+
+    item.linha_dig = linha;
+    item.forma_pgto = novoForma;
+    if (novoVenc) item.vencimento = novoVenc;
+
+    if (typeof salvarStorage === 'function') salvarStorage();
+    if (typeof atualizarTabela === 'function') atualizarTabela();
+    abrirModalDetalhesTitulo(id);
+    if (typeof mostrarToastSucesso === 'function') {
+      mostrarToastSucesso(linha ? 'Código de barras associado ao título com sucesso!' : 'Código de barras removido do título.');
+    }
   }
 
   function atualizarTotaisGerais() {
