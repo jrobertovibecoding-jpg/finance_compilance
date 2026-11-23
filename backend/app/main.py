@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
-from .core.config import PROJECT_NAME, VERSION, API_PREFIX, API_V2_PREFIX, CORS_ORIGINS
+from .core.config import PROJECT_NAME, VERSION, API_PREFIX, API_V2_PREFIX, CORS_ORIGINS, CORS_ORIGIN_REGEX
 from .core.database import get_connection, init_db
 from .core.security import obter_usuario_logado
 from .db.session import get_engine
@@ -39,6 +39,7 @@ allow_all_origins = "*" in CORS_ORIGINS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"] if allow_all_origins else CORS_ORIGINS,
+    allow_origin_regex=None if allow_all_origins else (CORS_ORIGIN_REGEX or None),
     allow_credentials=not allow_all_origins,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Tenant-Id", "Accept"],

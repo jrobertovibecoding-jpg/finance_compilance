@@ -846,10 +846,15 @@
         <h1>JR FinCloud — Gestão Financeira</h1>
         <p>Central de Contas a Pagar, Rateios, Retenções Tributárias & Conciliação</p>
       </div>
-      <div style="display: flex; align-items: center; gap: 6px;">
+      <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
         <span id="status-conexao-db" ondblclick="configurarServidorNuvem()" title="Servidor Cloud Conectado (duplo clique para gerenciar URL)" style="display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: #15803d; background: #dcfce7; padding: 2px 7px; border-radius: 3px; border: 1px solid #86efac; cursor: default;">
           <span class="bimer-status-dot"></span> Conectado ao Servidor (JR FinCloud)
         </span>
+        <div id="saas-workspace-wrap" style="display: none; align-items: center; gap: 4px; background: #eff6ff; border: 1px solid #bfdbfe; padding: 1px 6px; border-radius: 3px;">
+          <span style="font-size: 9.5px; font-weight: 700; color: #1e40af;">WORKSPACE:</span>
+          <select id="saas-workspace-select" onchange="trocarWorkspaceSaaS(this.value)" style="border: none; background: transparent; font-size: 10px; font-weight: 700; color: #0f172a; outline: none; cursor: pointer; max-width: 170px;"></select>
+          <button type="button" class="tool-btn" onclick="abrirModalNovoClienteBPO()" style="padding: 1px 5px; font-size: 9.5px; background: #ffffff;" title="Cadastrar novo cliente na carteira BPO">+ BPO</button>
+        </div>
       </div>
     </div>
 
@@ -860,6 +865,7 @@
       <button class="tool-btn" onclick="limparCamposFormulario()" title="Limpar campos do formulário atual sem apagar dados gravados"><svg class="bimer-svg" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg> Limpar Campos</button>
       <button class="tool-btn" onclick="abrirModalFolhaRostoDiaria()" title="Visualizar / Imprimir Folha de Rosto Resumida do Movimento do Dia (Borderô)"><svg class="bimer-svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg> Folha do Dia</button>
       <button class="tool-btn" onclick="trocarAba('aba-relatorios')" title="Central de Relatórios Gerenciais & BI"><svg class="bimer-svg" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Relatórios & BI</button>
+      <button type="button" class="tool-btn" style="background: #ecfdf5; border-color: #10b981; color: #065f46; font-weight: 700;" onclick="abrirCentralSaasV2()" title="Rateio Shopping 100%, Alçadas RBAC, Motor Fiscal 2026, DRE & Auditoria LGPD">SaaS v2 (Shopping • Fiscal 2026 • DRE)</button>
 
       <!-- Seletor Compacto de Escala (Zoom) -->
       <div style="display: inline-flex; align-items: center; gap: 3px; background: #e2e8f0; padding: 1px 6px; border-radius: 3px; border: 1px solid #cbd5e1; margin-left: 4px;">
@@ -874,9 +880,9 @@
         </select>
       </div>
 
-      <!-- Perfil do Gestor Roberto & Logout no Extremo Canto Direito -->
+      <!-- Perfil do Gestor & Logout no Extremo Canto Direito -->
       <div id="user-session-bar" style="display: inline-flex; align-items: center; gap: 6px; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 2px 8px; border-radius: 3px; font-size: 10.5px; margin-left: 6px;">
-        <span style="color: #166534; font-weight: 700;"><svg class="bimer-svg bimer-svg-sm" style="color: #166534;" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> <span id="user-name-display">Roberto</span></span>
+        <span style="color: #166534; font-weight: 700;"><svg class="bimer-svg bimer-svg-sm" style="color: #166534;" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> <span id="user-name-display">Usuário</span></span>
         <button type="button" class="tool-btn" style="padding: 1px 5px; font-size: 9.5px;" onclick="abrirModalSenha()" title="Alterar Senha de Acesso"><svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><path d="M21 2l-2 2m-1.5 1.5L14 9l-1.5-1.5-3 3L8 9 5 12l2 2-3 3 1.5 1.5 2.5-2.5 1.5 1.5 3-3-1.5-1.5L15 8.5l1.5-1.5L22 3z"></path></svg></button>
         <button type="button" class="tool-btn" style="padding: 1px 5px; font-size: 9.5px; color: var(--danger);" onclick="fazerLogout()" title="Sair da Sessão"><svg class="bimer-svg bimer-svg-xs" style="color: var(--danger);" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></button>
       </div>
@@ -2541,25 +2547,30 @@
 </div>
 
 <!-- ==================== MODAL DE AUTENTICAÇÃO / LOGIN (JR FINCLOUD) ==================== -->
-<div id="bimer-login-modal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.82); backdrop-filter: blur(5px); z-index: 99999; justify-content: center; align-items: center;">
-  <div style="background: white; border: 2px solid #004b87; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-radius: 6px; width: 360px; overflow: hidden;">
+<div id="bimer-login-modal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.82); backdrop-filter: blur(5px); z-index: 99999; justify-content: center; align-items: center; padding: 12px;">
+  <div style="background: white; border: 2px solid #047857; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); border-radius: 6px; width: 420px; max-width: 96vw; overflow: hidden;">
     <!-- Barra de Título JR FinCloud -->
     <div style="background: linear-gradient(to right, #064e3b, #047857); color: white; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center;">
       <div style="display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 11.5px;">
         <span><svg class="bimer-svg" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>
-        <span>JR FinCloud • Acesso Seguro</span>
+        <span>JR FinCloud • Acesso Seguro SaaS v2</span>
       </div>
       <span style="font-size: 10px; opacity: 0.85;">JR Solutions</span>
     </div>
 
     <!-- Conteúdo do Formulário -->
-    <div style="padding: 20px; background: #f8fafc;">
-      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px;">
+    <div style="padding: 16px 20px; background: #f8fafc; max-height: 82vh; overflow-y: auto;">
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
         <div style="background: rgba(16, 185, 129, 0.18); color: #065f46; border: 1px solid rgba(16, 185, 129, 0.45); font-weight: 900; font-size: 13px; padding: 6px 10px; border-radius: 4px; letter-spacing: 0.8px;">JR FINCLOUD</div>
         <div>
-          <div style="font-size: 12.5px; font-weight: 700; color: #065f46;">Plataforma de Gestão Financeira</div>
-          <div style="font-size: 10.5px; color: #64748b;">Autenticação Corporativa Obrigatória</div>
+          <div style="font-size: 12.5px; font-weight: 700; color: #065f46;">Plataforma Multi-Tenant de Compliance Financeiro</div>
+          <div style="font-size: 10px; color: #64748b;">PostgreSQL 17 + RLS • Supabase + Railway + Vercel</div>
         </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px;">
+        <button type="button" id="auth-tab-login" onclick="alternarModoAuthModal('login')" class="tool-btn primary" style="justify-content: center; padding: 6px;">Entrar na Conta</button>
+        <button type="button" id="auth-tab-register" onclick="alternarModoAuthModal('register')" class="tool-btn" style="justify-content: center; padding: 6px;">Criar Novo Workspace (SaaS)</button>
       </div>
 
       <div id="login-erro-alerta" style="display: none; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 8px 10px; border-radius: 4px; font-size: 11px; margin-bottom: 12px;">
@@ -2588,10 +2599,51 @@
           <svg class="bimer-svg" viewBox="0 0 24 24"><path d="M21 2l-2 2m-1.5 1.5L14 9l-1.5-1.5-3 3L8 9 5 12l2 2-3 3 1.5 1.5 2.5-2.5 1.5 1.5 3-3-1.5-1.5L15 8.5l1.5-1.5L22 3z"></path></svg> Entrar no Sistema (Enter)
         </button>
       </form>
+
+      <form id="form-register-bimer" onsubmit="executarCadastroTenant(event)" style="display: none;">
+        <div style="margin-bottom: 8px;">
+          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #334155; margin-bottom: 2px;">Nome da Empresa / Grupo *</label>
+          <input type="text" id="reg_nome_empresa" required placeholder="Ex: Rede Varejo Brasil Ltda" style="width: 100%; padding: 6px 8px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+          <div>
+            <label style="display: block; font-size: 10.5px; font-weight: 700; color: #334155; margin-bottom: 2px;">CNPJ *</label>
+            <input type="text" id="reg_cnpj" required placeholder="00.000.000/0001-00" style="width: 100%; padding: 6px 8px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 10.5px; font-weight: 700; color: #334155; margin-bottom: 2px;">Regime Tributário</label>
+            <select id="reg_regime" style="width: 100%; padding: 6px 8px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;">
+              <option value="LUCRO_PRESUMIDO">Lucro Presumido</option>
+              <option value="LUCRO_REAL">Lucro Real</option>
+              <option value="SIMPLES_NACIONAL">Simples Nacional</option>
+              <option value="MEI">MEI</option>
+            </select>
+          </div>
+        </div>
+        <label style="display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: #065f46; font-weight: 700; margin-bottom: 8px; cursor: pointer;">
+          <input type="checkbox" id="reg_is_bpo">
+          <span>Sou Escritório BPO / Contabilidade (Multi-Cliente)</span>
+        </label>
+        <div style="margin-bottom: 8px;">
+          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #334155; margin-bottom: 2px;">Nome do Gestor (Owner) *</label>
+          <input type="text" id="reg_admin_nome" required placeholder="Seu nome completo" style="width: 100%; padding: 6px 8px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;">
+        </div>
+        <div style="margin-bottom: 8px;">
+          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #334155; margin-bottom: 2px;">E-mail Corporativo *</label>
+          <input type="email" id="reg_admin_email" required placeholder="gestor@empresa.com.br" style="width: 100%; padding: 6px 8px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;">
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #334155; margin-bottom: 2px;">Senha Inicial (mínimo 8 caracteres) *</label>
+          <input type="password" id="reg_admin_senha" required minlength="8" placeholder="Senha forte" style="width: 100%; padding: 6px 8px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;">
+        </div>
+        <button type="submit" id="btn-submit-register" class="tool-btn primary" style="width: 100%; justify-content: center; padding: 8px 12px; font-size: 12px; font-weight: 700; cursor: pointer;">
+          Criar Workspace & Entrar Agora
+        </button>
+      </form>
     </div>
 
     <div style="background: #e2e8f0; border-top: 1px solid #cbd5e1; padding: 7px 12px; text-align: center; font-size: 10px; color: #64748b;">
-      JR FinCloud • JR Solutions • Proteção de Dados e Auditoria
+      JR FinCloud • JR Solutions • Isolamento Multi-Tenant com RLS no Postgres
     </div>
   </div>
 </div>
@@ -2755,6 +2807,199 @@
   </div>
 </div>
 
+<!-- ==================== MODAL BPO: NOVO CLIENTE NA CARTEIRA ==================== -->
+<div id="jr-modal-bpo-cliente" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.72); backdrop-filter: blur(3px); z-index: 99998; justify-content: center; align-items: center; padding: 12px;">
+  <div style="background: #ffffff; border: 2px solid #1e40af; border-radius: 6px; width: 420px; max-width: 96vw; overflow: hidden;">
+    <div style="background: linear-gradient(to right, #1e3a8a, #1d4ed8); color: #ffffff; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-weight: 700; font-size: 11.5px;">Novo Cliente na Carteira BPO (Multi-Tenant)</span>
+      <button type="button" onclick="fecharModalClienteBPO()" style="background: none; border: none; color: #ffffff; cursor: pointer; font-weight: 700;">✕</button>
+    </div>
+    <form onsubmit="criarClienteBPO(event)" style="padding: 14px 16px; background: #f8fafc;">
+      <p style="font-size: 10px; color: #475569; margin-bottom: 10px;">Cria um Workspace isolado vinculado ao seu tenant BPO atual (para alternar instantaneamente na barra superior).</p>
+      <div style="margin-bottom: 8px;">
+        <label style="display: block; font-size: 10.5px; font-weight: 700; margin-bottom: 2px;">Nome Fantasia do Cliente *</label>
+        <input type="text" id="bpo_cli_nome" required placeholder="Ex: Loja Alpha Shopping" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 3px;">
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+        <div>
+          <label style="display: block; font-size: 10.5px; font-weight: 700; margin-bottom: 2px;">CNPJ *</label>
+          <input type="text" id="bpo_cli_cnpj" required placeholder="00.000.000/0001-00" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 3px;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 10.5px; font-weight: 700; margin-bottom: 2px;">Regime</label>
+          <select id="bpo_cli_regime" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 3px; background: #fff;">
+            <option value="LUCRO_PRESUMIDO">Lucro Presumido</option>
+            <option value="LUCRO_REAL">Lucro Real</option>
+            <option value="SIMPLES_NACIONAL">Simples Nacional</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom: 8px;">
+        <label style="display: block; font-size: 10.5px; font-weight: 700; margin-bottom: 2px;">Nome do Responsável no Cliente *</label>
+        <input type="text" id="bpo_cli_admin_nome" required placeholder="Nome do sócio/financeiro" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 3px;">
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+        <div>
+          <label style="display: block; font-size: 10.5px; font-weight: 700; margin-bottom: 2px;">E-mail do Cliente *</label>
+          <input type="email" id="bpo_cli_email" required placeholder="cliente@empresa.com.br" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 3px;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 10.5px; font-weight: 700; margin-bottom: 2px;">Senha Inicial (8+ chars) *</label>
+          <input type="password" id="bpo_cli_senha" required minlength="8" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 3px;">
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button type="button" class="tool-btn" onclick="fecharModalClienteBPO()">Cancelar</button>
+        <button type="submit" class="tool-btn primary">Criar Cliente BPO</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==================== CENTRAL SAAS v2 (SHOPPING, ALÇADAS, FISCAL 2026, DRE & AUDITORIA) ==================== -->
+<div id="jr-modal-saas-v2" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.78); backdrop-filter: blur(3px); z-index: 99997; justify-content: center; align-items: center; padding: 14px;">
+  <div style="background: #ffffff; border: 2px solid #047857; border-radius: 6px; width: 960px; max-width: 97vw; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);">
+    <div style="background: linear-gradient(to right, #064e3b, #047857); color: #ffffff; padding: 9px 14px; display: flex; justify-content: space-between; align-items: center;">
+      <div style="font-weight: 700; font-size: 12px;">JR FinCloud SaaS v2 — Operações Multi-Tenant &amp; Compliance</div>
+      <button type="button" onclick="fecharCentralSaasV2()" style="background: transparent; border: none; color: #ffffff; font-size: 15px; cursor: pointer; font-weight: 700;">✕</button>
+    </div>
+
+    <div style="display: flex; gap: 4px; padding: 6px 12px; background: #ecfdf5; border-bottom: 1px solid #a7f3d0; flex-wrap: wrap;">
+      <button type="button" id="saas-tab-btn-rateio" class="tool-btn primary" onclick="trocarAbaSaasV2('rateio')">1. Rateio Shopping (100%)</button>
+      <button type="button" id="saas-tab-btn-alcadas" class="tool-btn" onclick="trocarAbaSaasV2('alcadas')">2. Alçadas &amp; Aprovações RBAC</button>
+      <button type="button" id="saas-tab-btn-fiscal" class="tool-btn" onclick="trocarAbaSaasV2('fiscal')">3. Motor Fiscal &amp; Reforma 2026</button>
+      <button type="button" id="saas-tab-btn-dre" class="tool-btn" onclick="trocarAbaSaasV2('dre')">4. DRE por Loja &amp; Auditoria LGPD</button>
+    </div>
+
+    <div style="padding: 14px 16px; overflow-y: auto; flex: 1; background: #f8fafc;">
+      <!-- ABA 1: RATEIO DE BOLETO SHOPPING -->
+      <div id="saas-pane-rateio">
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 10px;">
+          <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px;">
+            <label style="display: block; font-weight: 700; font-size: 10.5px; color: #065f46; margin-bottom: 4px;">Selecione o Título para Rateio de Rubricas / Lojas:</label>
+            <select id="saas-rateio-titulo-select" onchange="carregarRateiosTituloSelecionado()" style="width: 100%; padding: 6px; border: 1px solid #94a3b8; border-radius: 3px; background: #fff;"></select>
+            <div id="saas-rateio-resumo" style="margin-top: 6px; font-size: 10.5px; color: #334155;"></div>
+          </div>
+          <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px;">
+            <div style="font-weight: 700; font-size: 10.5px; color: #1e40af; margin-bottom: 4px;">Cadastro Rápido (Loja / Conta Bancária)</div>
+            <div style="display: flex; gap: 4px; margin-bottom: 6px;">
+              <input type="text" id="saas-novo-cc-codigo" placeholder="Cód (SDB)" style="width: 72px; padding: 4px; border: 1px solid #cbd5e1; border-radius: 3px;">
+              <input type="text" id="saas-novo-cc-nome" placeholder="Nome Loja / Shopping" style="flex: 1; padding: 4px; border: 1px solid #cbd5e1; border-radius: 3px;">
+              <button type="button" class="tool-btn" onclick="criarCentroCustoRapidoSaas()">+ Loja</button>
+            </div>
+            <div style="display: flex; gap: 4px;">
+              <input type="text" id="saas-cb-agencia" placeholder="Agência" style="width: 68px; padding: 4px; border: 1px solid #cbd5e1; border-radius: 3px;">
+              <input type="text" id="saas-cb-conta" placeholder="Conta" style="flex: 1; padding: 4px; border: 1px solid #cbd5e1; border-radius: 3px;">
+              <input type="text" id="saas-cb-dac" placeholder="DAC" style="width: 42px; padding: 4px; border: 1px solid #cbd5e1; border-radius: 3px;">
+              <button type="button" class="tool-btn" onclick="criarContaBancariaRapidaSaas()">+ Itaú</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <strong style="font-size: 11px; color: #0f172a;">Linhas de Desdobramento (Trava Exata 100% em Decimal)</strong>
+            <div style="display: flex; gap: 6px;">
+              <button type="button" class="tool-btn" onclick="preencherRubricasShoppingPadrao()">Modelo Pauta Shopping (6 Rubricas)</button>
+              <button type="button" class="tool-btn" onclick="adicionarLinhaRateioSaas()">+ Linha</button>
+            </div>
+          </div>
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f1f5f9; text-align: left;">
+                <th style="padding: 5px; border: 1px solid #cbd5e1;">Loja / Centro de Custo</th>
+                <th style="padding: 5px; border: 1px solid #cbd5e1;">Rubrica</th>
+                <th style="padding: 5px; border: 1px solid #cbd5e1;">Valor (R$)</th>
+                <th style="padding: 5px; border: 1px solid #cbd5e1;">Observação</th>
+                <th style="padding: 5px; border: 1px solid #cbd5e1; width: 40px;"></th>
+              </tr>
+            </thead>
+            <tbody id="saas-rateio-tbody"></tbody>
+          </table>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+            <span id="saas-rateio-status-soma" style="font-weight: 700; font-size: 11px;"></span>
+            <button type="button" class="tool-btn primary" onclick="salvarRateiosSaas()">Gravar Rateio 100% no Supabase</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA 2: WORKFLOW DE ALÇADAS RBAC -->
+      <div id="saas-pane-alcadas" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <strong style="font-size: 11px;">Fluxo de Alçadas e Aprovação (Solicitante/Financeiro → Diretor/Owner)</strong>
+          <button type="button" class="tool-btn" onclick="carregarAlcadasSaasV2()">Atualizar Lista</button>
+        </div>
+        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f1f5f9; text-align: left;">
+                <th style="padding: 5px; border: 1px solid #cbd5e1;">Doc</th>
+                <th style="padding: 5px; border: 1px solid #cbd5e1;">Favorecido</th>
+                <th style="padding: 5px; border: 1px solid #cbd5e1;">Vencimento</th>
+                <th style="padding: 5px; border: 1px solid #cbd5e1;">Líquido (R$)</th>
+                <th style="padding: 5px; border: 1px solid #cbd5e1;">Status Alçada</th>
+                <th style="padding: 5px; border: 1px solid #cbd5e1;">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="saas-alcadas-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ABA 3: SIMULADOR FISCAL & REFORMA 2026 -->
+      <div id="saas-pane-fiscal" style="display: none;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 12px;">
+            <strong style="display: block; font-size: 11px; color: #065f46; margin-bottom: 8px;">Parâmetros Tributários da NFS-e / Serviço</strong>
+            <div style="margin-bottom: 8px;">
+              <label style="display: block; font-size: 10.5px; font-weight: 700; margin-bottom: 2px;">Valor Bruto da Nota (R$)</label>
+              <input type="number" step="0.01" id="saas-fisc-bruto" value="10000.00" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 3px;">
+            </div>
+            <div style="margin-bottom: 8px;">
+              <label style="display: block; font-size: 10.5px; font-weight: 700; margin-bottom: 2px;">Regime do Prestador</label>
+              <select id="saas-fisc-regime" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 3px; background: #fff;">
+                <option value="LUCRO_PRESUMIDO">Lucro Presumido / Real (Retém IRRF + PCC)</option>
+                <option value="SIMPLES_NACIONAL">Simples Nacional (Dispensa IRRF/PCC)</option>
+                <option value="MEI">MEI (Dispensa IRRF/PCC)</option>
+              </select>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+              <div>
+                <label style="display: block; font-size: 10.5px; font-weight: 700; margin-bottom: 2px;">Alíquota ISS (%)</label>
+                <input type="number" step="0.01" id="saas-fisc-iss" value="5.00" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 3px;">
+              </div>
+              <div style="display: flex; flex-direction: column; justify-content: flex-end; gap: 4px;">
+                <label style="font-size: 10px;"><input type="checkbox" id="saas-fisc-reter-iss" checked> Reter ISS na Fonte</label>
+                <label style="font-size: 10px;"><input type="checkbox" id="saas-fisc-reforma" checked> Prévia IBS/CBS 2026</label>
+              </div>
+            </div>
+            <button type="button" class="tool-btn primary" style="width: 100%; justify-content: center; padding: 7px;" onclick="simularFiscalSaasV2()">Calcular Retenções &amp; Reforma 2026</button>
+          </div>
+          <div id="saas-fisc-resultado" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 12px; font-size: 11px;">
+            Preencha os dados ao lado e clique em Calcular para obter a memória tributária oficial da API v2.
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA 4: DRE POR CENTRO DE CUSTO & AUDITORIA LGPD -->
+      <div id="saas-pane-dre" style="display: none;">
+        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 10px; background: #ffffff; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 4px;">
+          <label style="font-weight: 700;">Ano:</label>
+          <input type="number" id="saas-dre-ano" style="width: 72px; padding: 4px; border: 1px solid #cbd5e1; border-radius: 3px;">
+          <label style="font-weight: 700;">Mês:</label>
+          <input type="number" id="saas-dre-mes" min="1" max="12" style="width: 56px; padding: 4px; border: 1px solid #cbd5e1; border-radius: 3px;">
+          <button type="button" class="tool-btn primary" onclick="carregarDreSaasV2()">Gerar DRE por Loja/Rubrica</button>
+          <button type="button" class="tool-btn" onclick="carregarAuditLogsSaasV2()">Atualizar Auditoria LGPD</button>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div id="saas-dre-resultado" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px; max-height: 360px; overflow-y: auto;"></div>
+          <div id="saas-audit-resultado" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px; max-height: 360px; overflow-y: auto;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 
   /* HELPER GLOBAL DE ÍCONES SVG VETORIAIS PROFISSIONAIS */
@@ -2800,13 +3045,26 @@
   }
 
   const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const CLOUD_DEFAULT_API = 'https://jr-fincloud-api-production.up.railway.app/api/v2/erp';
+  const LOCAL_DEFAULT_API = 'http://localhost:8000/api/v2/erp';
   let storedApi = localStorage.getItem('bimer_cloud_api_url');
-  let API_BASE = isLocalHost ? 'http://localhost:8000/api/contas-a-pagar' : (storedApi || 'https://api.jrfincloud.com.br/api/contas-a-pagar');
+  if (storedApi && (storedApi.includes('api.jrfincloud.com.br') || storedApi.includes('/api/contas-a-pagar'))) {
+    storedApi = CLOUD_DEFAULT_API;
+    localStorage.setItem('bimer_cloud_api_url', storedApi);
+  }
+  let API_BASE = isLocalHost
+    ? (storedApi && storedApi.includes('localhost') ? storedApi : LOCAL_DEFAULT_API)
+    : (storedApi || CLOUD_DEFAULT_API);
   let isBackendOnline = false;
+
+  function getApiV2Base() {
+    return API_BASE.replace(/\/erp\/?$/, '').replace(/\/api\/contas-a-pagar\/?$/, '/api/v2');
+  }
 
   // ── AUTENTICAÇÃO, SESSÃO & SEGURANÇA XSS ───────────────────────────────
   const AUTH_STORAGE_TOKEN = 'bimer_auth_token_v1';
   const AUTH_STORAGE_USER = 'bimer_auth_user_v1';
+  const AUTH_STORAGE_TENANT = 'jrfincloud_tenant_v2';
 
   function escapeHtml(val) {
     if (val === null || val === undefined) return '';
@@ -2891,6 +3149,20 @@
     }
   }
 
+  function alternarModoAuthModal(modo) {
+    const isReg = modo === 'register';
+    const formLogin = document.getElementById('form-login-bimer');
+    const formReg = document.getElementById('form-register-bimer');
+    const tabLogin = document.getElementById('auth-tab-login');
+    const tabReg = document.getElementById('auth-tab-register');
+    const alertBox = document.getElementById('login-erro-alerta');
+    if (alertBox) alertBox.style.display = 'none';
+    if (formLogin) formLogin.style.display = isReg ? 'none' : 'block';
+    if (formReg) formReg.style.display = isReg ? 'block' : 'none';
+    if (tabLogin) tabLogin.className = isReg ? 'tool-btn' : 'tool-btn primary';
+    if (tabReg) tabReg.className = isReg ? 'tool-btn primary' : 'tool-btn';
+  }
+
   async function executarLogin(e) {
     e.preventDefault();
     const email = document.getElementById('login_email').value.trim();
@@ -2916,9 +3188,11 @@
       if (resp.ok && data.success && data.access_token && data.usuario) {
         localStorage.setItem(AUTH_STORAGE_TOKEN, data.access_token);
         localStorage.setItem(AUTH_STORAGE_USER, JSON.stringify(data.usuario));
+        if (data.tenant) localStorage.setItem(AUTH_STORAGE_TENANT, JSON.stringify(data.tenant));
         document.getElementById('bimer-login-modal').style.display = 'none';
         const userDisplay = document.getElementById('user-name-display');
         if (userDisplay) userDisplay.textContent = data.usuario.nome || data.usuario.email || 'Usuário';
+        await carregarWorkspacesSaaS();
         await carregarDadosIniciais();
       } else {
         if (alertBox) {
@@ -2940,10 +3214,69 @@
     }
   }
 
+  async function executarCadastroTenant(e) {
+    e.preventDefault();
+    const alertBox = document.getElementById('login-erro-alerta');
+    const btn = document.getElementById('btn-submit-register');
+    if (alertBox) alertBox.style.display = 'none';
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Provisionando Workspace no Postgres...';
+    }
+
+    const payload = {
+      nome_empresa: document.getElementById('reg_nome_empresa').value.trim(),
+      cnpj: document.getElementById('reg_cnpj').value.trim(),
+      regime_tributario: document.getElementById('reg_regime').value,
+      is_bpo_partner: Boolean(document.getElementById('reg_is_bpo').checked),
+      admin_nome: document.getElementById('reg_admin_nome').value.trim(),
+      admin_email: document.getElementById('reg_admin_email').value.trim(),
+      admin_senha: document.getElementById('reg_admin_senha').value
+    };
+
+    try {
+      const resp = await fetch(`${getApiV2Base()}/auth/register-tenant`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (resp.ok && data.success && data.access_token) {
+        localStorage.setItem(AUTH_STORAGE_TOKEN, data.access_token);
+        const userObj = { ...(data.usuario || {}), perfil: data.role || 'OWNER', role: data.role || 'OWNER' };
+        localStorage.setItem(AUTH_STORAGE_USER, JSON.stringify(userObj));
+        if (data.tenant) localStorage.setItem(AUTH_STORAGE_TENANT, JSON.stringify(data.tenant));
+        document.getElementById('bimer-login-modal').style.display = 'none';
+        const userDisplay = document.getElementById('user-name-display');
+        if (userDisplay) userDisplay.textContent = userObj.nome || userObj.email || 'Owner';
+        await carregarWorkspacesSaaS();
+        await carregarDadosIniciais();
+        alert(`Workspace "${payload.nome_empresa}" criado com sucesso no Supabase PostgreSQL + RLS!\nPlano de Contas padrão (125 categorias) carregado automaticamente.`);
+      } else if (alertBox) {
+        alertBox.textContent = data.detail || 'Não foi possível criar o workspace. Verifique CNPJ e e-mail.';
+        alertBox.style.display = 'block';
+      }
+    } catch (err) {
+      if (alertBox) {
+        alertBox.textContent = 'Falha ao conectar ao backend para criar o workspace.';
+        alertBox.style.display = 'block';
+      }
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Criar Workspace & Entrar Agora';
+      }
+    }
+  }
+
   function fazerLogout() {
     if (!confirm('Deseja realmente sair da sua sessão?')) return;
     localStorage.removeItem(AUTH_STORAGE_TOKEN);
     localStorage.removeItem(AUTH_STORAGE_USER);
+    localStorage.removeItem(AUTH_STORAGE_TENANT);
+    const wsWrap = document.getElementById('saas-workspace-wrap');
+    if (wsWrap) wsWrap.style.display = 'none';
+    alternarModoAuthModal('login');
     document.getElementById('bimer-login-modal').style.display = 'flex';
     document.getElementById('login_senha').value = '';
   }
@@ -3003,13 +3336,14 @@
   }
 
   function configurarServidorNuvem() {
-    const atual = localStorage.getItem('bimer_cloud_api_url') || 'http://localhost:8000/api/contas-a-pagar';
-    const nova = prompt('Informe o endereço da API do Backend (Railway, Render ou Localhost):\nEx: https://sua-api.up.railway.app/api/contas-a-pagar', atual);
+    const atual = localStorage.getItem('bimer_cloud_api_url') || CLOUD_DEFAULT_API;
+    const nova = prompt('Informe o endereço base da API do Backend (Railway ou Localhost):\nEx: https://jr-fincloud-api-production.up.railway.app/api/v2/erp', atual);
     if (nova !== null) {
-      const urlFinal = nova.trim() || 'http://localhost:8000/api/contas-a-pagar';
+      const urlFinal = nova.trim() || CLOUD_DEFAULT_API;
       localStorage.setItem('bimer_cloud_api_url', urlFinal);
       API_BASE = urlFinal;
       alert(`Servidor configurado para:\n${urlFinal}\nRecarregando dados...`);
+      carregarWorkspacesSaaS();
       carregarDadosIniciais();
     }
   }
@@ -10640,6 +10974,7 @@
   // Conecta e sincroniza dados após autenticação
   verificarSessao().then(autenticado => {
     if (autenticado) {
+      carregarWorkspacesSaaS();
       carregarDadosIniciais();
     }
   });
@@ -10752,6 +11087,483 @@
   async function enviarWhatsAppDiretoriaModal() {
     const dt = document.getElementById('aut-data-lote')?.value || '';
     await enviarWhatsAppDiretoria(dt);
+  }
+
+  // ==============================================================================
+  // SAAS v2 MULTI-TENANT: WORKSPACES BPO, RATEIO SHOPPING, ALÇADAS, FISCAL & DRE
+  // ==============================================================================
+  const saasV2State = {
+    workspaces: [],
+    empresas: [],
+    centrosCusto: [],
+    planoContas: [],
+    titulos: [],
+    rateioLinhas: [],
+  };
+
+  async function carregarWorkspacesSaaS() {
+    const wrap = document.getElementById('saas-workspace-wrap');
+    const sel = document.getElementById('saas-workspace-select');
+    if (!wrap || !sel || !obterToken()) return;
+
+    try {
+      const resp = await apiFetch(`${getApiV2Base()}/workspaces`, { cache: 'no-store' });
+      if (!resp.ok) return;
+      const data = await resp.json();
+      saasV2State.workspaces = data.workspaces || [];
+      sel.innerHTML = saasV2State.workspaces.map(w => {
+        const tag = w.via_bpo ? ' [BPO]' : (w.is_bpo_partner ? ' [MATRIZ BPO]' : '');
+        return `<option value="${escapeHtml(w.tenant_id)}" ${w.ativo_atual ? 'selected' : ''}>${escapeHtml(w.nome_fantasia)}${tag} (${escapeHtml(w.role)})</option>`;
+      }).join('');
+      const atual = saasV2State.workspaces.find(w => w.ativo_atual);
+      if (atual) {
+        localStorage.setItem(AUTH_STORAGE_TENANT, JSON.stringify(atual));
+      }
+      wrap.style.display = saasV2State.workspaces.length ? 'inline-flex' : 'none';
+    } catch (e) {
+      console.warn('Não foi possível carregar lista de workspaces:', e);
+    }
+  }
+
+  async function trocarWorkspaceSaaS(targetTenantId) {
+    if (!targetTenantId) return;
+    try {
+      const resp = await apiFetch(`${getApiV2Base()}/auth/switch-tenant`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_tenant_id: targetTenantId })
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (resp.ok && data.access_token) {
+        localStorage.setItem(AUTH_STORAGE_TOKEN, data.access_token);
+        if (data.tenant) localStorage.setItem(AUTH_STORAGE_TENANT, JSON.stringify(data.tenant));
+        await carregarWorkspacesSaaS();
+        await carregarDadosIniciais();
+      } else {
+        alert(data.detail || 'Não foi possível alternar o workspace.');
+      }
+    } catch (e) {
+      alert('Erro ao trocar workspace: ' + e.message);
+    }
+  }
+
+  function abrirModalNovoClienteBPO() {
+    const m = document.getElementById('jr-modal-bpo-cliente');
+    if (m) m.style.display = 'flex';
+  }
+
+  function fecharModalClienteBPO() {
+    const m = document.getElementById('jr-modal-bpo-cliente');
+    if (m) m.style.display = 'none';
+  }
+
+  async function criarClienteBPO(e) {
+    e.preventDefault();
+    const tenantAtual = JSON.parse(localStorage.getItem(AUTH_STORAGE_TENANT) || '{}');
+    const parentId = tenantAtual.tenant_id || tenantAtual.id || null;
+    if (!parentId) {
+      alert('Identifique seu workspace atual antes de cadastrar um cliente BPO.');
+      return;
+    }
+
+    const payload = {
+      nome_empresa: document.getElementById('bpo_cli_nome').value.trim(),
+      cnpj: document.getElementById('bpo_cli_cnpj').value.trim(),
+      regime_tributario: document.getElementById('bpo_cli_regime').value,
+      is_bpo_partner: false,
+      parent_bpo_tenant_id: parentId,
+      admin_nome: document.getElementById('bpo_cli_admin_nome').value.trim(),
+      admin_email: document.getElementById('bpo_cli_email').value.trim(),
+      admin_senha: document.getElementById('bpo_cli_senha').value
+    };
+
+    try {
+      const resp = await apiFetch(`${getApiV2Base()}/auth/register-tenant`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (resp.ok && data.success) {
+        fecharModalClienteBPO();
+        await carregarWorkspacesSaaS();
+        alert(`Cliente "${payload.nome_empresa}" criado na carteira BPO!`);
+      } else {
+        alert(data.detail || 'Erro ao criar cliente BPO.');
+      }
+    } catch (err) {
+      alert('Erro ao comunicar com o servidor: ' + err.message);
+    }
+  }
+
+  async function abrirCentralSaasV2(abaInicial = 'rateio') {
+    const modal = document.getElementById('jr-modal-saas-v2');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    const hoje = new Date();
+    const inpAno = document.getElementById('saas-dre-ano');
+    const inpMes = document.getElementById('saas-dre-mes');
+    if (inpAno && !inpAno.value) inpAno.value = hoje.getFullYear();
+    if (inpMes && !inpMes.value) inpMes.value = hoje.getMonth() + 1;
+    await carregarBaseCadastrosSaasV2();
+    trocarAbaSaasV2(abaInicial);
+  }
+
+  function fecharCentralSaasV2() {
+    const modal = document.getElementById('jr-modal-saas-v2');
+    if (modal) modal.style.display = 'none';
+  }
+
+  function trocarAbaSaasV2(aba) {
+    ['rateio', 'alcadas', 'fiscal', 'dre'].forEach(nome => {
+      const pane = document.getElementById(`saas-pane-${nome}`);
+      const btn = document.getElementById(`saas-tab-btn-${nome}`);
+      if (pane) pane.style.display = nome === aba ? 'block' : 'none';
+      if (btn) btn.className = nome === aba ? 'tool-btn primary' : 'tool-btn';
+    });
+    if (aba === 'alcadas') carregarAlcadasSaasV2();
+    if (aba === 'dre') {
+      carregarDreSaasV2();
+      carregarAuditLogsSaasV2();
+    }
+  }
+
+  async function carregarBaseCadastrosSaasV2() {
+    const base = getApiV2Base();
+    try {
+      const [rEmp, rCc, rTit] = await Promise.all([
+        apiFetch(`${base}/empresas`, { cache: 'no-store' }),
+        apiFetch(`${base}/centros-custo`, { cache: 'no-store' }),
+        apiFetch(`${base}/titulos`, { cache: 'no-store' })
+      ]);
+      if (rEmp.ok) saasV2State.empresas = (await rEmp.json()).empresas || [];
+      if (rCc.ok) saasV2State.centrosCusto = (await rCc.json()).centros_custo || [];
+      if (rTit.ok) saasV2State.titulos = (await rTit.json()).titulos || [];
+
+      const sel = document.getElementById('saas-rateio-titulo-select');
+      if (sel) {
+        if (!saasV2State.titulos.length) {
+          sel.innerHTML = '<option value="">Nenhum título lançado no workspace ainda</option>';
+          document.getElementById('saas-rateio-tbody').innerHTML = '';
+        } else {
+          sel.innerHTML = saasV2State.titulos.map(t =>
+            `<option value="${escapeHtml(t.id)}">${escapeHtml(t.numero_documento)} — ${escapeHtml(t.favorecido_nome)} (Bruto: R$ ${escapeHtml(t.valor_bruto)})</option>`
+          ).join('');
+          await carregarRateiosTituloSelecionado();
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar base SaaS v2:', e);
+    }
+  }
+
+  function renderizarOpcoesCentroCusto(selectedId) {
+    const opts = ['<option value="">(Padrão do Título)</option>'];
+    saasV2State.centrosCusto.forEach(c => {
+      const sel = String(c.id) === String(selectedId || '') ? 'selected' : '';
+      opts.push(`<option value="${escapeHtml(c.id)}" ${sel}>${escapeHtml(c.codigo)} - ${escapeHtml(c.nome)}</option>`);
+    });
+    return opts.join('');
+  }
+
+  function renderizarTabelaRateioSaas() {
+    const tbody = document.getElementById('saas-rateio-tbody');
+    if (!tbody) return;
+    const rubricas = ['ALUGUEL', 'CONDOMINIO', 'FPP', 'IPTU', 'ENERGIA', 'AR_CONDICIONADO', 'AGUA', 'OUTROS'];
+    tbody.innerHTML = saasV2State.rateioLinhas.map((item, idx) => {
+      const rubOpts = rubricas.map(r => `<option value="${r}" ${String(item.rubrica).toUpperCase() === r ? 'selected' : ''}>${r}</option>`).join('');
+      return `
+        <tr>
+          <td style="padding: 4px; border: 1px solid #cbd5e1;">
+            <select onchange="saasV2State.rateioLinhas[${idx}].centro_custo_id = this.value" style="width: 100%; padding: 3px;">${renderizarOpcoesCentroCusto(item.centro_custo_id)}</select>
+          </td>
+          <td style="padding: 4px; border: 1px solid #cbd5e1;">
+            <select onchange="saasV2State.rateioLinhas[${idx}].rubrica = this.value" style="width: 100%; padding: 3px;">${rubOpts}</select>
+          </td>
+          <td style="padding: 4px; border: 1px solid #cbd5e1;">
+            <input type="number" step="0.01" min="0.01" value="${escapeHtml(item.valor)}" oninput="saasV2State.rateioLinhas[${idx}].valor = this.value; atualizarSomaRateioSaas();" style="width: 100%; padding: 3px; text-align: right;">
+          </td>
+          <td style="padding: 4px; border: 1px solid #cbd5e1;">
+            <input type="text" value="${escapeHtml(item.observacao || '')}" oninput="saasV2State.rateioLinhas[${idx}].observacao = this.value" style="width: 100%; padding: 3px;">
+          </td>
+          <td style="padding: 4px; border: 1px solid #cbd5e1; text-align: center;">
+            <button type="button" class="tool-btn" onclick="saasV2State.rateioLinhas.splice(${idx}, 1); renderizarTabelaRateioSaas();" title="Remover">✕</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+    atualizarSomaRateioSaas();
+  }
+
+  function atualizarSomaRateioSaas() {
+    const titId = document.getElementById('saas-rateio-titulo-select')?.value;
+    const tit = saasV2State.titulos.find(t => t.id === titId);
+    const el = document.getElementById('saas-rateio-status-soma');
+    if (!el || !tit) return;
+    const brutoCents = Math.round(parseFloat(tit.valor_bruto || '0') * 100);
+    const somaCents = saasV2State.rateioLinhas.reduce((acc, row) => acc + Math.round((parseFloat(row.valor || '0') || 0) * 100), 0);
+    const diffCents = brutoCents - somaCents;
+    if (diffCents === 0 && saasV2State.rateioLinhas.length > 0) {
+      el.style.color = '#15803d';
+      el.textContent = `100% FECHADO — Total rateado: R$ ${(somaCents / 100).toFixed(2)}`;
+    } else {
+      el.style.color = '#b91c1c';
+      el.textContent = `Rateado: R$ ${(somaCents / 100).toFixed(2)} | Bruto Título: R$ ${(brutoCents / 100).toFixed(2)} | Diferença: R$ ${(diffCents / 100).toFixed(2)}`;
+    }
+  }
+
+  async function carregarRateiosTituloSelecionado() {
+    const titId = document.getElementById('saas-rateio-titulo-select')?.value;
+    const tit = saasV2State.titulos.find(t => t.id === titId);
+    const resEl = document.getElementById('saas-rateio-resumo');
+    if (!titId || !tit) return;
+    if (resEl) {
+      resEl.textContent = `Status: ${tit.status} | Vencimento: ${tit.dt_vencimento} | Valor Bruto: R$ ${tit.valor_bruto}`;
+    }
+    try {
+      const resp = await apiFetch(`${getApiV2Base()}/titulos/${encodeURIComponent(titId)}/rateios`, { cache: 'no-store' });
+      if (resp.ok) {
+        const data = await resp.json();
+        saasV2State.rateioLinhas = (data.itens || []).map(i => ({
+          centro_custo_id: i.centro_custo_id || '',
+          rubrica: i.rubrica,
+          valor: i.valor,
+          observacao: i.observacao || ''
+        }));
+      } else {
+        saasV2State.rateioLinhas = [];
+      }
+    } catch (e) {
+      saasV2State.rateioLinhas = [];
+    }
+    renderizarTabelaRateioSaas();
+  }
+
+  function adicionarLinhaRateioSaas() {
+    saasV2State.rateioLinhas.push({ centro_custo_id: saasV2State.centrosCusto[0]?.id || '', rubrica: 'ALUGUEL', valor: '0.00', observacao: '' });
+    renderizarTabelaRateioSaas();
+  }
+
+  function preencherRubricasShoppingPadrao() {
+    const titId = document.getElementById('saas-rateio-titulo-select')?.value;
+    const tit = saasV2State.titulos.find(t => t.id === titId);
+    if (!tit) return;
+    const brutoCents = Math.round(parseFloat(tit.valor_bruto || '0') * 100);
+    const modelos = [
+      { rubrica: 'ALUGUEL', peso: 40 },
+      { rubrica: 'CONDOMINIO', peso: 24 },
+      { rubrica: 'FPP', peso: 5 },
+      { rubrica: 'IPTU', peso: 7 },
+      { rubrica: 'ENERGIA', peso: 18 },
+      { rubrica: 'AR_CONDICIONADO', peso: 6 }
+    ];
+    let alocado = 0;
+    const ccDefault = tit.centro_custo_id || saasV2State.centrosCusto[0]?.id || '';
+    saasV2State.rateioLinhas = modelos.map((m, idx) => {
+      const c = idx === modelos.length - 1 ? (brutoCents - alocado) : Math.round((brutoCents * m.peso) / 100);
+      alocado += c;
+      return { centro_custo_id: ccDefault, rubrica: m.rubrica, valor: (c / 100).toFixed(2), observacao: 'Pauta Shopping' };
+    });
+    renderizarTabelaRateioSaas();
+  }
+
+  async function salvarRateiosSaas() {
+    const titId = document.getElementById('saas-rateio-titulo-select')?.value;
+    if (!titId) return;
+    const itens = saasV2State.rateioLinhas.map(r => ({
+      centro_custo_id: r.centro_custo_id || null,
+      rubrica: r.rubrica,
+      valor: String(r.valor),
+      observacao: r.observacao || null
+    }));
+    const resp = await apiFetch(`${getApiV2Base()}/titulos/${encodeURIComponent(titId)}/rateios`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itens })
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (resp.ok) {
+      alert(`Rateio 100% gravado com sucesso no Supabase! Total rateado: R$ ${data.total_rateado}`);
+      await carregarDadosIniciais();
+    } else {
+      alert(data.detail || 'Erro ao gravar rateio.');
+    }
+  }
+
+  async function criarCentroCustoRapidoSaas() {
+    const codigo = document.getElementById('saas-novo-cc-codigo').value.trim();
+    const nome = document.getElementById('saas-novo-cc-nome').value.trim();
+    const empId = saasV2State.empresas[0]?.id;
+    if (!empId || !codigo || !nome) {
+      alert('Informe código e nome da Loja / Centro de Custo.');
+      return;
+    }
+    const resp = await apiFetch(`${getApiV2Base()}/centros-custo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ empresa_id: empId, codigo, nome, tipo_unidade: 'LOJA_SHOPPING' })
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (resp.ok) {
+      document.getElementById('saas-novo-cc-codigo').value = '';
+      document.getElementById('saas-novo-cc-nome').value = '';
+      await carregarBaseCadastrosSaasV2();
+      alert(`Loja/Centro de Custo "${codigo}" cadastrado!`);
+    } else {
+      alert(data.detail || 'Erro ao cadastrar centro de custo.');
+    }
+  }
+
+  async function criarContaBancariaRapidaSaas() {
+    const agencia = document.getElementById('saas-cb-agencia').value.trim();
+    const conta = document.getElementById('saas-cb-conta').value.trim();
+    const dac = document.getElementById('saas-cb-dac').value.trim() || '0';
+    const empId = saasV2State.empresas[0]?.id;
+    if (!empId || !agencia || !conta) {
+      alert('Informe agência e conta bancária.');
+      return;
+    }
+    const resp = await apiFetch(`${getApiV2Base()}/contas-bancarias`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ empresa_id: empId, banco_codigo: '341', banco_nome: 'Banco Itaú', agencia, conta, dac })
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (resp.ok) {
+      document.getElementById('saas-cb-agencia').value = '';
+      document.getElementById('saas-cb-conta').value = '';
+      document.getElementById('saas-cb-dac').value = '';
+      alert('Conta Bancária Itaú vinculada à empresa para remessas CNAB 240!');
+    } else {
+      alert(data.detail || 'Erro ao cadastrar conta bancária.');
+    }
+  }
+
+  async function carregarAlcadasSaasV2() {
+    const tbody = document.getElementById('saas-alcadas-tbody');
+    if (!tbody) return;
+    const resp = await apiFetch(`${getApiV2Base()}/titulos`, { cache: 'no-store' });
+    if (!resp.ok) return;
+    const lista = (await resp.json()).titulos || [];
+    saasV2State.titulos = lista;
+    tbody.innerHTML = lista.map(t => `
+      <tr>
+        <td style="padding: 5px; border: 1px solid #cbd5e1;">${escapeHtml(t.numero_documento)}</td>
+        <td style="padding: 5px; border: 1px solid #cbd5e1;">${escapeHtml(t.favorecido_nome)}</td>
+        <td style="padding: 5px; border: 1px solid #cbd5e1;">${escapeHtml(t.dt_vencimento)}</td>
+        <td style="padding: 5px; border: 1px solid #cbd5e1; text-align: right;">R$ ${escapeHtml(t.valor_liquido)}</td>
+        <td style="padding: 5px; border: 1px solid #cbd5e1; font-weight: 700;">${escapeHtml(t.status)}</td>
+        <td style="padding: 5px; border: 1px solid #cbd5e1; display: flex; gap: 4px;">
+          <button type="button" class="tool-btn" onclick="acaoAlcadaSaasV2('${escapeHtml(t.id)}', 'submeter-aprovacao')">Submeter</button>
+          <button type="button" class="tool-btn primary" onclick="acaoAlcadaSaasV2('${escapeHtml(t.id)}', 'aprovar')">Aprovar</button>
+          <button type="button" class="tool-btn" style="color: #dc2626;" onclick="acaoAlcadaSaasV2('${escapeHtml(t.id)}', 'reprovar')">Reprovar</button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="6" style="padding: 8px; text-align: center;">Nenhum título cadastrado.</td></tr>';
+  }
+
+  async function acaoAlcadaSaasV2(titId, acao) {
+    let bodyObj = {};
+    if (acao === 'aprovar') {
+      bodyObj = { canal: 'WEB', justificativa: 'Aprovado via Central SaaS v2' };
+    } else if (acao === 'reprovar') {
+      const just = prompt('Informe a justificativa obrigatória da reprovação:');
+      if (!just || !just.trim()) return;
+      bodyObj = { canal: 'WEB', justificativa: just.trim() };
+    }
+    const resp = await apiFetch(`${getApiV2Base()}/titulos/${encodeURIComponent(titId)}/${acao}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bodyObj)
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (resp.ok) {
+      await carregarAlcadasSaasV2();
+      await carregarDadosIniciais();
+    } else {
+      alert(data.detail || 'Permissão ou transição de status inválida.');
+    }
+  }
+
+  async function simularFiscalSaasV2() {
+    const out = document.getElementById('saas-fisc-resultado');
+    const regime = document.getElementById('saas-fisc-regime').value;
+    const payload = {
+      valor_bruto: String(document.getElementById('saas-fisc-bruto').value || '0'),
+      regime_tributario: regime,
+      optante_simples: regime === 'SIMPLES_NACIONAL' || regime === 'MEI',
+      iss_aliquota: String(document.getElementById('saas-fisc-iss').value || '0'),
+      reter_iss: Boolean(document.getElementById('saas-fisc-reter-iss').checked),
+      reter_federais: true,
+      incluir_reforma_2026: Boolean(document.getElementById('saas-fisc-reforma').checked)
+    };
+    const resp = await apiFetch(`${getApiV2Base()}/fiscal/calcular-retencoes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const d = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      out.innerHTML = `<span style="color:#dc2626;font-weight:700;">${escapeHtml(d.detail || 'Erro no cálculo')}</span>`;
+      return;
+    }
+    const r = d.retencoes || {};
+    const ref26 = d.reforma_tributaria_2026_informativo || {};
+    out.innerHTML = `
+      <div style="font-weight: 700; color: #065f46; margin-bottom: 6px;">Memória de Cálculo (Engine Python Decimal):</div>
+      <div>Valor Bruto: <strong>R$ ${escapeHtml(d.valor_bruto)}</strong></div>
+      <div>Valor Líquido a Pagar: <strong style="color:#0284c7;">R$ ${escapeHtml(d.valor_liquido)}</strong></div>
+      <div>Total Retido na Fonte: <strong>R$ ${escapeHtml(d.total_retencoes)}</strong></div>
+      <hr style="margin: 6px 0; border-color: #e2e8f0;">
+      <div>IRRF (1,5%): R$ ${escapeHtml(r.irrf)} | PIS (0,65%): R$ ${escapeHtml(r.pis)} | COFINS (3%): R$ ${escapeHtml(r.cofins)} | CSLL (1%): R$ ${escapeHtml(r.csll)} | ISS: R$ ${escapeHtml(r.iss)}</div>
+      ${d.dispensa_federal_motivo ? `<div style="margin-top:6px; padding:6px; background:#fef3c7; color:#92400e; border-radius:3px;">${escapeHtml(d.dispensa_federal_motivo)}</div>` : ''}
+      <div style="margin-top: 8px; padding: 6px; background: #eff6ff; color: #1e40af; border-radius: 3px;">
+        <strong>Reforma Tributária 2026 (Informativo IVA Dual):</strong> CBS (0,90%): R$ ${escapeHtml(ref26.cbs_0_90)} | IBS (0,10%): R$ ${escapeHtml(ref26.ibs_0_10)} | Total: R$ ${escapeHtml(ref26.total_iva_dual)}
+      </div>
+    `;
+  }
+
+  async function carregarDreSaasV2() {
+    const out = document.getElementById('saas-dre-resultado');
+    const ano = document.getElementById('saas-dre-ano').value || new Date().getFullYear();
+    const mes = document.getElementById('saas-dre-mes').value || (new Date().getMonth() + 1);
+    const resp = await apiFetch(`${getApiV2Base()}/relatorios/dre-por-centro-custo?ano=${encodeURIComponent(ano)}&mes=${encodeURIComponent(mes)}`, { cache: 'no-store' });
+    const d = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      out.innerHTML = `<span style="color:#dc2626;">${escapeHtml(d.detail || 'Erro ao carregar DRE')}</span>`;
+      return;
+    }
+    const linhasCc = (d.por_centro_custo || []).map(c =>
+      `<div style="padding:4px 0; border-bottom:1px solid #f1f5f9;"><strong>${escapeHtml(c.centro_custo_nome)}</strong>: R$ ${escapeHtml(c.total)}</div>`
+    ).join('') || '<div>Sem lançamentos na competência.</div>';
+    const linhasRub = Object.entries(d.por_rubrica || {}).map(([k, v]) =>
+      `<div>${escapeHtml(k)}: <strong>R$ ${escapeHtml(v)}</strong></div>`
+    ).join('');
+    out.innerHTML = `
+      <strong style="display:block; color:#065f46; margin-bottom:6px;">DRE Gerencial (${escapeHtml(d.competencia)}) — Total Geral: R$ ${escapeHtml(d.total_geral)}</strong>
+      <div style="margin-bottom:8px;">${linhasCc}</div>
+      <strong style="display:block; margin-bottom:4px;">Por Rubrica / Natureza:</strong>
+      ${linhasRub}
+    `;
+  }
+
+  async function carregarAuditLogsSaasV2() {
+    const out = document.getElementById('saas-audit-resultado');
+    const resp = await apiFetch(`${getApiV2Base()}/audit-logs?limit=25`, { cache: 'no-store' });
+    const d = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      out.innerHTML = `<span style="color:#64748b;">${escapeHtml(d.detail || 'Auditoria disponível apenas para Owner, Diretor ou Contador.')}</span>`;
+      return;
+    }
+    out.innerHTML = `
+      <strong style="display:block; color:#1e40af; margin-bottom:6px;">Trilha de Auditoria LGPD (Últimos Eventos)</strong>
+      ${(d.logs || []).map(l => `
+        <div style="padding:4px 0; border-bottom:1px solid #f1f5f9; font-size:10px;">
+          <strong>${escapeHtml(l.acao)}</strong> • ${escapeHtml(l.entidade)}<br>
+          <span style="color:#64748b;">${escapeHtml(l.usuario_email || 'sistema')} • ${escapeHtml(l.criado_em)}</span>
+        </div>
+      `).join('') || '<div>Nenhum evento registrado.</div>'}
+    `;
   }
 
 </script>

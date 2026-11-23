@@ -34,7 +34,7 @@ from ...db.models import (
     UsuarioTenantRole,
 )
 from ...db.session import get_db, set_rls_context
-from .deps import extrair_ip, registrar_audit_v2, slugify
+from .deps import extrair_ip, garantir_seed_plano_contas_padrao, registrar_audit_v2, slugify
 
 router = APIRouter(tags=["JR FinCloud v2 - Auth & Workspaces"])
 
@@ -165,6 +165,7 @@ def register_tenant(
             ativo=True,
         )
     )
+    garantir_seed_plano_contas_padrao(db, tenant.id)
 
     ip = extrair_ip(request)
     ua = request.headers.get("user-agent", "")

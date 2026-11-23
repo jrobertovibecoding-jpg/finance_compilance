@@ -650,3 +650,75 @@ def test_audit_logs_e_isolamento_cross_tenant_novos_modulos(client):
     tok_fin = client.post("/api/v2/auth/login", json={"email": "fina@emp.com.br", "senha": "SenhaFin@2026"}).json()["access_token"]
     r_aud_forbid = client.get("/api/v2/audit-logs", headers={"Authorization": f"Bearer {tok_fin}"})
     assert r_aud_forbid.status_code == 403
+
+
+def test_erp_compat_v2_fluxo_completo_e_seed_automatico(client):
+    reg = _registrar(client, "Grupo Shopping Bahia", "11.222.333/0001-81", "erp@shopping.com.br")
+    hdr = {"Authorization": f"Bearer {reg['access_token']}"}
+
+    # Seed automático no register-tenant deve popular as 125 contas sem duplicidade
+    r_pc = client.get("/api/v2/plano-contas", headers=hdr)
+    assert r_pc.status_code == 200
+    assert r_pc.json()["total"] > 100
+
+    # Login pela ponte ERP /api/v2/erp
+    r_login = client.post(
+        "/api/v2/erp/auth/login",
+        json={"email": "erp@shopping.com.br", "senha": "SenhaSaaS@2026"},
+    )
+    assert r_login.status_code == 200, r_login.text
+    erp_hdr = {"Authorization": f"Bearer {r_login.json()['access_token']}"}
+    assert r_login.json()["usuario"]["perfil"] == "OWNER"
+
+    r_me = client.get("/api/v2/erp/auth/me", headers=erp_hdr)
+    assert r_me.status_code == 200
+    assert r_me.json()["usuario"]["email"] == "erp@shopping.com.br"
+
+    # Gravar documento com retenção de ISS via ponte ERP
+    r_doc = client.post(
+        "/api/v2/erp/gravar-documento",
+        headers=erp_hdr,
+        json={
+            "tipo_doc": "NFSE",
+            "numero_doc": "NF-ERP-100",
+            "favorecido": "Prestador Cloud Ltda",
+            "cnpj": "45.997.418/0001-53",
+            "data_emissao": "2026-11-10",
+            "vencimento": "2026-11-25",
+            "valor_bruto": 2000.0,
+            "ccusto": "12101 - Tecidos",
+            "impostos": [{"tipo": "ISS", "aliquota": 5.0, "valor": 100.0, "dt_venc_imp": "2026-12-10"}],
+        },
+    )
+    assert r_doc.status_code == 200, r_doc.text
+    assert r_doc.json()["impostos_gravados"] == 1
+    assert r_doc.json()["valor_liquido_fornecedor"] == 1900.0
+    nota_id = r_doc.json()["nota_id"]
+
+    # Listagem ERP retorna NOTA_<id> e IMP_<id>
+    r_list = client.get("/api/v2/erp/titulos", headers=erp_hdr)
+    assert r_list.status_code == 200
+    ids_erp = {t["id"] for t in r_list.json()["titulos"]}
+    assert f"NOTA_{nota_id}" in ids_erp
+    assert any(i.startswith("IMP_") for i in ids_erp)
+
+    # Edição via ERP preserva impostos (3000 - 100 = 2900)
+    r_edit = client.post(
+        f"/api/v2/erp/titulos/NOTA_{nota_id}/editar",
+        headers=erp_hdr,
+        json={"valor": 3000.0},
+    )
+    assert r_edit.status_code == 200, r_edit.text
+    t_v2 = next(t for t in client.get("/api/v2/titulos", headers=hdr).json()["titulos"] if t["id"] == nota_id)
+    assert t_v2["valor_liquido"] == "2900.00"
+
+    # Baixa via ponte ERP reflete no endpoint v2 e grava AuditLog
+    r_baixa = client.post(f"/api/v2/erp/titulos/NOTA_{nota_id}/baixa", headers=erp_hdr)
+    assert r_baixa.status_code == 200
+    assert r_baixa.json()["status"] == "CONCILIADO"
+
+    logs = client.get("/api/v2/audit-logs", headers=hdr).json()["logs"]
+    acoes = {l["acao"] for l in logs}
+    assert "GRAVAR_DOCUMENTO_ERP" in acoes
+    assert "EDITAR_TITULO_ERP" in acoes
+    assert "BAIXAR_TITULO_ERP" in acoes

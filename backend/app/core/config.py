@@ -34,6 +34,10 @@ CORS_ORIGINS = [
     for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
     if origin.strip()
 ]
+CORS_ORIGIN_REGEX = os.getenv(
+    "CORS_ORIGIN_REGEX",
+    r"^https://.*\.(vercel\.app|jrfincloud\.com\.br)$",
+).strip()
 
 API_PREFIX = "/api/v1"
 API_V2_PREFIX = "/api/v2"

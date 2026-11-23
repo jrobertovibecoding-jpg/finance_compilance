@@ -1,5 +1,7 @@
+import json
 import re
 from decimal import Decimal, ROUND_HALF_UP
+from pathlib import Path
 from typing import Optional
 
 from fastapi import HTTPException, Request
@@ -99,3 +101,52 @@ def obter_titulo_tenant(db: Session, tenant_id: str, titulo_id: str) -> Titulo:
     if not tit:
         raise HTTPException(status_code=404, detail="Título não encontrado neste workspace.")
     return tit
+
+
+def garantir_seed_plano_contas_padrao(db: Session, tenant_id: str) -> int:
+    """Popula o plano de contas padrão do workspace caso ainda esteja vazio."""
+    if db.query(PlanoConta).filter(PlanoConta.tenant_id == tenant_id).count() > 0:
+        return 0
+
+    caminho_json = Path(__file__).resolve().parent.parent.parent / "core" / "grupos_categorias.json"
+    if not caminho_json.exists():
+        return 0
+
+    itens = json.loads(caminho_json.read_text(encoding="utf-8"))
+    codigos_vistos: set[str] = set()
+    criados = 0
+    for item in itens:
+        codigo = str(item.get("codigo") or "").strip()
+        if not codigo or codigo in codigos_vistos:
+            continue
+        codigos_vistos.add(codigo)
+
+        nome = str(item.get("nome") or codigo).strip()[:180]
+        macro = str(item.get("grupo") or item.get("macro") or "DESPESAS OPERACIONAIS").strip()[:100]
+        grupo_up = macro.upper()
+        if "RECEITA" in grupo_up:
+            tipo = "RECEITA"
+            dre_grupo = "RECEITA_BRUTA"
+        elif "CUSTO" in grupo_up or "FORNECEDOR" in grupo_up:
+            tipo = "CUSTO"
+            dre_grupo = "CUSTO_OPERACIONAL"
+        else:
+            tipo = "DESPESA"
+            dre_grupo = "DESPESAS_OPERACIONAIS"
+
+        db.add(
+            PlanoConta(
+                tenant_id=tenant_id,
+                codigo=codigo[:30],
+                nome=nome,
+                macro_grupo=macro,
+                tipo=tipo,
+                dre_grupo=dre_grupo,
+                ativo=True,
+            )
+        )
+        criados += 1
+
+    if criados:
+        db.flush()
+    return criados
