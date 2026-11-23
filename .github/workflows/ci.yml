@@ -1,0 +1,64 @@
+name: JR FinCloud CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  security-and-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Bloquear arquivos sensíveis (.db / .sqlite / .env) rastreados no Git
+        run: |
+          if git ls-files | grep -E '\.(db|sqlite|sqlite3)$|(^|/)\.env$'; then
+            echo "ERRO DE SEGURANÇA: Arquivo de banco ou .env rastreado no Git!"
+            exit 1
+          fi
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências do backend e pytest
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt pytest httpx
+
+      - name: Validar compilação Python
+        run: python -m compileall backend/app scripts/migrar_sqlite_para_postgres_saas.py
+
+      - name: Testar migração Alembic limpa
+        env:
+          TESTING: "1"
+          DATABASE_URL: sqlite:///./ci_alembic_test.db
+        run: alembic -c backend/alembic.ini upgrade head
+
+      - name: Configurar Node.js e validar sintaxe JS do frontend
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validar bloco script de frontend/index.html
+        run: |
+          python -c "
+          import re, subprocess, tempfile, os
+          with open('frontend/index.html', 'r', encoding='utf-8') as f:
+              html = f.read()
+          scripts = re.findall(r'<script>(.*?)</script>', html, re.S)
+          with tempfile.NamedTemporaryFile('w', suffix='.js', delete=False, encoding='utf-8') as tf:
+              tf.write('\n'.join(scripts))
+              tpath = tf.name
+          res = subprocess.run(['node', '--check', tpath])
+          os.unlink(tpath)
+          raise SystemExit(res.returncode)
+          "
+
+      - name: Executar suíte completa pytest
+        run: pytest -v backend/tests

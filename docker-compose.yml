@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: jr_fincloud
+      POSTGRES_USER: jrfincloud
+      POSTGRES_PASSWORD: jrfincloud_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jrfincloud -d jr_fincloud"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ENV: development
+      DATABASE_URL: postgresql+psycopg://jrfincloud:jrfincloud_dev_password@postgres:5432/jr_fincloud
+      JWT_SECRET_KEY: dev-jwt-secret-key-com-mais-de-32-caracteres-2026
+      CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
