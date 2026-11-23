@@ -1259,22 +1259,22 @@
         <legend>Grade de Títulos no Contas a Pagar (Desmembramento Automático)</legend>
         <!-- REGUA DA AGENDA FINANCEIRA DE VENCIMENTOS -->
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 8px;">
-          <div onclick="filtrarAgendaVencimento('vencidos')" style="background: #fef2f2; border: 1px solid #fca5a5; padding: 6px 10px; border-radius: 3px; cursor: pointer; transition: all 0.1s;" title="Clique para filtrar vencidos">
+          <div id="agenda-card-vencidos" onclick="filtrarAgendaVencimento('vencidos', this)" style="background: #fef2f2; border: 1px solid #fca5a5; padding: 6px 10px; border-radius: 3px; cursor: pointer; transition: all 0.1s;" title="Clique para filtrar/alternar vencidos">
             <div style="font-size: 10px; font-weight: 700; color: #991b1b; text-transform: uppercase;"><svg class="bimer-svg bimer-svg-xs" style="stroke:#dc2626;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> Vencidos (Atraso)</div>
             <div style="font-size: 13px; font-weight: 800; color: #dc2626;" id="agenda-tot-vencidos">R$ 0,00</div>
             <div style="font-size: 9.5px; color: #7f1d1d;" id="agenda-qtd-vencidos">0 contas</div>
           </div>
-          <div onclick="filtrarAgendaVencimento('hoje')" style="background: #fffbeb; border: 1px solid #fcd34d; padding: 6px 10px; border-radius: 3px; cursor: pointer; transition: all 0.1s;" title="Clique para filtrar o que vence hoje">
+          <div id="agenda-card-hoje" onclick="filtrarAgendaVencimento('hoje', this)" style="background: #fffbeb; border: 1px solid #fcd34d; padding: 6px 10px; border-radius: 3px; cursor: pointer; transition: all 0.1s;" title="Clique para filtrar/alternar o que vence hoje">
             <div style="font-size: 10px; font-weight: 700; color: #92400e; text-transform: uppercase;"><svg class="bimer-svg bimer-svg-xs" style="stroke:#b45309;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Vence Hoje</div>
             <div style="font-size: 13px; font-weight: 800; color: #b45309;" id="agenda-tot-hoje">R$ 0,00</div>
             <div style="font-size: 9.5px; color: #78350f;" id="agenda-qtd-hoje">0 contas</div>
           </div>
-          <div onclick="filtrarAgendaVencimento('semana')" style="background: #eff6ff; border: 1px solid #93c5fd; padding: 6px 10px; border-radius: 3px; cursor: pointer; transition: all 0.1s;" title="Clique para filtrar próximos 7 dias">
+          <div id="agenda-card-semana" onclick="filtrarAgendaVencimento('semana', this)" style="background: #eff6ff; border: 1px solid #93c5fd; padding: 6px 10px; border-radius: 3px; cursor: pointer; transition: all 0.1s;" title="Clique para filtrar/alternar próximos 7 dias">
             <div style="font-size: 10px; font-weight: 700; color: #1e40af; text-transform: uppercase;"><svg class="bimer-svg bimer-svg-xs" style="stroke:#1e40af;" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Próximos 7 Dias</div>
             <div style="font-size: 13px; font-weight: 800; color: var(--alterdata-blue);" id="agenda-tot-semana">R$ 0,00</div>
             <div style="font-size: 9.5px; color: #1e3a8a;" id="agenda-qtd-semana">0 contas</div>
           </div>
-          <div onclick="filtrarAgendaVencimento('mes')" style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 3px; cursor: pointer; transition: all 0.1s;" title="Clique para filtrar restante do mês">
+          <div id="agenda-card-mes" onclick="filtrarAgendaVencimento('mes', this)" style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 3px; cursor: pointer; transition: all 0.1s;" title="Clique para filtrar/alternar restante do mês">
             <div style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase;"><svg class="bimer-svg bimer-svg-xs" style="stroke:#475569;" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Restante do Mês</div>
             <div style="font-size: 13px; font-weight: 800; color: #1e293b;" id="agenda-tot-mes">R$ 0,00</div>
             <div style="font-size: 9.5px; color: #64748b;" id="agenda-qtd-mes">0 contas</div>
@@ -1328,7 +1328,20 @@
             <button class="tool-btn" onclick="filtrarTipoTitulos('folha_feriados', this)" style="font-size: 11px; padding: 4px 10px; font-weight: 600;"><svg class="bimer-svg" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Folha, Domingos & Feriados</button>
             <button class="tool-btn" onclick="filtrarTipoTitulos('imposto', this)" style="font-size: 11px; padding: 4px 10px; font-weight: 600;"><svg class="bimer-svg" viewBox="0 0 24 24"><line x1="3" y1="21" x2="21" y2="21"></line><line x1="3" y1="10" x2="21" y2="10"></line><polyline points="5 10 5 21"></polyline><polyline points="19 10 19 21"></polyline><polygon points="12 2 2 7 22 7 12 2"></polygon></svg> Tributos Retidos</button>
           </div>
-          <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <select id="filtro-meio-pgto-titulos" onchange="renderizarGridTitulos()" style="font-size: 11px; padding: 3px 6px; border: 1px solid #cbd5e1; border-radius: 3px; background: white; font-weight: 600; color: #1e293b;" title="Filtrar por forma de pagamento">
+              <option value="TODOS">Meio Pgto: Todos</option>
+              <option value="PIX">Somente PIX</option>
+              <option value="BOLETO">Somente Boleto</option>
+              <option value="OUTROS">TED / Débito / Outros</option>
+            </select>
+            <div style="display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; color: #475569; font-weight: 600;">
+              <span>Venc:</span>
+              <input type="date" id="filtro-venc-ini-titulos" onchange="renderizarGridTitulos()" style="font-size: 10.5px; padding: 2px 5px; border: 1px solid #cbd5e1; border-radius: 3px;" title="Vencimento Inicial">
+              <span>a</span>
+              <input type="date" id="filtro-venc-fim-titulos" onchange="renderizarGridTitulos()" style="font-size: 10.5px; padding: 2px 5px; border: 1px solid #cbd5e1; border-radius: 3px;" title="Vencimento Final">
+            </div>
+            <button type="button" class="tool-btn" onclick="limparTodosFiltrosTitulos()" style="font-size: 10.5px; padding: 3px 8px;" title="Redefinir todos os filtros">Limpar Filtros</button>
             <div style="display: flex; align-items: center; gap: 4px;">
               <span style="font-size: 10.5px; font-weight: 700; color: #475569;">Classificar:</span>
               <select id="select-classificar-titulos" onchange="alterarOrdenacaoTitulos(this.value)" style="font-size: 11px; padding: 3px 6px; border: 1px solid #cbd5e1; border-radius: 3px; background: white; font-weight: 600; color: #1e293b;">
@@ -1347,22 +1360,37 @@
           </div>
         </div>
 
+        <!-- BARRA DE AÇÕES EM LOTE (SELEÇÃO DE TÍTULOS) -->
+        <div id="barra-lote-selecionados" style="display: none; background: #eff6ff; border: 1px solid #93c5fd; border-radius: 4px; padding: 6px 12px; margin-bottom: 8px; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <span id="resumo-lote-selecionados" style="font-size: 11.5px; font-weight: 800; color: #1e3a8a;">Selecionados: 0 título(s) • Total: R$ 0,00</span>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button type="button" class="tool-btn primary" onclick="baixarTitulosSelecionados()" style="background: #16a34a; border-color: #15803d; color: #ffffff; font-weight: 700; padding: 4px 12px; font-size: 11px;">
+              ✓ Baixar Selecionados
+            </button>
+            <button type="button" class="tool-btn" onclick="limparSelecaoTitulos()" style="padding: 4px 10px; font-size: 11px;">
+              Desmarcar Seleção
+            </button>
+          </div>
+        </div>
+
         <table class="alterdata-grid">
           <thead>
             <tr>
+              <th style="width: 30px; text-align: center;"><input type="checkbox" id="chk-master-titulos" onchange="alternarSelecaoTodosTitulos(this.checked)" title="Selecionar todos os títulos filtrados"></th>
               <th onclick="ordenarPorColuna('tipo')" style="width: 85px; cursor: pointer;" title="Clique para ordenar por Tipo">Tipo Título <span id="sort-icon-tipo" style="font-size: 9px; opacity: 0.6;">↕</span></th>
               <th onclick="ordenarPorColuna('id')" style="width: 110px; cursor: pointer;" title="Clique para ordenar por ID">ID <span id="sort-icon-id" style="font-size: 9px; opacity: 0.6;">↕</span></th>
               <th onclick="ordenarPorColuna('documento')" style="width: 90px; cursor: pointer;" title="Clique para ordenar por Documento">Documento <span id="sort-icon-documento" style="font-size: 9px; opacity: 0.6;">↕</span></th>
               <th onclick="ordenarPorColuna('cnpj')" style="width: 135px; cursor: pointer;" title="Clique para ordenar por CNPJ/CPF">CNPJ / CPF <span id="sort-icon-cnpj" style="font-size: 9px; opacity: 0.6;">↕</span></th>
-              <th onclick="ordenarPorColuna('favorecido')" style="width: 200px; cursor: pointer;" title="Clique para ordenar por Favorecido">Favorecido <span id="sort-icon-favorecido" style="font-size: 9px; opacity: 0.6;">↕</span></th>
-              <th onclick="ordenarPorColuna('historico')" style="cursor: pointer;" title="Clique para ordenar por Detalhes">Histórico Completo / Detalhes <span id="sort-icon-historico" style="font-size: 9px; opacity: 0.6;">↕</span></th>
+              <th onclick="ordenarPorColuna('favorecido')" style="width: 190px; cursor: pointer;" title="Clique para ordenar por Favorecido">Favorecido <span id="sort-icon-favorecido" style="font-size: 9px; opacity: 0.6;">↕</span></th>
+              <th onclick="ordenarPorColuna('historico')" style="cursor: pointer;" title="Clique para ordenar por Detalhes">Detalhes / Forma Pgto &amp; Chave <span id="sort-icon-historico" style="font-size: 9px; opacity: 0.6;">↕</span></th>
               <th onclick="ordenarPorColuna('vencimento')" style="width: 95px; cursor: pointer;" title="Clique para ordenar por Vencimento">Vencimento <span id="sort-icon-vencimento" style="font-size: 9px; opacity: 0.6;">↕</span></th>
-              <th onclick="ordenarPorColuna('valor')" style="width: 105px; text-align: right; cursor: pointer;" title="Clique para ordenar por Valor">Valor (R$) <span id="sort-icon-valor" style="font-size: 9px; opacity: 0.6;">↕</span></th>
+              <th onclick="ordenarPorColuna('valor')" style="width: 115px; text-align: right; cursor: pointer;" title="Clique para ordenar por Valor">Valor (R$) <span id="sort-icon-valor" style="font-size: 9px; opacity: 0.6;">↕</span></th>
               <th onclick="ordenarPorColuna('situacao')" style="width: 85px; text-align: center; cursor: pointer;" title="Clique para ordenar por Situação">Situação <span id="sort-icon-situacao" style="font-size: 9px; opacity: 0.6;">↕</span></th>
-              <th style="width: 115px; text-align: center;">Ações</th>
+              <th style="width: 145px; text-align: center;">Ações</th>
             </tr>
           </thead>
           <tbody id="grid-titulos-body"></tbody>
+          <tfoot id="grid-titulos-tfoot"></tfoot>
         </table>
         <div id="empty-titulos-msg" style="text-align: center; padding: 30px; color: var(--text-muted);">
           Nenhum título lançado. Preencha as abas e clique no botão "Gravar (F10)".
@@ -6129,23 +6157,298 @@
     if (elQtdMes) elQtdMes.innerText = `${qtdMes} contas`;
   }
 
-  function filtrarAgendaVencimento(tipo, btn) {
-    filtroAtual = 'agenda_' + tipo;
+  function filtrarAgendaVencimento(tipo, elCard) {
+    const target = 'agenda_' + tipo;
+    filtroAtual = (filtroAtual === target) ? 'todos' : target;
 
-    const bar = document.getElementById('botoes-filtro-titulos');
-    if (bar) {
-      bar.querySelectorAll('button').forEach(b => {
-        b.style.background = 'var(--btn-bg)';
-        b.style.color = 'var(--text-main)';
-      });
-    }
+    ['vencidos', 'hoje', 'semana', 'mes'].forEach(k => {
+      const card = document.getElementById(`agenda-card-${k}`);
+      if (card) {
+        card.style.boxShadow = (filtroAtual === `agenda_${k}`) ? '0 0 0 2px #004b87' : 'none';
+      }
+    });
 
-    if (btn) {
-      btn.style.background = 'var(--alterdata-blue)';
-      btn.style.color = 'white';
+    if (elCard && filtroAtual === target) {
+      elCard.style.boxShadow = '0 0 0 2px #004b87';
     }
 
     renderizarGridTitulos();
+  }
+
+  function limparTodosFiltrosTitulos() {
+    filtroAtual = 'todos';
+    filtroTipoTituloAtual = 'todos';
+    termoBuscaTitulos = '';
+
+    ['vencidos', 'hoje', 'semana', 'mes'].forEach(k => {
+      const card = document.getElementById(`agenda-card-${k}`);
+      if (card) card.style.boxShadow = 'none';
+    });
+
+    const barTipo = document.getElementById('botoes-filtro-titulos');
+    if (barTipo) {
+      const btns = barTipo.querySelectorAll('button');
+      btns.forEach((b, idx) => {
+        b.style.background = idx === 0 ? 'var(--alterdata-blue)' : 'var(--btn-bg)';
+        b.style.color = idx === 0 ? 'white' : 'var(--text-main)';
+      });
+    }
+
+    const inputBusca = document.getElementById('campo-busca-titulos');
+    if (inputBusca) inputBusca.value = '';
+    const btnLimparBusca = document.getElementById('btn-limpar-busca-titulos');
+    if (btnLimparBusca) btnLimparBusca.style.display = 'none';
+    const selMeio = document.getElementById('filtro-meio-pgto-titulos');
+    if (selMeio) selMeio.value = 'TODOS';
+    const dtIni = document.getElementById('filtro-venc-ini-titulos');
+    if (dtIni) dtIni.value = '';
+    const dtFim = document.getElementById('filtro-venc-fim-titulos');
+    if (dtFim) dtFim.value = '';
+
+    renderizarGridTitulos();
+  }
+
+  function obterDadosBancoTitulo(item) {
+    if (!item) return '';
+    if (item.dados_banco && String(item.dados_banco).trim()) return String(item.dados_banco).trim();
+    if (item.pix_chave && String(item.pix_chave).trim()) return String(item.pix_chave).trim();
+    const docDigits = String(item.cnpj || '').replace(/\D/g, '');
+    const favLower = String(item.favorecido || '').trim().toLowerCase();
+    const forn = (LISTA_FORNECEDORES || []).find(f =>
+      (docDigits && String(f.cnpj_cpf || '').replace(/\D/g, '') === docDigits) ||
+      (favLower && String(f.razao_social || '').trim().toLowerCase() === favLower)
+    );
+    return (forn && (forn.pix_chave || forn.dados_banco)) ? String(forn.pix_chave || forn.dados_banco).trim() : '';
+  }
+
+  function copiarTextoAreaTransferencia(texto, msgToast = 'Copiado para a área de transferência!') {
+    const val = String(texto || '').trim();
+    if (!val) return;
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      navigator.clipboard.writeText(val).then(() => {
+        mostrarToastSucesso(msgToast);
+      }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = val;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        mostrarToastSucesso(msgToast);
+      });
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = val;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      mostrarToastSucesso(msgToast);
+    }
+  }
+
+  function copiarPagamentoTitulo(id, campo) {
+    const item = (titulos || []).find(t => String(t.id) === String(id));
+    if (!item) return;
+    if (campo === 'boleto') {
+      copiarTextoAreaTransferencia(item.linha_dig, 'Código de barras / linha digitável copiado!');
+    } else {
+      const dados = obterDadosBancoTitulo(item);
+      const isPix = String(item.forma_pgto || '').toUpperCase().includes('PIX');
+      copiarTextoAreaTransferencia(dados, isPix ? `Chave PIX copiada: ${escapeHtml(dados)}` : 'Dados bancários copiados!');
+    }
+  }
+
+  window._titulosSelecionadosIds = new Set();
+  window._ultimosTitulosFiltrados = [];
+
+  function alternarSelecaoTituloIndividual(id, checked) {
+    const key = String(id);
+    if (checked) {
+      window._titulosSelecionadosIds.add(key);
+    } else {
+      window._titulosSelecionadosIds.delete(key);
+    }
+    const lista = window._ultimosTitulosFiltrados || [];
+    const chkMaster = document.getElementById('chk-master-titulos');
+    if (chkMaster) {
+      chkMaster.checked = lista.length > 0 && lista.every(i => window._titulosSelecionadosIds.has(String(i.id)));
+    }
+    atualizarBarraLoteSelecionados();
+  }
+
+  function alternarSelecaoTodosTitulos(checked) {
+    const lista = window._ultimosTitulosFiltrados || [];
+    lista.forEach(item => {
+      const key = String(item.id);
+      if (checked) window._titulosSelecionadosIds.add(key);
+      else window._titulosSelecionadosIds.delete(key);
+    });
+    document.querySelectorAll('.chk-linha-titulo').forEach(cb => {
+      cb.checked = checked;
+    });
+    atualizarBarraLoteSelecionados();
+  }
+
+  function limparSelecaoTitulos() {
+    window._titulosSelecionadosIds.clear();
+    const chkMaster = document.getElementById('chk-master-titulos');
+    if (chkMaster) chkMaster.checked = false;
+    document.querySelectorAll('.chk-linha-titulo').forEach(cb => {
+      cb.checked = false;
+    });
+    atualizarBarraLoteSelecionados();
+  }
+
+  function atualizarBarraLoteSelecionados() {
+    const barra = document.getElementById('barra-lote-selecionados');
+    const resumo = document.getElementById('resumo-lote-selecionados');
+    if (!barra || !resumo) return;
+
+    const selecionados = (titulos || []).filter(t => window._titulosSelecionadosIds.has(String(t.id)));
+    if (selecionados.length === 0) {
+      barra.style.display = 'none';
+      return;
+    }
+
+    const totalSel = selecionados.reduce((acc, t) => acc + (Number(t.valor) || 0), 0);
+    const abertosSel = selecionados.filter(t => !isTituloBaixadoOuConciliado(t)).length;
+    resumo.innerText = `Selecionados: ${selecionados.length} título(s) (${abertosSel} em aberto) • Total: ${formatarMoeda(totalSel)}`;
+    barra.style.display = 'flex';
+  }
+
+  async function baixarTitulosSelecionados() {
+    const pendentes = (titulos || []).filter(t =>
+      window._titulosSelecionadosIds.has(String(t.id)) && !isTituloBaixadoOuConciliado(t)
+    );
+    if (pendentes.length === 0) {
+      alert('Selecione ao menos 1 título em aberto para realizar a baixa em lote.');
+      return;
+    }
+
+    const total = pendentes.reduce((acc, t) => acc + (Number(t.valor) || 0), 0);
+    if (!confirm(`Confirmar baixa em lote de ${pendentes.length} título(s) no total de ${formatarMoeda(total)}?`)) {
+      return;
+    }
+
+    let baixadosOk = 0;
+    for (const t of pendentes) {
+      if (isBackendOnline) {
+        try {
+          const resp = await apiFetch(`${API_BASE}/titulos/${encodeURIComponent(t.id)}/baixa`, { method: 'POST' });
+          if (resp.ok) {
+            baixadosOk++;
+          }
+        } catch (e) {
+          console.warn('Erro ao baixar título em lote:', t.id, e);
+        }
+      } else {
+        t.status = 'CONCILIADO';
+        t.situacao = 'BAIXADO';
+        t.conciliada = true;
+        t.data_baixa = hoje;
+        baixadosOk++;
+      }
+    }
+
+    window._titulosSelecionadosIds.clear();
+    const chkMaster = document.getElementById('chk-master-titulos');
+    if (chkMaster) chkMaster.checked = false;
+
+    if (isBackendOnline) {
+      await carregarDadosIniciais();
+    } else {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(titulos));
+      renderizarGridTitulos();
+      atualizarTotaisGerais();
+      atualizarAgendaFinanceira();
+    }
+
+    atualizarBarraLoteSelecionados();
+    mostrarToastSucesso(`${baixadosOk} título(s) baixado(s) com sucesso!`);
+  }
+
+  function repetirLancamentoTitulo(id) {
+    const t = (titulos || []).find(x => String(x.id) === String(id));
+    if (!t) return;
+
+    const selTipo = document.getElementById('tipo_documento');
+    if (selTipo && t.tipo_doc) {
+      const hasOpt = Array.from(selTipo.options).some(o => o.value === t.tipo_doc);
+      if (hasOpt) selTipo.value = t.tipo_doc;
+    }
+    ajustarTipoDocumento();
+
+    const setVal = (elId, v) => {
+      const el = document.getElementById(elId);
+      if (el) el.value = v || '';
+    };
+
+    setVal('numero_doc', '');
+    setVal('linha_digitavel', '');
+    setVal('data_emissao', hoje);
+    setVal('data_entrada', hoje);
+    setVal('vencimento_principal', hoje);
+    setVal('ret_iss', '');
+    setVal('ret_irrf', '');
+    setVal('ret_pis', '');
+    setVal('ret_cofins', '');
+    setVal('ret_csll', '');
+
+    if (t.cod_operacao) {
+      setVal('cod_operacao', t.cod_operacao);
+      const elCfop = document.getElementById('cod_operacao');
+      if (elCfop && typeof autocompletarCFOPLive === 'function') autocompletarCFOPLive(elCfop);
+    }
+    if (t.cnae) {
+      setVal('cnae_servico', t.cnae);
+      const elCnae = document.getElementById('cnae_servico');
+      if (elCnae && typeof autocompletarCNAELive === 'function') autocompletarCNAELive(elCnae);
+    }
+    setVal('item_lc116', t.item_lc116 || '');
+    if (t.ccusto || t.categoria) {
+      const catVal = t.ccusto || t.categoria;
+      setVal('categoria_rapida_aba1', catVal);
+      const elCat = document.getElementById('categoria_rapida_aba1');
+      if (elCat && typeof autocompletarCategoriaLive === 'function') autocompletarCategoriaLive(elCat);
+    }
+    setVal('solicitante_despesa_aba1', t.solicitante || '');
+    setVal('solicitante_despesa', t.solicitante || '');
+    setVal('cnpj_favorecido', t.cnpj || '');
+    setVal('razao_favorecido', t.favorecido || '');
+    const brutoRef = Number(t.valor_bruto || t.valor || 0);
+    setVal('valor_bruto', brutoRef > 0 ? brutoRef.toFixed(2) : '');
+
+    const selForma = document.getElementById('forma_pagamento');
+    if (selForma && t.forma_pgto) {
+      const targetForma = String(t.forma_pgto).toLowerCase();
+      for (const opt of selForma.options) {
+        if (opt.value.toLowerCase() === targetForma || opt.text.toLowerCase().includes(targetForma)) {
+          selForma.value = opt.value;
+          break;
+        }
+      }
+    }
+
+    setVal('dados_bancarios', obterDadosBancoTitulo(t));
+    setVal('descricao_detalhada', t.descricao || t.historico || '');
+    setVal('num_contrato_pedido', t.contrato || '');
+
+    window._historicoEditadoManual = false;
+    sugerirVencimentosFiscais();
+    recalcularValores();
+    atualizarHistoricoDinamico(true);
+    trocarAba('aba-geral');
+
+    setTimeout(() => {
+      const numEl = document.getElementById('numero_doc');
+      if (numEl) numEl.focus();
+    }, 60);
+    mostrarToastSucesso('Dados clonados para novo lançamento! Informe o novo nº do documento.');
   }
 
   function alterarZoom(nivel) {
@@ -7442,8 +7745,10 @@
 
   function renderizarGridTitulos() {
     const tbody = document.getElementById('grid-titulos-body');
+    const tfoot = document.getElementById('grid-titulos-tfoot');
     const emptyMsg = document.getElementById('empty-titulos-msg');
     tbody.innerHTML = '';
+    if (tfoot) tfoot.innerHTML = '';
 
     atualizarBadgesSubabas();
 
@@ -7456,6 +7761,10 @@
 
     const anoAtual = hojeData.getFullYear();
     const mesAtual = hojeData.getMonth();
+
+    const filtroMeioPgto = document.getElementById('filtro-meio-pgto-titulos')?.value || 'TODOS';
+    const filtroVencIni = document.getElementById('filtro-venc-ini-titulos')?.value || '';
+    const filtroVencFim = document.getElementById('filtro-venc-fim-titulos')?.value || '';
 
     let lista = titulos.filter(item => {
       const isPago = isTituloBaixadoOuConciliado(item);
@@ -7495,7 +7804,7 @@
         if (!item.tipo || !item.tipo.startsWith('IMPOSTO_')) return false;
       }
 
-      // 3. Filtros legados da Agenda Financeira (se ativados diretamente)
+      // 3. Filtros da Agenda Financeira (régua do topo)
       if (filtroAtual === 'agenda_vencidos') {
         if (isPago || !item.vencimento) return false;
         const dVenc = parseDataVencimento(item.vencimento);
@@ -7514,6 +7823,24 @@
         if (!dVenc || dVenc.getFullYear() !== anoAtual || dVenc.getMonth() !== mesAtual) return false;
       }
 
+      // 3B. Filtro por Meio de Pagamento
+      if (filtroMeioPgto !== 'TODOS') {
+        const formaUp = String(item.forma_pgto || '').toUpperCase();
+        const isPix = formaUp.includes('PIX');
+        const isBoleto = formaUp.includes('BOL') || Boolean(item.linha_dig);
+        if (filtroMeioPgto === 'PIX' && !isPix) return false;
+        if (filtroMeioPgto === 'BOLETO' && !isBoleto) return false;
+        if (filtroMeioPgto === 'OUTROS' && (isPix || isBoleto)) return false;
+      }
+
+      // 3C. Filtro por Intervalo de Vencimento (De / Até)
+      if (filtroVencIni || filtroVencFim) {
+        const dtStr = item.vencimento ? String(item.vencimento).slice(0, 10) : '';
+        if (!dtStr) return false;
+        if (filtroVencIni && dtStr < filtroVencIni) return false;
+        if (filtroVencFim && dtStr > filtroVencFim) return false;
+      }
+
       // 4. Filtro por Busca de Texto Instantânea
       if (termoBuscaTitulos) {
         const textoBusca = [
@@ -7525,7 +7852,9 @@
           item.descricao || '',
           item.historico || '',
           item.solicitante || '',
-          item.ccusto || ''
+          item.ccusto || '',
+          item.forma_pgto || '',
+          obterDadosBancoTitulo(item)
         ].join(' ').toLowerCase();
         if (!textoBusca.includes(termoBuscaTitulos)) return false;
       }
@@ -7580,11 +7909,19 @@
       }
     });
 
+    window._ultimosTitulosFiltrados = lista;
+
     const lblStatus = document.getElementById('label-status-contas');
     if (lblStatus) lblStatus.innerText = `${titulos.length} títulos cadastrados (${lista.length} exibidos)`;
     const elInfoContagem = document.getElementById('info-contagem-filtrada');
     if (elInfoContagem) elInfoContagem.innerText = `Exibindo ${lista.length} de ${titulos.length} títulos`;
     atualizarBarraRodape();
+
+    const chkMaster = document.getElementById('chk-master-titulos');
+    if (chkMaster) {
+      chkMaster.checked = lista.length > 0 && lista.every(i => window._titulosSelecionadosIds.has(String(i.id)));
+    }
+    atualizarBarraLoteSelecionados();
 
     if (lista.length === 0) {
       emptyMsg.style.display = 'block';
@@ -7595,10 +7932,22 @@
     }
     emptyMsg.style.display = 'none';
 
+    let totValorCol = 0;
+    let totBrutoNotas = 0;
+    let totRetNotas = 0;
+
     lista.forEach(item => {
       const tr = document.createElement('tr');
       const isForn = item.tipo === 'FORNECEDOR' || item.tipo === 'DESPESA_GERAL';
       const isPago = isTituloBaixadoOuConciliado(item);
+      const vLiq = Number(item.valor || 0);
+      const vBruto = Number(item.valor_bruto || vLiq);
+      const temRetencaoNota = isForn && vBruto > (vLiq + 0.009);
+      const vRetNota = temRetencaoNota ? (vBruto - vLiq) : 0;
+
+      totValorCol += vLiq;
+      if (isForn) totBrutoNotas += vBruto;
+      if (temRetencaoNota) totRetNotas += vRetNota;
 
       // Status de vencimento: apenas se NÃO estiver liquidado
       let vencDestaque = '';
@@ -7613,7 +7962,19 @@
         vencDestaque = `<span style="display: inline-flex; align-items: center; gap: 3px; font-size: 9.5px; font-weight: 700; color: #166534;">${bimerIcon('checkCircle', 'bimer-svg-xs', 'stroke:#166534;')} PAGO NO BANCO</span>`;
       }
 
+      const formaRaw = String(item.forma_pgto || 'PIX');
+      const formaUp = formaRaw.toUpperCase();
+      const badgeFormaBg = formaUp.includes('PIX') ? '#dcfce7' : (formaUp.includes('BOL') ? '#dbeafe' : '#f1f5f9');
+      const badgeFormaCor = formaUp.includes('PIX') ? '#15803d' : (formaUp.includes('BOL') ? '#1e40af' : '#334155');
+      const dadosBancoResolvido = obterDadosBancoTitulo(item);
+      const isSelecionado = window._titulosSelecionadosIds.has(String(item.id));
+
       tr.innerHTML = `
+        <!-- 0. Seleção em Lote -->
+        <td style="text-align: center;">
+          <input type="checkbox" class="chk-linha-titulo" ${isSelecionado ? 'checked' : ''} onchange="alternarSelecaoTituloIndividual('${item.id}', this.checked)" title="Selecionar título">
+        </td>
+
         <!-- 1. Tipo Título -->
         <td>
           ${(item.tipo_doc === 'DOMINGO_FERIADO' || (item.tipo_doc && item.tipo_doc.includes('21412')) || (item.numero_doc && String(item.numero_doc).startsWith('DOM-')) || (item.descricao && item.descricao.toUpperCase().includes('DOMINGO')) || (item.descricao && item.descricao.toUpperCase().includes('FERIADO'))) ? `
@@ -7647,22 +8008,37 @@
           </span>
         </td>
 
-        <!-- 5. Favorecido (Coluna Exclusiva) -->
+        <!-- 5. Favorecido -->
         <td>
           <strong style="color: #0f172a; font-size: 12px; display: block; line-height: 1.3;">
             ${escapeHtml(item.favorecido || '-')}
           </strong>
         </td>
 
-        <!-- 6. Histórico Completo / Detalhes (Coluna Após Favorecido) -->
+        <!-- 6. Histórico Completo / Detalhes + Forma Pgto & Chave PIX / Boleto -->
         <td>
           <div style="font-weight: 600; color: #1e293b; font-size: 11.5px; margin-bottom: 3px;">
             ${escapeHtml(limparHistoricoRedundante(item.descricao || item.historico))}
           </div>
-          <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+          <div style="display: flex; gap: 5px; flex-wrap: wrap; align-items: center;">
+            <span style="font-size: 9.5px; font-weight: 800; background: ${badgeFormaBg}; color: ${badgeFormaCor}; padding: 1.5px 6px; border-radius: 3px;">
+              ${escapeHtml(formaUp)}
+            </span>
+            ${dadosBancoResolvido ? `
+              <span style="font-size: 10px; background: #f0fdf4; color: #166534; padding: 1.5px 6px; border-radius: 3px; border: 1px solid #bbf7d0; font-family: monospace;" title="${escapeHtml(dadosBancoResolvido)}">
+                ${escapeHtml(dadosBancoResolvido)}
+              </span>
+              <button type="button" class="tool-btn" style="padding: 1px 6px; font-size: 9.5px; font-weight: 700; color: #15803d; border-color: #86efac; background: #ffffff;" onclick="copiarPagamentoTitulo('${item.id}', 'dados')" title="Copiar ${formaUp.includes('PIX') ? 'Chave PIX' : 'Dados Bancários'}">
+                ${formaUp.includes('PIX') ? 'Copiar PIX' : 'Copiar Dados'}
+              </button>
+            ` : ''}
+            ${item.linha_dig ? `
+              <button type="button" class="tool-btn" style="padding: 1px 6px; font-size: 9.5px; font-weight: 700; color: #92400e; border-color: #fde68a; background: #fef3c7;" onclick="copiarPagamentoTitulo('${item.id}', 'boleto')" title="${escapeHtml(item.linha_dig)}">
+                ${bimerIcon('creditCard', 'bimer-svg-xs')} Copiar Boleto
+              </button>
+            ` : ''}
             ${item.solicitante ? `<span style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 1.5px 6px; border-radius: 3px; border: 1px solid #bae6fd;">${bimerIcon('user', 'bimer-svg-xs')} Resp: ${escapeHtml(item.solicitante)}</span>` : ''}
             ${item.ccusto ? `<span style="font-size: 10px; background: #f8fafc; color: #475569; padding: 1.5px 6px; border-radius: 3px; border: 1px solid #e2e8f0;">${bimerIcon('tag', 'bimer-svg-xs')} C.Custo: ${escapeHtml(item.ccusto)}</span>` : ''}
-            ${item.linha_dig ? `<span style="font-size: 9.5px; background: #fef3c7; color: #92400e; padding: 1.5px 5px; border-radius: 3px; border: 1px solid #fde68a;" title="${escapeHtml(item.linha_dig)}">${bimerIcon('creditCard', 'bimer-svg-xs')} Boleto Cadastrado</span>` : ''}
           </div>
         </td>
 
@@ -7672,9 +8048,10 @@
           ${vencDestaque}
         </td>
 
-        <!-- 8. Valor (R$) -->
+        <!-- 8. Valor (R$) com sublinha Bruto vs Retenção -->
         <td style="text-align: right; white-space: nowrap;">
-          <strong style="color: ${isForn ? 'var(--alterdata-blue)' : 'var(--tax-purple)'}; font-size: 12.5px;">${formatarMoeda(item.valor)}</strong>
+          <strong style="color: ${isForn ? 'var(--alterdata-blue)' : 'var(--tax-purple)'}; font-size: 12.5px;">${formatarMoeda(vLiq)}</strong>
+          ${temRetencaoNota ? `<div style="font-size: 9.5px; color: #64748b; margin-top: 2px;">Bruto: ${formatarMoeda(vBruto)} <span style="color: #7e22ce;">(-${formatarMoeda(vRetNota)})</span></div>` : ''}
         </td>
 
         <!-- 9. Situação -->
@@ -7693,6 +8070,9 @@
           <button class="tool-btn" style="display: inline-flex; align-items: center; justify-content: center; padding: 3px 6px; font-size: 10.5px;" onclick="alternarBaixa('${item.id}')" title="${isPago ? 'Reabrir título' : 'Baixar / Liquidar'}">
             ${isPago ? bimerIcon('undo', 'bimer-svg-xs') : bimerIcon('check', 'bimer-svg-xs')}
           </button>
+          <button class="tool-btn" style="display: inline-flex; align-items: center; gap: 3px; padding: 3px 6px; font-size: 10.5px; color: #0369a1;" onclick="repetirLancamentoTitulo('${item.id}')" title="Repetir / Clonar este lançamento para nova NF/mês">
+            ${bimerIcon('refresh', 'bimer-svg-xs')}
+          </button>
           <button class="tool-btn" style="display: inline-flex; align-items: center; gap: 3px; padding: 3px 6px; font-size: 10.5px; font-weight: 600;" onclick="abrirFolhaRostoTitulo('${item.id}')" title="Imprimir Folha de Rosto deste Documento">
             ${bimerIcon('printer', 'bimer-svg-xs')} Folha
           </button>
@@ -7703,6 +8083,23 @@
       `;
       tbody.appendChild(tr);
     });
+
+    if (tfoot) {
+      const resumoRetStr = totRetNotas > 0 ? ` • Bruto Notas: ${formatarMoeda(totBrutoNotas)} • Retenções: -${formatarMoeda(totRetNotas)}` : '';
+      tfoot.innerHTML = `
+        <tr style="background: #f1f5f9; font-weight: 800; border-top: 2px solid var(--alterdata-blue);">
+          <td colspan="8" style="text-align: right; color: #1e293b; font-size: 11px;">
+            SUBTOTAL DO FILTRO (${lista.length} ${lista.length === 1 ? 'título' : 'títulos'}${resumoRetStr}):
+          </td>
+          <td style="text-align: right; color: var(--alterdata-blue); font-size: 12.5px; white-space: nowrap;">
+            ${formatarMoeda(totValorCol)}
+          </td>
+          <td colspan="2" style="text-align: center; font-size: 10px; color: #475569;">
+            Total Líquido / Guias Exibidos
+          </td>
+        </tr>
+      `;
+    }
   }
 
   function atualizarTotaisGerais() {
