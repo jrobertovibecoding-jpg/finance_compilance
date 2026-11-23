@@ -960,6 +960,27 @@
 
     <!-- ==================== ABA 1: IDENTIFICAÇÃO DO DOCUMENTO ==================== -->
     <div id="aba-geral" class="tab-content active">
+      <!-- IMPORTADOR INTELIGENTE DE XML (NF-e PRODUTO & NFS-e SERVIÇO) -->
+      <div id="box-importar-xml-nf"
+           ondragover="event.preventDefault(); this.style.borderColor='#0284c7'; this.style.background='#e0f2fe';"
+           ondragleave="this.style.borderColor='#93c5fd'; this.style.background='#eff6ff';"
+           ondrop="event.preventDefault(); this.style.borderColor='#93c5fd'; this.style.background='#eff6ff'; if(event.dataTransfer?.files?.length) importarArquivoXMLObjeto(event.dataTransfer.files[0]);"
+           style="background: #eff6ff; border: 1.5px dashed #93c5fd; border-radius: 6px; padding: 7px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; transition: all 0.15s;">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span style="background: #1d4ed8; color: #ffffff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.3px;">XML</span>
+          <span style="font-size: 11.5px; font-weight: 700; color: #1e3a8a;">Lançar Nota Fiscal por XML (NF-e Produto ou NFS-e Serviço)</span>
+          <span style="font-size: 10.5px; color: #475569;">Arraste o arquivo .xml aqui ou clique ao lado para preencher todos os campos automaticamente.</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <input type="file" id="input-xml-nf" accept=".xml,text/xml,application/xml" style="display: none;" onchange="processarArquivoXMLNF(event)">
+          <button type="button" class="tool-btn" onclick="document.getElementById('input-xml-nf').click()" style="background: #1d4ed8; color: #ffffff; border-color: #1e40af; font-weight: 700; padding: 4px 11px; font-size: 11px;">
+            <svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><polyline points="9 15 12 12 15 15"></polyline></svg>
+            Selecionar XML (NF-e / NFS-e)
+          </button>
+        </div>
+        <div id="badge-xml-importado" style="display: none; width: 100%; background: #ecfdf5; border: 1px solid #86efac; color: #065f46; border-radius: 4px; padding: 5px 9px; font-size: 11px; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;"></div>
+      </div>
+
       <fieldset>
         <legend>Tipo de Operação & Documento de Origem</legend>
         <div class="form-grid-4">
@@ -7064,6 +7085,324 @@
   function regerarHistoricoAutomatico() {
     window._historicoEditadoManual = false;
     atualizarHistoricoDinamico(true);
+  }
+
+  // ── IMPORTADOR INTELIGENTE DE XML (NF-e PRODUTO & NFS-e SERVIÇO) ──────────
+  function _xmlPrimeiroTexto(root, tagNames) {
+    if (!root) return '';
+    const nomes = Array.isArray(tagNames) ? tagNames : [tagNames];
+    const all = root.getElementsByTagName('*');
+    for (const nome of nomes) {
+      const alvo = nome.toLowerCase();
+      for (let i = 0; i < all.length; i++) {
+        const local = (all[i].localName || all[i].nodeName || '').split(':').pop().toLowerCase();
+        if (local === alvo) {
+          const txt = (all[i].textContent || '').trim();
+          if (txt) return txt;
+        }
+      }
+    }
+    return '';
+  }
+
+  function _xmlPrimeiroElemento(root, tagNames) {
+    if (!root) return null;
+    const nomes = Array.isArray(tagNames) ? tagNames : [tagNames];
+    const all = root.getElementsByTagName('*');
+    for (const nome of nomes) {
+      const alvo = nome.toLowerCase();
+      for (let i = 0; i < all.length; i++) {
+        const local = (all[i].localName || all[i].nodeName || '').split(':').pop().toLowerCase();
+        if (local === alvo) return all[i];
+      }
+    }
+    return null;
+  }
+
+  function _xmlTodosElementos(root, tagName) {
+    if (!root) return [];
+    const alvo = tagName.toLowerCase();
+    const all = root.getElementsByTagName('*');
+    const out = [];
+    for (let i = 0; i < all.length; i++) {
+      const local = (all[i].localName || all[i].nodeName || '').split(':').pop().toLowerCase();
+      if (local === alvo) out.push(all[i]);
+    }
+    return out;
+  }
+
+  function _xmlFormatarCNPJCPF(doc) {
+    const d = String(doc || '').replace(/\D/g, '');
+    if (d.length === 14) return d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+    if (d.length === 11) return d.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+    return doc || '';
+  }
+
+  function _xmlExtrairDataISO(raw) {
+    const s = String(raw || '').trim();
+    const mISO = s.match(/(\d{4}-\d{2}-\d{2})/);
+    if (mISO) return mISO[1];
+    const mBR = s.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    if (mBR) return `${mBR[3]}-${mBR[2]}-${mBR[1]}`;
+    return '';
+  }
+
+  function _xmlParseValor(raw) {
+    const s = String(raw || '').trim();
+    if (!s) return 0;
+    const norm = s.includes(',') && s.includes('.') ? s.replace(/\./g, '').replace(',', '.') : s.replace(',', '.');
+    const n = parseFloat(norm);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function _xmlConverterCFOPSaidaParaEntrada(cfopEmit) {
+    const dig = String(cfopEmit || '').replace(/\D/g, '');
+    if (dig.length !== 4) return '';
+    let entr = dig;
+    if (dig.startsWith('5')) entr = '1' + dig.slice(1);
+    else if (dig.startsWith('6')) entr = '2' + dig.slice(1);
+    else if (dig.startsWith('7')) entr = '3' + dig.slice(1);
+    if (entr === '1405') entr = '1403';
+    if (entr === '2405') entr = '2403';
+    return `${entr[0]}.${entr.slice(1)}`;
+  }
+
+  function limparBannerXMLNF() {
+    const badge = document.getElementById('badge-xml-importado');
+    if (badge) {
+      badge.style.display = 'none';
+      badge.innerHTML = '';
+    }
+    const inp = document.getElementById('input-xml-nf');
+    if (inp) inp.value = '';
+  }
+
+  function processarArquivoXMLNF(event) {
+    const file = event?.target?.files?.[0];
+    if (file) importarArquivoXMLObjeto(file);
+  }
+
+  function importarArquivoXMLObjeto(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      importarConteudoXMLNF(String(e.target?.result || ''), file.name);
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+
+  function importarConteudoXMLNF(xmlText, nomeArquivo = 'nota.xml') {
+    const txt = String(xmlText || '').trim();
+    if (!txt || !txt.includes('<')) {
+      alert('O arquivo selecionado não parece ser um XML válido.');
+      return;
+    }
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(txt, 'text/xml');
+    if (doc.getElementsByTagName('parsererror').length > 0) {
+      alert('Erro ao ler o XML. Verifique se o arquivo não está corrompido.');
+      return;
+    }
+
+    const infNFe = _xmlPrimeiroElemento(doc, ['infNFe']);
+    const isNFSe = Boolean(
+      !infNFe && (
+        _xmlPrimeiroElemento(doc, ['CompNfse', 'Nfse', 'InfNfse', 'NFSe', 'infNFSe', 'PrestadorServico', 'Discriminacao', 'xDescServ'])
+      )
+    );
+
+    if (!infNFe && !isNFSe) {
+      alert('XML não reconhecido como NF-e (Produto) nem NFS-e (Serviço). Verifique o arquivo enviado.');
+      return;
+    }
+
+    const selTipo = document.getElementById('tipo_documento');
+    const elNum = document.getElementById('numero_doc');
+    const elSerie = document.getElementById('serie_doc');
+    const elCfop = document.getElementById('cod_operacao');
+    const elCnae = document.getElementById('cnae_servico');
+    const elItemLc = document.getElementById('item_lc116');
+    const elCtn = document.getElementById('ctn_nacional');
+    const elCnpj = document.getElementById('cnpj_favorecido');
+    const elRazao = document.getElementById('razao_favorecido');
+    const elEmissao = document.getElementById('data_emissao');
+    const elEntrada = document.getElementById('data_entrada');
+    const elVenc = document.getElementById('vencimento_principal');
+    const elBruto = document.getElementById('valor_bruto');
+    const elDesc = document.getElementById('descricao_detalhada');
+    const elPedido = document.getElementById('num_contrato_pedido');
+
+    // Zera retenções anteriores antes de preencher
+    ['ret_iss', 'ret_irrf', 'ret_pis', 'ret_cofins', 'ret_csll'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+
+    let resumoTipo = '';
+    let chaveOuCod = '';
+    let infoExtra = '';
+    let temRetencao = false;
+
+    if (infNFe) {
+      // ── NF-e PRODUTO / MERCADORIA (MODELO 55 / 65) ──
+      resumoTipo = 'NF-e Produto (Mod. 55)';
+      if (selTipo) {
+        selTipo.value = 'NFE';
+        ajustarTipoDocumento();
+      }
+      const ide = _xmlPrimeiroElemento(infNFe, ['ide']);
+      const emit = _xmlPrimeiroElemento(infNFe, ['emit']);
+      const icmsTot = _xmlPrimeiroElemento(infNFe, ['ICMSTot']);
+      const cobr = _xmlPrimeiroElemento(infNFe, ['cobr']);
+      const dets = _xmlTodosElementos(infNFe, 'det');
+
+      const nNF = _xmlPrimeiroTexto(ide, ['nNF']);
+      const serie = _xmlPrimeiroTexto(ide, ['serie']);
+      const dhEmi = _xmlExtrairDataISO(_xmlPrimeiroTexto(ide, ['dhEmi', 'dEmi']));
+      const cnpjEmit = _xmlPrimeiroTexto(emit, ['CNPJ', 'CPF']);
+      const xNome = _xmlPrimeiroTexto(emit, ['xNome', 'xFant']);
+      const vNF = _xmlParseValor(_xmlPrimeiroTexto(icmsTot, ['vNF']));
+
+      const rawId = infNFe.getAttribute('Id') || '';
+      chaveOuCod = rawId.replace(/^NFe/i, '');
+
+      // CFOP do primeiro item convertido para entrada
+      const cfopSaida = dets.length ? _xmlPrimeiroTexto(dets[0], ['CFOP']) : '';
+      const cfopEntrada = _xmlConverterCFOPSaidaParaEntrada(cfopSaida);
+
+      // Produtos para descrição
+      const nomesProds = [];
+      let xPed = '';
+      dets.forEach(d => {
+        const xp = _xmlPrimeiroTexto(d, ['xProd']);
+        if (xp && nomesProds.length < 3) nomesProds.push(xp);
+        if (!xPed) xPed = _xmlPrimeiroTexto(d, ['xPed']);
+      });
+      const sufItens = dets.length > 3 ? ` (+${dets.length - 3} itens)` : '';
+      const descProdutos = nomesProds.length ? `Ref. NF-e ${nNF}: ${nomesProds.join('; ')}${sufItens}` : `Aquisição de mercadorias - NF-e ${nNF}`;
+
+      // Duplicatas / Vencimentos
+      const dups = cobr ? _xmlTodosElementos(cobr, 'dup') : [];
+      const primeiroVenc = dups.length ? _xmlExtrairDataISO(_xmlPrimeiroTexto(dups[0], ['dVenc'])) : '';
+
+      if (elNum) elNum.value = nNF;
+      if (elSerie && serie) elSerie.value = serie;
+      if (elCfop && cfopEntrada) {
+        elCfop.value = cfopEntrada;
+        if (typeof autocompletarCFOPLive === 'function') autocompletarCFOPLive(elCfop);
+      }
+      if (elCnpj) elCnpj.value = _xmlFormatarCNPJCPF(cnpjEmit);
+      if (elRazao) elRazao.value = xNome;
+      if (elEmissao && dhEmi) elEmissao.value = dhEmi;
+      if (elEntrada && !elEntrada.value) elEntrada.value = new Date().toISOString().slice(0, 10);
+      if (elVenc && primeiroVenc) elVenc.value = primeiroVenc;
+      if (elBruto && vNF > 0) elBruto.value = vNF.toFixed(2);
+      if (elDesc) elDesc.value = descProdutos;
+      if (elPedido && xPed) elPedido.value = xPed;
+
+      infoExtra = `${dets.length} item(ns)` + (dups.length ? ` • ${dups.length} duplicata(s) (1º venc: ${primeiroVenc ? primeiroVenc.split('-').reverse().join('/') : '-'})` : ' • Sem duplicata no XML (confira o vencimento)');
+    } else {
+      // ── NFS-e SERVIÇO (ABRASF / GINFES / NACIONAL / PREFEITURAS) ──
+      resumoTipo = 'NFS-e Serviço';
+      if (selTipo) {
+        selTipo.value = 'NFSE';
+        ajustarTipoDocumento();
+      }
+
+      const infNfse = _xmlPrimeiroElemento(doc, ['InfNfse', 'infNFSe']) || doc.documentElement;
+      const prestador = _xmlPrimeiroElemento(infNfse, ['PrestadorServico', 'Prestador', 'emit']) || infNfse;
+      const valores = _xmlPrimeiroElemento(infNfse, ['Valores', 'ValoresNfse', 'valores']) || infNfse;
+
+      const nNFSe = _xmlPrimeiroTexto(infNfse, ['Numero', 'nNFSe', 'NumeroNFe', 'NumeroNota']);
+      const serie = _xmlPrimeiroTexto(infNfse, ['Serie', 'SerieRPS', 'SeriePrestacao']);
+      const dtEmissao = _xmlExtrairDataISO(_xmlPrimeiroTexto(infNfse, ['DataEmissao', 'dhEmi', 'DataEmissaoNFe', 'dhProc']));
+      const cnpjPrest = _xmlPrimeiroTexto(prestador, ['Cnpj', 'CNPJ', 'Cpf', 'CPF']);
+      const razaoPrest = _xmlPrimeiroTexto(prestador, ['RazaoSocial', 'xNome', 'NomeFantasia', 'RazaoSocialPrestador']);
+      const codVerif = _xmlPrimeiroTexto(infNfse, ['CodigoVerificacao', 'cVerif', 'CodigoAutenticidade']);
+      chaveOuCod = codVerif || (infNfse.getAttribute && infNfse.getAttribute('Id') ? infNfse.getAttribute('Id').replace(/^NFS/i, '') : '');
+
+      const vServ = _xmlParseValor(_xmlPrimeiroTexto(valores, ['ValorServicos', 'vServ', 'ValorTotalServicos', 'ValorLiquidoNfse']));
+      const issRetidoFlag = _xmlPrimeiroTexto(valores, ['IssRetido', 'tpRetISSQN']);
+      let vIssRet = _xmlParseValor(_xmlPrimeiroTexto(valores, ['ValorIssRetido', 'vISSQNRet']));
+      if (!vIssRet && (issRetidoFlag === '1' || issRetidoFlag === '2' || issRetidoFlag === '3' || issRetidoFlag.toLowerCase() === 'true')) {
+        vIssRet = _xmlParseValor(_xmlPrimeiroTexto(valores, ['ValorIss', 'vISSQN']));
+      }
+      const vIr = _xmlParseValor(_xmlPrimeiroTexto(valores, ['ValorIr', 'vRetIRRF', 'ValorIR']));
+      const vPis = _xmlParseValor(_xmlPrimeiroTexto(valores, ['ValorPis', 'vRetPIS', 'ValorPIS']));
+      const vCofins = _xmlParseValor(_xmlPrimeiroTexto(valores, ['ValorCofins', 'vRetCOFINS', 'ValorCOFINS']));
+      const vCsll = _xmlParseValor(_xmlPrimeiroTexto(valores, ['ValorCsll', 'vRetCSLL', 'ValorCSLL']));
+
+      const cnaeXml = _xmlPrimeiroTexto(infNfse, ['CodigoCnae', 'CNAE', 'cnae']);
+      const itemLcXml = _xmlPrimeiroTexto(infNfse, ['ItemListaServico', 'CodigoTributacaoMunicipio']);
+      const cTribNac = _xmlPrimeiroTexto(infNfse, ['cTribNac']);
+      const discrim = _xmlPrimeiroTexto(infNfse, ['Discriminacao', 'xDescServ', 'DiscriminacaoServicos']).replace(/\s+/g, ' ').trim();
+      const vencXml = _xmlExtrairDataISO(_xmlPrimeiroTexto(infNfse, ['DataVencimento', 'Vencimento', 'dVenc']));
+
+      if (elNum && nNFSe) elNum.value = nNFSe;
+      if (elSerie && serie) elSerie.value = serie;
+      if (elCnpj && cnpjPrest) elCnpj.value = _xmlFormatarCNPJCPF(cnpjPrest);
+      if (elRazao && razaoPrest) elRazao.value = razaoPrest;
+      if (elEmissao && dtEmissao) elEmissao.value = dtEmissao;
+      if (elEntrada && !elEntrada.value) elEntrada.value = new Date().toISOString().slice(0, 10);
+      if (elVenc && vencXml) elVenc.value = vencXml;
+      if (elBruto && vServ > 0) elBruto.value = vServ.toFixed(2);
+      if (elDesc && discrim) elDesc.value = discrim.slice(0, 260);
+      if (elItemLc && itemLcXml) elItemLc.value = itemLcXml;
+      if (elCtn && cTribNac) elCtn.value = cTribNac;
+      if (elCnae && cnaeXml) {
+        elCnae.value = cnaeXml;
+        if (typeof autocompletarCNAELive === 'function') autocompletarCNAELive(elCnae);
+      }
+
+      const mapRet = [
+        ['ret_iss', vIssRet],
+        ['ret_irrf', vIr],
+        ['ret_pis', vPis],
+        ['ret_cofins', vCofins],
+        ['ret_csll', vCsll]
+      ];
+      mapRet.forEach(([id, val]) => {
+        if (val > 0) {
+          temRetencao = true;
+          const el = document.getElementById(id);
+          if (el) el.value = val.toFixed(2);
+        }
+      });
+      if (temRetencao && typeof alternarVisibilidadeRetencoes === 'function') {
+        alternarVisibilidadeRetencoes(true);
+      }
+
+      infoExtra = (temRetencao ? 'Retenções preenchidas automaticamente' : 'Sem retenções no XML') + (vencXml ? '' : ' • Confira o vencimento');
+    }
+
+    // Dispara gatilhos padrão do formulário (busca fornecedor/PIX, cálculos, vencimentos fiscais, duplicidade e histórico)
+    if (elCnpj && typeof onInputCNPJFavorecidoLive === 'function') onInputCNPJFavorecidoLive(elCnpj);
+    if (typeof sugerirVencimentosFiscais === 'function') sugerirVencimentosFiscais();
+    if (typeof recalcularValores === 'function') recalcularValores();
+    if (typeof checarDuplicidadeLive === 'function') checarDuplicidadeLive();
+    if (typeof atualizarHistoricoDinamico === 'function') atualizarHistoricoDinamico();
+
+    const badge = document.getElementById('badge-xml-importado');
+    if (badge) {
+      badge.style.display = 'flex';
+      badge.innerHTML = `
+        <span>
+          <strong>✓ XML Importado (${escapeHtml(nomeArquivo)}):</strong>
+          <span style="background: #d1fae5; padding: 1px 6px; border-radius: 3px; font-weight: 700;">${escapeHtml(resumoTipo)}</span>
+          • Nº <strong>${escapeHtml(elNum?.value || '-')}</strong>
+          • <strong>${escapeHtml(elRazao?.value || '-')}</strong>
+          • Bruto: <strong>${formatarMoeda(parseFloat(elBruto?.value || 0))}</strong>
+          ${chaveOuCod ? `• Chave/Cód: <code style="font-size:10px;">${escapeHtml(chaveOuCod.slice(0, 22))}${chaveOuCod.length > 22 ? '...' : ''}</code>` : ''}
+          • ${escapeHtml(infoExtra)}
+        </span>
+        <button type="button" class="tool-btn" onclick="limparBannerXMLNF()" style="padding: 2px 7px; font-size: 10px; border-color: #86efac; color: #065f46;">Ocultar</button>
+      `;
+    }
+
+    if (typeof mostrarToastSucesso === 'function') {
+      mostrarToastSucesso(`XML (${resumoTipo}) importado! Confira Categoria, Loja e Vencimento antes de gravar.`);
+    }
   }
 
   function ajustarTipoDocumento() {
