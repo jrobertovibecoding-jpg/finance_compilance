@@ -1048,26 +1048,22 @@
         </div>
       </fieldset>
 
-      <!-- SEÇÃO UNIFICADA: PAGAMENTO, LOJA/DESTINO & HISTÓRICO CONTÁBIL INTELIGENTE -->
+      <!-- SEÇÃO UNIFICADA: PAGAMENTO, LOJA/DESTINO & DESCRIÇÃO -->
       <fieldset id="secao-pagamento-origem-historico" style="border: 1px solid #bfdbfe; background: #f8fafc;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 5px;">
-          <legend style="margin-bottom: 0; color: #1e3a8a;">Pagamento, Loja/Destino &amp; Histórico Contábil</legend>
-          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-            <span id="badge-id-lancamento-previsto" style="font-family: monospace; font-size: 10.5px; font-weight: 700; background: #e0e7ff; color: #3730a3; padding: 1px 7px; border-radius: 4px; border: 1px solid #c7d2fe;">
-              ID Oficial: LCT-2026-0001
-            </span>
-            <button type="button" class="tool-btn" id="btn-toggle-extras-historico" onclick="alternarDetalhesExtrasLancamento()" style="padding: 2px 8px; font-size: 10.5px;">
-              Recolher Histórico / O.S.
-            </button>
-          </div>
+          <legend style="margin-bottom: 0; color: #1e3a8a;">Pagamento, Loja/Destino &amp; Descrição da Despesa</legend>
+          <span id="badge-id-lancamento-previsto" style="font-family: monospace; font-size: 10.5px; font-weight: 700; background: #e0e7ff; color: #3730a3; padding: 1px 7px; border-radius: 4px; border: 1px solid #c7d2fe;">
+            ID Oficial: LCT-2026-0001
+          </span>
         </div>
 
-        <!-- Campos ocultos para manter 100% de compatibilidade com scripts legados -->
+        <!-- Campos ocultos para manter 100% de compatibilidade com scripts e relatórios -->
         <select id="centro_custo" onchange="aoMudarSelectCategoriaOficial(this)" style="display: none;"></select>
         <input type="hidden" id="solicitante_despesa" value="Compras">
+        <input type="hidden" id="historico_contabil_completo">
 
-        <!-- Linha principal (4 colunas sempre visíveis) -->
-        <div class="form-grid-4">
+        <!-- Linha 1: Forma de Pagamento, Chave PIX/Dados Bancários e Loja/Unidade -->
+        <div class="form-grid-3">
           <div class="form-field">
             <label>Forma de Pagamento</label>
             <select id="forma_pagamento" onchange="atualizarHistoricoDinamico()">
@@ -1093,38 +1089,17 @@
               <option value="Atelier / Produção">Atelier / Produção</option>
             </select>
           </div>
-          <div class="form-field">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <label style="margin-bottom: 0;">Objeto / Serviço Realizado *</label>
-              <span style="display: inline-flex; gap: 4px; font-size: 9.5px;">
-                <a href="javascript:void(0)" onclick="preencherObjetoRapido('categoria')" style="color: #0369a1; font-weight: 700; text-decoration: none;" title="Preencher com o nome da Categoria selecionada">+ Categoria</a>
-                <span style="color: #cbd5e1;">|</span>
-                <a href="javascript:void(0)" onclick="preencherObjetoRapido('cnae')" style="color: #047857; font-weight: 700; text-decoration: none;" title="Preencher com a descrição do CNAE selecionado">+ CNAE</a>
-              </span>
-            </div>
-            <input type="text" id="descricao_detalhada" placeholder="Ex: Manutenção Jardim (se vazio, usa Categoria/CNAE)" oninput="atualizarHistoricoDinamico()">
-          </div>
         </div>
 
-        <!-- Linha compacta de Contrato/O.S. e Histórico Contábil Automático -->
-        <div id="painel-extras-historico" class="form-grid-4" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #cbd5e1; margin-bottom: 0;">
-          <div class="form-field">
-            <label>Nº Contrato / Pedido / O.S. (Opcional)</label>
-            <input type="text" id="num_contrato_pedido" placeholder="Ex: OS-8841 ou CT-2026" oninput="atualizarHistoricoDinamico()">
-          </div>
+        <!-- Linha 2: Descrição Ampla (3 colunas) + Nº Pedido/Contrato/O.S. (1 coluna) -->
+        <div class="form-grid-4" style="margin-top: 5px; margin-bottom: 0;">
           <div class="form-field" style="grid-column: span 3;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
-              <label style="margin-bottom: 0; color: #1e293b;">
-                Histórico Contábil Oficial (Diário / Razão / Grade)
-                <span id="badge-modo-historico" style="font-size: 9px; font-weight: 700; color: #047857; background: #dcfce7; padding: 1px 5px; border-radius: 3px; margin-left: 4px;">Automático • Contábil</span>
-              </label>
-              <div style="display: inline-flex; align-items: center; gap: 4px;">
-                <button type="button" id="btn-hist-completo" class="tool-btn primary" onclick="setModoHistorico('COMPLETO')" style="padding: 1px 6px; font-size: 9.5px;">Modo Contábil</button>
-                <button type="button" id="btn-hist-enxuto" class="tool-btn" onclick="setModoHistorico('ENXUTO')" style="padding: 1px 6px; font-size: 9.5px;">Modo Enxuto</button>
-                <button type="button" class="tool-btn" onclick="regerarHistoricoAutomatico()" style="padding: 1px 6px; font-size: 9.5px; color: var(--alterdata-blue); font-weight: 700;" title="Desbloqueia edição manual e regera o histórico automático">↻ Regerar Auto</button>
-              </div>
-            </div>
-            <input type="text" id="historico_contabil_completo" oninput="marcarHistoricoManual()" style="font-size: 11.5px; font-weight: 500; color: #0f172a; background: #ffffff;" placeholder="Histórico contábil gerado automaticamente (Doc, Favorecido, Loja, Categoria e Competência)...">
+            <label>Descrição / Detalhamento do Serviço ou Despesa *</label>
+            <input type="text" id="descricao_detalhada" placeholder="Descreva o serviço, produto ou motivo da despesa (ex: Manutenção e poda do jardim da fachada)..." oninput="atualizarHistoricoDinamico()" style="font-size: 12px; font-weight: 600;">
+          </div>
+          <div class="form-field">
+            <label>Nº Pedido / Contrato / O.S. (Opcional)</label>
+            <input type="text" id="num_contrato_pedido" placeholder="Ex: OS-8841 ou CT-2026" oninput="atualizarHistoricoDinamico()">
           </div>
         </div>
       </fieldset>
@@ -6863,39 +6838,17 @@
     else if (tipo === 'DOMINGO_FERIADO') prefixoDoc = 'Dom/Fer';
 
     if (!window._historicoEditadoManual || forcar === true) {
-      const objetoBase = servico || obterObjetoDespesaAutomatico();
-      let compMesAno = '';
-      if (dataEntrada && dataEntrada.includes('-')) {
-        const partesDt = dataEntrada.split('-');
-        if (partesDt.length >= 2) compMesAno = `${partesDt[1]}/${partesDt[0]}`;
+      const baseDesc = servico || obterObjetoDespesaAutomatico();
+      let texto = baseDesc;
+      if (unidade && !baseDesc.toLowerCase().includes(unidade.toLowerCase())) {
+        texto += ` • ${unidade}`;
       }
-
-      let texto = '';
-      if (window._modoHistoricoContabil === 'ENXUTO') {
-        texto = `Vlr. ref. ${objetoBase}${unidade ? ' • ' + unidade : ''}${doc ? ' • ' + prefixoDoc + ' ' + doc : ''}${ccusto ? ' [' + ccusto + ']' : ''}`;
-      } else {
-        const blocoDoc = `[${prefixoDoc}${doc ? ' nº ' + doc : ''}]`;
-        const blocoForn = fornecedor ? `[${fornecedor.toUpperCase()}]` : '';
-        const blocoUnid = unidade ? `[Unid: ${unidade}]` : '';
-        const metaItens = [];
-        if (ccusto) metaItens.push(`Cat: ${ccusto}`);
-        if (solicitante) metaItens.push(`Aut: ${solicitante}`);
-        if (contrato && contrato.toUpperCase() !== 'S/N') metaItens.push(`O.S./Contr: ${contrato}`);
-        if (compMesAno) metaItens.push(`Comp: ${compMesAno}`);
-        const blocoMeta = metaItens.length > 0 ? `[${metaItens.join(' | ')}]` : '';
-
-        texto = [blocoDoc, blocoForn, `- Ref. ${objetoBase}`, blocoUnid, blocoMeta].filter(Boolean).join(' ');
+      if (contrato && contrato.toUpperCase() !== 'S/N') {
+        texto += ` (Ref: ${contrato})`;
       }
 
       const elHist = document.getElementById('historico_contabil_completo');
       if (elHist) elHist.value = texto;
-
-      const badgeModo = document.getElementById('badge-modo-historico');
-      if (badgeModo) {
-        badgeModo.innerText = window._modoHistoricoContabil === 'ENXUTO' ? 'Automático • Enxuto' : 'Automático • Contábil';
-        badgeModo.style.background = '#dcfce7';
-        badgeModo.style.color = '#047857';
-      }
     }
 
     const rotuloOrigem = `${doc ? prefixoDoc + ' nº ' + doc : 'doc'} de ${fornecedor || 'prestador'}${cnpjFmt && cnpjFmt !== '-' ? ' (CNPJ: ' + cnpjFmt + ')' : ''}`;
