@@ -78,46 +78,68 @@
     .top-toolbar {
       background: linear-gradient(to bottom, #ffffff, #f1f5f9);
       border-bottom: 1px solid var(--alterdata-border);
-      padding: 4px 12px;
+      padding: 6px 14px;
+      min-height: 44px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
+      background: #ffffff;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .top-toolbar::-webkit-scrollbar {
+      display: none;
     }
 
     .system-badge {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      flex-shrink: 0;
     }
 
     .system-logo {
       background: var(--alterdata-blue);
       color: white;
       font-weight: 900;
-      padding: 3px 8px;
-      border-radius: 3px;
-      font-size: 12px;
-      letter-spacing: 0.5px;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 11.5px;
+      letter-spacing: 0.7px;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .system-title h1 {
-      font-size: 12.5px;
+      font-size: 13px;
       color: var(--alterdata-dark);
-      font-weight: 700;
-      line-height: 1.2;
+      font-weight: 800;
+      line-height: 1.15;
+      white-space: nowrap;
     }
 
     .system-title p {
-      font-size: 10.5px;
+      font-size: 10px;
       color: var(--text-muted);
-      line-height: 1.2;
+      line-height: 1.15;
+      white-space: nowrap;
     }
 
     .toolbar-actions {
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .top-toolbar .tool-btn {
+      white-space: nowrap;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 4px;
+      flex-shrink: 0;
     }
 
     .tool-btn {
@@ -841,36 +863,34 @@
   <!-- BARRA DE FERRAMENTAS SUPERIOR -->
   <div class="top-toolbar">
     <div class="system-badge">
-      <div class="system-logo" style="background: var(--brand-green-translucent); color: var(--brand-green-text); border: 1px solid var(--brand-green-border); backdrop-filter: blur(4px); font-weight: 900; letter-spacing: 0.8px; padding: 4px 10px; border-radius: 4px; box-shadow: 0 1px 3px rgba(16, 185, 129, 0.1);">JR FINCLOUD</div>
+      <div class="system-logo" style="background: linear-gradient(135deg, #065f46, #047857); color: #ffffff; border: 1px solid #064e3b; box-shadow: 0 1px 3px rgba(4, 120, 87, 0.25);">JR FINCLOUD</div>
       <div class="system-title">
-        <h1>JR FinCloud — Gestão Financeira</h1>
-        <p>Central de Contas a Pagar, Rateios, Retenções Tributárias & Conciliação</p>
+        <h1>JR FinCloud</h1>
+        <p>Gestão Financeira &amp; Compliance</p>
       </div>
-      <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-        <span id="status-conexao-db" ondblclick="configurarServidorNuvem()" title="Servidor Cloud Conectado (duplo clique para gerenciar URL)" style="display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: #15803d; background: #dcfce7; padding: 2px 7px; border-radius: 3px; border: 1px solid #86efac; cursor: default;">
-          <span class="bimer-status-dot"></span> Conectado ao Servidor (JR FinCloud)
-        </span>
-        <div id="saas-workspace-wrap" style="display: none; align-items: center; gap: 4px; background: #eff6ff; border: 1px solid #bfdbfe; padding: 1px 6px; border-radius: 3px;">
-          <span style="font-size: 9.5px; font-weight: 700; color: #1e40af;">WORKSPACE:</span>
-          <select id="saas-workspace-select" onchange="trocarWorkspaceSaaS(this.value)" style="border: none; background: transparent; font-size: 10px; font-weight: 700; color: #0f172a; outline: none; cursor: pointer; max-width: 170px;"></select>
-          <button type="button" class="tool-btn" onclick="abrirModalNovoClienteBPO()" style="padding: 1px 5px; font-size: 9.5px; background: #ffffff;" title="Cadastrar novo cliente na carteira BPO">+ BPO</button>
+      <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+        <div id="saas-workspace-wrap" style="display: none; align-items: center; gap: 5px; height: 28px; background: #eff6ff; border: 1px solid #bfdbfe; padding: 0 8px; border-radius: 4px; white-space: nowrap;">
+          <span style="font-size: 9.5px; font-weight: 800; color: #1e40af;">WORKSPACE:</span>
+          <select id="saas-workspace-select" onchange="trocarWorkspaceSaaS(this.value)" style="border: none; background: transparent; font-size: 10.5px; font-weight: 700; color: #0f172a; outline: none; cursor: pointer; max-width: 175px;"></select>
+          <button type="button" class="tool-btn" onclick="abrirModalNovoClienteBPO()" style="height: 20px; padding: 0 6px; font-size: 9.5px; background: #ffffff; border-color: #93c5fd; color: #1e40af;" title="Cadastrar novo cliente na carteira BPO">+ BPO</button>
         </div>
+        <span id="status-conexao-db" ondblclick="configurarServidorNuvem()" title="Servidor Cloud Conectado (duplo clique para gerenciar URL)" style="display: inline-flex; align-items: center; gap: 5px; height: 28px; font-size: 10px; font-weight: 700; color: #15803d; background: #dcfce7; padding: 0 9px; border-radius: 4px; border: 1px solid #86efac; white-space: nowrap; cursor: default;">
+          <span class="bimer-status-dot"></span> Cloud Online
+        </span>
       </div>
     </div>
 
-    <div class="toolbar-actions" style="display: flex; align-items: center; gap: 6px;">
-      <!-- Ações Principais de Lançamento -->
+    <div class="toolbar-actions">
       <button class="tool-btn primary" onclick="gravarDocumento()" title="Gravar lançamento atual (F10)"><svg class="bimer-svg" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Gravar (F10)</button>
-      <button class="tool-btn" onclick="novoDocumento()" title="Iniciar novo lançamento em branco"><svg class="bimer-svg" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Novo Lançamento</button>
-      <button class="tool-btn" onclick="limparCamposFormulario()" title="Limpar campos do formulário atual sem apagar dados gravados"><svg class="bimer-svg" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg> Limpar Campos</button>
+      <button class="tool-btn" onclick="novoDocumento()" title="Iniciar novo lançamento em branco"><svg class="bimer-svg" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Novo</button>
+      <button class="tool-btn" onclick="limparCamposFormulario()" title="Limpar campos do formulário atual sem apagar dados gravados"><svg class="bimer-svg" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg> Limpar</button>
       <button class="tool-btn" onclick="abrirModalFolhaRostoDiaria()" title="Visualizar / Imprimir Folha de Rosto Resumida do Movimento do Dia (Borderô)"><svg class="bimer-svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg> Folha do Dia</button>
-      <button class="tool-btn" onclick="trocarAba('aba-relatorios')" title="Central de Relatórios Gerenciais & BI"><svg class="bimer-svg" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Relatórios & BI</button>
-      <button type="button" class="tool-btn" style="background: #ecfdf5; border-color: #10b981; color: #065f46; font-weight: 700;" onclick="abrirCentralSaasV2()" title="Rateio Shopping 100%, Alçadas RBAC, Motor Fiscal 2026, DRE & Auditoria LGPD">SaaS v2 (Shopping • Fiscal 2026 • DRE)</button>
+      <button type="button" class="tool-btn" style="background: #ecfdf5; border-color: #10b981; color: #065f46; font-weight: 700;" onclick="abrirCentralSaasV2()" title="Rateio Shopping 100%, Alçadas RBAC, Motor Fiscal 2026, DRE &amp; Auditoria LGPD">Central SaaS v2</button>
 
       <!-- Seletor Compacto de Escala (Zoom) -->
-      <div style="display: inline-flex; align-items: center; gap: 3px; background: #e2e8f0; padding: 1px 6px; border-radius: 3px; border: 1px solid #cbd5e1; margin-left: 4px;">
+      <div style="display: inline-flex; align-items: center; gap: 3px; height: 28px; background: #f1f5f9; padding: 0 7px; border-radius: 4px; border: 1px solid #cbd5e1; flex-shrink: 0;">
         <svg class="bimer-svg bimer-svg-sm" style="color: #475569;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <select id="seletor-escala-zoom" onchange="alterarZoom(this.value)" style="border: none; background: transparent; font-size: 10.5px; font-weight: 700; color: #334155; outline: none; cursor: pointer; padding: 1px 2px;">
+        <select id="seletor-escala-zoom" onchange="alterarZoom(this.value)" style="border: none; background: transparent; font-size: 10.5px; font-weight: 700; color: #334155; outline: none; cursor: pointer;">
           <option value="80%">80%</option>
           <option value="85%">85%</option>
           <option value="90%">90%</option>
@@ -880,11 +900,11 @@
         </select>
       </div>
 
-      <!-- Perfil do Gestor & Logout no Extremo Canto Direito -->
-      <div id="user-session-bar" style="display: inline-flex; align-items: center; gap: 6px; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 2px 8px; border-radius: 3px; font-size: 10.5px; margin-left: 6px;">
-        <span style="color: #166534; font-weight: 700;"><svg class="bimer-svg bimer-svg-sm" style="color: #166534;" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> <span id="user-name-display">Usuário</span></span>
-        <button type="button" class="tool-btn" style="padding: 1px 5px; font-size: 9.5px;" onclick="abrirModalSenha()" title="Alterar Senha de Acesso"><svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><path d="M21 2l-2 2m-1.5 1.5L14 9l-1.5-1.5-3 3L8 9 5 12l2 2-3 3 1.5 1.5 2.5-2.5 1.5 1.5 3-3-1.5-1.5L15 8.5l1.5-1.5L22 3z"></path></svg></button>
-        <button type="button" class="tool-btn" style="padding: 1px 5px; font-size: 9.5px; color: var(--danger);" onclick="fazerLogout()" title="Sair da Sessão"><svg class="bimer-svg bimer-svg-xs" style="color: var(--danger);" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></button>
+      <!-- Perfil do Gestor & Logout -->
+      <div id="user-session-bar" style="display: inline-flex; align-items: center; gap: 6px; height: 28px; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 0 8px; border-radius: 4px; font-size: 10.5px; white-space: nowrap; flex-shrink: 0;">
+        <span style="color: #166534; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;"><svg class="bimer-svg bimer-svg-sm" style="color: #166534;" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> <span id="user-name-display">Usuário</span></span>
+        <button type="button" class="tool-btn" style="height: 20px; padding: 0 5px; font-size: 9.5px;" onclick="abrirModalSenha()" title="Alterar Senha de Acesso"><svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><path d="M21 2l-2 2m-1.5 1.5L14 9l-1.5-1.5-3 3L8 9 5 12l2 2-3 3 1.5 1.5 2.5-2.5 1.5 1.5 3-3-1.5-1.5L15 8.5l1.5-1.5L22 3z"></path></svg></button>
+        <button type="button" class="tool-btn" style="height: 20px; padding: 0 5px; font-size: 9.5px; color: var(--danger);" onclick="fazerLogout()" title="Sair da Sessão"><svg class="bimer-svg bimer-svg-xs" style="color: var(--danger);" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></button>
       </div>
     </div>
   </div>
@@ -7313,7 +7333,7 @@
             badgeStatus.style.background = '#dcfce7';
             badgeStatus.style.color = '#15803d';
             badgeStatus.style.border = '1px solid #86efac';
-            badgeStatus.innerHTML = `<span class="bimer-status-dot"></span> Conectado ao JR FinCloud (${API_BASE.includes('localhost') ? 'Local' : 'Cloud'}) • ${titulos.length} títulos`;
+            badgeStatus.innerHTML = `<span class="bimer-status-dot"></span> ${API_BASE.includes('localhost') ? 'Local' : 'Cloud'} • ${titulos.length} ${titulos.length === 1 ? 'título' : 'títulos'}`;
           }
         }
       }
