@@ -891,13 +891,12 @@
 
   <!-- NAVEGAÇÃO POR ABAS -->
   <div class="tabs-bar">
-    <button class="tab-btn active" onclick="trocarAba('aba-geral', this)"><svg class="bimer-svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg> 1. Documento & Retenções</button>
-    <button class="tab-btn" onclick="trocarAba('aba-detalhes', this)"><svg class="bimer-svg" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> 2. Detalhes & Origem</button>
-    <button class="tab-btn" onclick="trocarAba('aba-financeiro', this)"><svg class="bimer-svg" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg> 3. Títulos a Pagar</button>
-    <button class="tab-btn tab-fixas" onclick="trocarAba('aba-previsoes', this)"><svg class="bimer-svg" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> 4. Despesas Fixas</button>
-    <button class="tab-btn tab-adiantamentos" onclick="trocarAba('aba-adiantamentos', this)"><svg class="bimer-svg" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> 5. Adiantamentos</button>
-    <button class="tab-btn tab-conciliacao" onclick="trocarAba('aba-conciliacao', this)"><svg class="bimer-svg" viewBox="0 0 24 24"><line x1="3" y1="21" x2="21" y2="21"></line><line x1="3" y1="10" x2="21" y2="10"></line><polyline points="5 10 5 21"></polyline><polyline points="19 10 19 21"></polyline><polygon points="12 2 2 7 22 7 12 2"></polygon></svg> 6. Conciliação Bancária</button>
-    <button class="tab-btn tab-relatorios" onclick="trocarAba('aba-relatorios', this)"><svg class="bimer-svg" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> 7. Relatórios & BI</button>
+    <button class="tab-btn active" onclick="trocarAba('aba-geral', this)"><svg class="bimer-svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg> 1. Lançar Despesa / NF</button>
+    <button class="tab-btn" onclick="trocarAba('aba-financeiro', this)"><svg class="bimer-svg" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg> 2. Títulos a Pagar</button>
+    <button class="tab-btn tab-fixas" onclick="trocarAba('aba-previsoes', this)"><svg class="bimer-svg" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> 3. Despesas Fixas</button>
+    <button class="tab-btn tab-adiantamentos" onclick="trocarAba('aba-adiantamentos', this)"><svg class="bimer-svg" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> 4. Adiantamentos</button>
+    <button class="tab-btn tab-conciliacao" onclick="trocarAba('aba-conciliacao', this)"><svg class="bimer-svg" viewBox="0 0 24 24"><line x1="3" y1="21" x2="21" y2="21"></line><line x1="3" y1="10" x2="21" y2="10"></line><polyline points="5 10 5 21"></polyline><polyline points="19 10 19 21"></polyline><polygon points="12 2 2 7 22 7 12 2"></polygon></svg> 5. Conciliação Bancária</button>
+    <button class="tab-btn tab-relatorios" onclick="trocarAba('aba-relatorios', this)"><svg class="bimer-svg" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> 6. Relatórios & BI</button>
   </div>
 
   <!-- CONTEÚDO PRINCIPAL -->
@@ -1032,11 +1031,11 @@
         <div class="form-grid-4">
           <div class="form-field">
             <label>Data de Emissão *</label>
-            <input type="date" id="data_emissao" onchange="sugerirVencimentosFiscais()">
+            <input type="date" id="data_emissao" onchange="sugerirVencimentosFiscais(); atualizarHistoricoDinamico();">
           </div>
           <div class="form-field">
             <label>Data de Entrada / Competência *</label>
-            <input type="date" id="data_entrada">
+            <input type="date" id="data_entrada" onchange="atualizarHistoricoDinamico()">
           </div>
           <div class="form-field">
             <label>Vencimento do Boleto / Prestador *</label>
@@ -1045,6 +1044,87 @@
           <div class="form-field">
             <label>Valor Bruto do Documento (R$) *</label>
             <input type="number" step="0.01" id="valor_bruto" placeholder="0.00" oninput="recalcularValores()" style="font-size: 13px; font-weight: 700; color: var(--alterdata-blue);">
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- SEÇÃO UNIFICADA: PAGAMENTO, LOJA/DESTINO & HISTÓRICO CONTÁBIL INTELIGENTE -->
+      <fieldset id="secao-pagamento-origem-historico" style="border: 1px solid #bfdbfe; background: #f8fafc;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 5px;">
+          <legend style="margin-bottom: 0; color: #1e3a8a;">Pagamento, Loja/Destino &amp; Histórico Contábil</legend>
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <span id="badge-id-lancamento-previsto" style="font-family: monospace; font-size: 10.5px; font-weight: 700; background: #e0e7ff; color: #3730a3; padding: 1px 7px; border-radius: 4px; border: 1px solid #c7d2fe;">
+              ID Oficial: LCT-2026-0001
+            </span>
+            <button type="button" class="tool-btn" id="btn-toggle-extras-historico" onclick="alternarDetalhesExtrasLancamento()" style="padding: 2px 8px; font-size: 10.5px;">
+              Recolher Histórico / O.S.
+            </button>
+          </div>
+        </div>
+
+        <!-- Campos ocultos para manter 100% de compatibilidade com scripts legados -->
+        <select id="centro_custo" onchange="aoMudarSelectCategoriaOficial(this)" style="display: none;"></select>
+        <input type="hidden" id="solicitante_despesa" value="Compras">
+
+        <!-- Linha principal (4 colunas sempre visíveis) -->
+        <div class="form-grid-4">
+          <div class="form-field">
+            <label>Forma de Pagamento</label>
+            <select id="forma_pagamento" onchange="atualizarHistoricoDinamico()">
+              <option value="BOLETO">Boleto Bancário (Cód. Barras)</option>
+              <option value="PIX">Transferência Instantânea - PIX</option>
+              <option value="TED_DOC">Transferência Bancária - TED / DOC</option>
+              <option value="DEBITO">Débito Automático em Conta</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Chave PIX ou Dados Bancários (Favorecido)</label>
+            <input type="text" id="dados_bancarios" placeholder="Ex: Chave PIX, CNPJ ou Banco 341 Ag/Cc" oninput="atualizarHistoricoDinamico()">
+          </div>
+          <div class="form-field">
+            <label>Loja / Unidade de Destino</label>
+            <select id="unidade_loja_lancamento" onchange="atualizarHistoricoDinamico()">
+              <option value="">Matriz / Geral</option>
+              <option value="Loja Barra">Loja Barra</option>
+              <option value="Loja SDB">Loja SDB</option>
+              <option value="Loja Paseo">Loja Paseo</option>
+              <option value="Loja Vilas">Loja Vilas</option>
+              <option value="Loja Horto">Loja Horto</option>
+              <option value="Atelier / Produção">Atelier / Produção</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label style="margin-bottom: 0;">Objeto / Serviço Realizado *</label>
+              <span style="display: inline-flex; gap: 4px; font-size: 9.5px;">
+                <a href="javascript:void(0)" onclick="preencherObjetoRapido('categoria')" style="color: #0369a1; font-weight: 700; text-decoration: none;" title="Preencher com o nome da Categoria selecionada">+ Categoria</a>
+                <span style="color: #cbd5e1;">|</span>
+                <a href="javascript:void(0)" onclick="preencherObjetoRapido('cnae')" style="color: #047857; font-weight: 700; text-decoration: none;" title="Preencher com a descrição do CNAE selecionado">+ CNAE</a>
+              </span>
+            </div>
+            <input type="text" id="descricao_detalhada" placeholder="Ex: Manutenção Jardim (se vazio, usa Categoria/CNAE)" oninput="atualizarHistoricoDinamico()">
+          </div>
+        </div>
+
+        <!-- Linha compacta de Contrato/O.S. e Histórico Contábil Automático -->
+        <div id="painel-extras-historico" class="form-grid-4" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed #cbd5e1; margin-bottom: 0;">
+          <div class="form-field">
+            <label>Nº Contrato / Pedido / O.S. (Opcional)</label>
+            <input type="text" id="num_contrato_pedido" placeholder="Ex: OS-8841 ou CT-2026" oninput="atualizarHistoricoDinamico()">
+          </div>
+          <div class="form-field" style="grid-column: span 3;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+              <label style="margin-bottom: 0; color: #1e293b;">
+                Histórico Contábil Oficial (Diário / Razão / Grade)
+                <span id="badge-modo-historico" style="font-size: 9px; font-weight: 700; color: #047857; background: #dcfce7; padding: 1px 5px; border-radius: 3px; margin-left: 4px;">Automático • Contábil</span>
+              </label>
+              <div style="display: inline-flex; align-items: center; gap: 4px;">
+                <button type="button" id="btn-hist-completo" class="tool-btn primary" onclick="setModoHistorico('COMPLETO')" style="padding: 1px 6px; font-size: 9.5px;">Modo Contábil</button>
+                <button type="button" id="btn-hist-enxuto" class="tool-btn" onclick="setModoHistorico('ENXUTO')" style="padding: 1px 6px; font-size: 9.5px;">Modo Enxuto</button>
+                <button type="button" class="tool-btn" onclick="regerarHistoricoAutomatico()" style="padding: 1px 6px; font-size: 9.5px; color: var(--alterdata-blue); font-weight: 700;" title="Desbloqueia edição manual e regera o histórico automático">↻ Regerar Auto</button>
+              </div>
+            </div>
+            <input type="text" id="historico_contabil_completo" oninput="marcarHistoricoManual()" style="font-size: 11.5px; font-weight: 500; color: #0f172a; background: #ffffff;" placeholder="Histórico contábil gerado automaticamente (Doc, Favorecido, Loja, Categoria e Competência)...">
           </div>
         </div>
       </fieldset>
@@ -1138,29 +1218,37 @@
           </div>
 
           <!-- PAINEL DO NOVO PADRÃO TRIBUTÁRIO (REFORMA TRIBUTÁRIA • EC 132/2023 - IVA DUAL: IBS & CBS) -->
-          <div style="margin-top: 12px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 10px 14px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
-              <span style="font-size: 11.5px; font-weight: 800; color: #166534; display: flex; align-items: center; gap: 6px;">
-                <svg class="bimer-svg" viewBox="0 0 24 24"><line x1="3" y1="21" x2="21" y2="21"></line><line x1="3" y1="10" x2="21" y2="10"></line><polyline points="5 10 5 21"></polyline><polyline points="19 10 19 21"></polyline><polygon points="12 2 2 7 22 7 12 2"></polygon></svg> NOVO PADRÃO TRIBUTÁRIO NACIONAL (REFORMA TRIBUTÁRIA • EC 132/2023)
-                <span style="background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; font-size: 9.5px; padding: 2px 6px; border-radius: 4px; font-weight: 700;">Transição 2026/2027 • IVA Dual</span>
+          <div style="margin-top: 12px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 6px; padding: 8px 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+              <span style="font-size: 11px; font-weight: 800; color: #166534; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <svg class="bimer-svg" viewBox="0 0 24 24"><line x1="3" y1="21" x2="21" y2="21"></line><line x1="3" y1="10" x2="21" y2="10"></line><polyline points="5 10 5 21"></polyline><polyline points="19 10 19 21"></polyline><polygon points="12 2 2 7 22 7 12 2"></polygon></svg> NOVO PADRÃO TRIBUTÁRIO NACIONAL (REFORMA TRIBUTÁRIA • LC 214/2025)
+                <span style="background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; font-size: 9.5px; padding: 1px 6px; border-radius: 4px; font-weight: 700;">Transição 2026 • IVA Dual</span>
               </span>
-              <span style="font-size: 10.5px; color: #15803d; font-weight: 600;">Layout Nacional NFS-e & NF-e</span>
+              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <select id="regime_prestador_iva" onchange="recalcularValores()" style="font-size: 10.5px; padding: 2px 6px; border: 1px solid #86efac; border-radius: 3px; background: #ffffff; color: #065f46; font-weight: 700;">
+                  <option value="NORMAL">Prestador Regime Normal (0,90% CBS + 0,10% IBS)</option>
+                  <option value="SIMPLES_MEI">Simples Nacional / MEI (0,00% - Dispensado em 2026)</option>
+                </select>
+                <button type="button" id="btn-toggle-iva-2026" class="tool-btn" onclick="alternarPainelIva2026()" style="padding: 2px 8px; font-size: 10px; border-color: #86efac; color: #065f46;">
+                  Recolher IVA 2026
+                </button>
+              </div>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; font-size: 11px;">
+            <div id="corpo-painel-iva-2026" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; font-size: 11px; margin-top: 6px;">
               <div style="background: #ffffff; padding: 6px 10px; border-radius: 4px; border: 1px solid #bbf7d0;">
                 <div style="color: #475569; font-size: 10px; font-weight: 600;">CBS (Federal • Alíquota Teste 0,90%):</div>
                 <strong id="nt-valor-cbs" style="font-size: 12.5px; color: #047857;">R$ 0,00</strong>
-                <span style="font-size: 9.5px; color: #64748b; display: block;">Compensável com PIS/COFINS</span>
+                <span style="font-size: 9.5px; color: #64748b; display: block;">Compensável c/ PIS/COFINS ou dispensada em 2026</span>
               </div>
               <div style="background: #ffffff; padding: 6px 10px; border-radius: 4px; border: 1px solid #bbf7d0;">
                 <div style="color: #475569; font-size: 10px; font-weight: 600;">IBS (Estados/Municípios • 0,10%):</div>
                 <strong id="nt-valor-ibs" style="font-size: 12.5px; color: #047857;">R$ 0,00</strong>
-                <span style="font-size: 9.5px; color: #64748b; display: block;">Compensável com ISS/ICMS</span>
+                <span style="font-size: 9.5px; color: #64748b; display: block;">Compensável c/ ISS/ICMS • Destaque informativo</span>
               </div>
               <div style="background: #ffffff; padding: 6px 10px; border-radius: 4px; border: 1px solid #bbf7d0;">
                 <div style="color: #475569; font-size: 10px; font-weight: 600;">Total IVA Dual Estimado (1,00%):</div>
                 <strong id="nt-valor-iva-dual" style="font-size: 12.5px; color: #166534;">R$ 0,00</strong>
-                <span style="font-size: 9.5px; color: #64748b; display: block;">Impacto Neutro na Transição</span>
+                <span style="font-size: 9.5px; color: #64748b; display: block;">Sem aumento no valor líquido a pagar</span>
               </div>
               <div style="background: #ffffff; padding: 6px 10px; border-radius: 4px; border: 1px solid #bbf7d0;">
                 <div style="color: #475569; font-size: 10px; font-weight: 600;">Cód. Tributação Nacional (CTN):</div>
@@ -1172,69 +1260,7 @@
       </fieldset>
     </div>
 
-    <!-- ==================== ABA 2: RIQUEZA DE DETALHES ==================== -->
-    <div id="aba-detalhes" class="tab-content">
-      <fieldset>
-        <legend>Origem, Motivo & Rastreabilidade da Despesa (Mesmo sem Documento Fiscal)</legend>
-        <div class="form-grid-3">
-          <div class="form-field">
-            <label>Categoria / Plano de Contas Oficial *</label>
-            <select id="centro_custo" onchange="aoMudarSelectCategoriaOficial(this)">
-              <!-- Populado dinamicamente via JS a partir do arquivo Grupos e Categorias -->
-            </select>
-          </div>
-          <div class="form-field">
-            <label>Solicitante / Quem Autorizou *</label>
-            <input type="text" id="solicitante_despesa" placeholder="Ex: Roberto (Gerência de TI)" oninput="atualizarHistoricoDinamico()">
-          </div>
-          <div class="form-field">
-            <label>Nº Contrato / Pedido de Compra / O.S.</label>
-            <input type="text" id="num_contrato_pedido" placeholder="Ex: CT-2026/04 ou OS-8841" oninput="atualizarHistoricoDinamico()">
-          </div>
-        </div>
-
-        <div class="form-field" style="margin-top: 6px;">
-          <label>Descrição Completa / Objeto Detalhado do Serviço ou Despesa *</label>
-          <textarea id="descricao_detalhada" rows="3" placeholder="Detalhe com riqueza de informações: qual o serviço, finalidade, período de atendimento, equipamentos atendidos ou justificativa do pagamento..." oninput="atualizarHistoricoDinamico()"></textarea>
-        </div>
-
-        <div class="form-field" style="margin-top: 8px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; flex-wrap: wrap; gap: 4px;">
-            <label style="margin-bottom: 0; font-weight: 700; color: #1e293b;">Histórico Contábil Oficial / Observações da Nota</label>
-            <span id="badge-id-lancamento-previsto" style="font-family: monospace; font-size: 11px; font-weight: 700; background: #e0e7ff; color: #3730a3; padding: 2px 8px; border-radius: 4px; border: 1px solid #c7d2fe;">
-              ID Oficial: LCT-2026-0001
-            </span>
-          </div>
-          <textarea id="historico_contabil_completo" rows="2" style="font-size: 12px; line-height: 1.45; font-family: inherit;" placeholder="Histórico formal para escrituração e conciliação contábil/bancária (gerado automaticamente com ID e CNPJ)..."></textarea>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 3px; font-size: 10px; color: var(--text-muted);">
-            <span><svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> Padrão Diário/Razão: ID do lançamento, CNPJ em destaque, fornecedor, documento e centro de custo integrados.</span>
-            <a href="javascript:void(0)" onclick="atualizarHistoricoDinamico()" style="color: var(--alterdata-blue); font-weight: 600; text-decoration: underline;"><svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg> Regerar Texto</a>
-          </div>
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Dados para Pagamento Bancário / Conciliação</legend>
-        <div class="form-grid-2">
-          <div class="form-field">
-            <label>Forma de Pagamento Pretendida</label>
-            <select id="forma_pagamento">
-              <option value="BOLETO">Boleto Bancário (Com Código de Barras)</option>
-              <option value="PIX">Transferência Instantânea - PIX</option>
-              <option value="TED_DOC">Transferência Bancária - TED / DOC</option>
-              <option value="DEBITO">Débito Automático em Conta</option>
-            </select>
-          </div>
-          <div class="form-field">
-            <label>Chave PIX ou Dados Bancários (Favorecido)</label>
-            <input type="text" id="dados_bancarios" placeholder="Ex: Chave CNPJ ou Banco 341 Ag 1234 Cc 5678-9">
-          </div>
-        </div>
-      </fieldset>
-    </div>
-
-
-    <!-- ==================== ABA 4: CONTAS A PAGAR ==================== -->
+    <!-- ==================== ABA 2 (EX-ABA 3): CONTAS A PAGAR ==================== -->
     <div id="aba-financeiro" class="tab-content">
       <fieldset>
         <legend>Grade de Títulos no Contas a Pagar (Desmembramento Automático)</legend>
@@ -3642,6 +3668,14 @@
     "3313_9": { cnae: "3313-9/99", desc: "Manutenção e reparação de máquinas, aparelhos e materiais elétricos e eletrotécnicos", lc116: "14.01", ctn: "14.01.01", retFederal: true, issRetido: true, obs: "Manutenção Eletrotécnica e Motores (ISS Retido Tomador + Retenção Federal)" },
     "3312_1": { cnae: "3312-1/02", desc: "Manutenção e reparação de aparelhos e instrumentos de medida, teste e controle eletrônico", lc116: "14.01", ctn: "14.01.01", retFederal: true, issRetido: true, obs: "Assistência Técnica em Equipamentos e Placas Eletrônicas" },
     "9521_5": { cnae: "9521-5/00", desc: "Reparação e manutenção de equipamentos eletroeletrônicos", lc116: "14.01", ctn: "14.01.01", retFederal: false, issRetido: false, obs: "Conserto de Eletroeletrônicos e Áudio/Vídeo" },
+    "8130_3": { cnae: "8130-3/00", desc: "Atividades paisagísticas (Jardinagem, poda e manutenção de áreas verdes)", lc116: "07.11", ctn: "07.11.01", retFederal: false, issRetido: false, obs: "Jardinagem, Paisagismo e Manutenção de Jardins (Item 07.11 / 07.10)" },
+    "8122_2": { cnae: "8122-2/00", desc: "Imunização e controle de pragas urbanas (Dedetização e sanitização)", lc116: "07.13", ctn: "07.13.01", retFederal: true, issRetido: true, obs: "Dedetização, Desratização e Controle de Pragas em Lojas (ISS Retido + Federal)" },
+    "4322_2": { cnae: "4322-3/02", desc: "Instalação e manutenção de sistemas centrais de ar condicionado e refrigeração", lc116: "14.01", ctn: "14.01.01", retFederal: true, issRetido: true, obs: "Manutenção de Ar Condicionado e Climatização de Lojas (ISS Retido)" },
+    "4329_1": { cnae: "4329-1/01", desc: "Instalação de painéis publicitários, fachadas, letreiros e luminosos", lc116: "14.06", ctn: "14.06.01", retFederal: false, issRetido: false, obs: "Letreiros, Fachadas e Comunicação Visual de Lojas" },
+    "9511_8": { cnae: "9511-8/00", desc: "Reparação e manutenção de computadores e equipamentos periféricos (PDV)", lc116: "14.01", ctn: "14.01.01", retFederal: false, issRetido: false, obs: "Manutenção de Computadores, Impressoras e Equipamentos de PDV" },
+    "7111_1": { cnae: "7111-1/00", desc: "Serviços de arquitetura e projetos comerciais para lojas", lc116: "07.03", ctn: "07.03.01", retFederal: true, issRetido: false, obs: "Projetos de Arquitetura e Reforma de Lojas (IRRF 1,5% + PCC)" },
+    "8299_7": { cnae: "8299-7/99", desc: "Outras atividades de serviços prestados às empresas (Extintores, chaveiro, apoio)", lc116: "14.01", ctn: "14.01.01", retFederal: false, issRetido: false, obs: "Serviços Operacionais Gerais, Recarga de Extintores e Chaveiro" },
+    "9601_7": { cnae: "9601-7/01", desc: "Lavanderias, tinturarias e higienização têxtil", lc116: "14.10", ctn: "14.10.01", retFederal: false, issRetido: false, obs: "Lavanderia e Higienização de Peças e Cortinas de Provador" },
 
     // ── 6. CONSULTORIAS, CONTABILIDADE, JURÍDICO & APOIO ADMINISTRATIVO ──
     "6920_6": { cnae: "6920-6/01", desc: "Atividades de contabilidade, auditoria e assessoria contábil", lc116: "17.19", ctn: "17.19.01", retFederal: true, issRetido: false, obs: "Serviços Contábeis e Auditoria (IRRF 1,5% + PCC 4,65%)" },
@@ -3673,6 +3707,17 @@
   }
   popularDatalistCNAEs();
 
+  function selecionarCNAEPorCodigo(cnaeStr) {
+    const digAlvo = String(cnaeStr || '').replace(/\D/g, '');
+    const match = Object.values(TABELA_CNAES).find(c => c.cnae === cnaeStr || c.cnae.replace(/\D/g, '') === digAlvo);
+    const input = document.getElementById('cnae_servico');
+    if (match && input) {
+      input.value = `${match.cnae} - ${match.desc}`;
+      autocompletarCNAELive(input);
+      atualizarHistoricoDinamico();
+    }
+  }
+
   function autocompletarCNAELive(input) {
     if (!input) return;
     const raw = input.value.trim();
@@ -3682,13 +3727,12 @@
 
     const digitos = raw.replace(/\D/g, '');
     const prefixo4 = digitos.substring(0, 4);
+    const listaCnaes = Object.values(TABELA_CNAES);
 
-    // 1. Busca por código (4 ou mais dígitos)
+    // 1. Busca por código (prioriza correspondência mais específica antes dos 4 primeiros dígitos)
     if (digitos.length >= 4) {
-      const match = Object.values(TABELA_CNAES).find(c => {
-        const cDigits = c.cnae.replace(/\D/g, '');
-        return cDigits.startsWith(digitos) || cDigits.startsWith(prefixo4);
-      });
+      const match = listaCnaes.find(c => c.cnae.replace(/\D/g, '').startsWith(digitos)) ||
+                    listaCnaes.find(c => c.cnae.replace(/\D/g, '').startsWith(prefixo4));
       if (match) {
         input.value = `${match.cnae} - ${match.desc}`;
         if (inputLc116) inputLc116.value = match.lc116;
@@ -3698,6 +3742,7 @@
           badge.innerHTML = `<svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><path d="M12 17v5M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A2 2 0 0 1 15 10.77V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.77a2 2 0 0 1-1.11 1.79l-1.78.89A2 2 0 0 0 5 15.24z"></path></svg> <strong>Item LC 116:</strong> ${match.lc116} • <strong>CTN:</strong> ${match.ctn || match.lc116} • <strong>Enquadramento:</strong> ${match.obs}`;
         }
         aplicarSugestaoRetencoesCNAE(match);
+        atualizarHistoricoDinamico();
         return;
       }
     }
@@ -3705,7 +3750,8 @@
     // 2. Se selecionado da lista com traço
     if (raw.includes('-')) {
       const codCnae = raw.split('-')[0].trim().replace(/\D/g, '');
-      const match = Object.values(TABELA_CNAES).find(c => c.cnae.replace(/\D/g, '').startsWith(codCnae.substring(0, 4)));
+      const match = listaCnaes.find(c => c.cnae.replace(/\D/g, '').startsWith(codCnae)) ||
+                    listaCnaes.find(c => c.cnae.replace(/\D/g, '').startsWith(codCnae.substring(0, 4)));
       if (match) {
         if (inputLc116 && !inputLc116.value) inputLc116.value = match.lc116;
         if (inputCtn && !inputCtn.value) inputCtn.value = match.ctn || match.lc116;
@@ -3714,21 +3760,22 @@
           badge.innerHTML = `<svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><path d="M12 17v5M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A2 2 0 0 1 15 10.77V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.77a2 2 0 0 1-1.11 1.79l-1.78.89A2 2 0 0 0 5 15.24z"></path></svg> <strong>Item LC 116:</strong> ${match.lc116} • <strong>CTN:</strong> ${match.ctn || match.lc116} • <strong>Enquadramento:</strong> ${match.obs}`;
         }
         aplicarSugestaoRetencoesCNAE(match);
+        atualizarHistoricoDinamico();
         return;
       }
     }
 
-    // 3. Busca por texto (ex: 'facção', 'costura', 'tecido', 'lookbook', 'marketing', 'elétrica')
+    // 3. Busca por texto normalizada (ex: 'jardinagem', 'paisagismo', 'dedetizacao', 'fachada')
     if (raw.length >= 3 && isNaN(raw)) {
-      const termo = raw.toLowerCase();
-      const match = Object.values(TABELA_CNAES).find(c => 
-        c.desc.toLowerCase().includes(termo) || 
-        c.obs.toLowerCase().includes(termo) ||
-        (c.cnae && c.cnae.includes(termo))
+      const termo = normalizarTextoBusca(raw);
+      const match = listaCnaes.find(c =>
+        normalizarTextoBusca(`${c.desc} ${c.obs} ${c.cnae}`).includes(termo)
       );
       if (match && badge) {
         badge.style.display = 'inline-block';
-        badge.innerHTML = `Sugestão CNAE: <strong>${match.cnae}</strong> (${match.desc}) • LC 116: <strong>${match.lc116}</strong>`;
+        badge.innerHTML = `Sugestão CNAE: <strong>${match.cnae}</strong> (${match.desc}) • LC 116: <strong>${match.lc116}</strong> <button type="button" class="tool-btn primary" style="padding:1px 6px; font-size:9.5px; margin-left:6px;" onclick="selecionarCNAEPorCodigo('${match.cnae}')">Aplicar CNAE</button>`;
+      } else if (badge) {
+        badge.style.display = 'none';
       }
     }
   }
@@ -5245,7 +5292,7 @@
       itens = listaCnaes.filter(c => {
         if (buscaRapidaFiltroChip === 'CONFECCAO' && !(c.cnae.startsWith('14') || c.cnae.startsWith('13') || c.cnae.startsWith('7410') || c.desc.toLowerCase().includes('vestuário') || c.desc.toLowerCase().includes('facção') || c.desc.toLowerCase().includes('tecido') || c.desc.toLowerCase().includes('costura'))) return false;
         if (buscaRapidaFiltroChip === 'MKT' && !(c.cnae.startsWith('73') || c.cnae.startsWith('7420') || c.cnae.startsWith('7490') || c.cnae.startsWith('5911') || c.desc.toLowerCase().includes('foto') || c.desc.toLowerCase().includes('publicidade') || c.desc.toLowerCase().includes('vídeo') || c.desc.toLowerCase().includes('marketing'))) return false;
-        if (buscaRapidaFiltroChip === 'OBRAS' && !(c.cnae.startsWith('43') || c.cnae.startsWith('33') || c.cnae.startsWith('71') || c.cnae.startsWith('81') || c.cnae.startsWith('95') || c.desc.toLowerCase().includes('elétrica') || c.desc.toLowerCase().includes('eletrônica') || c.desc.toLowerCase().includes('eletrotécnica') || c.desc.toLowerCase().includes('manutenção') || c.desc.toLowerCase().includes('limpeza') || c.desc.toLowerCase().includes('ar condicionado'))) return false;
+        if (buscaRapidaFiltroChip === 'OBRAS' && !(c.cnae.startsWith('43') || c.cnae.startsWith('33') || c.cnae.startsWith('71') || c.cnae.startsWith('81') || c.cnae.startsWith('95') || c.cnae.startsWith('8299') || c.cnae.startsWith('9601') || c.cnae.startsWith('8130') || c.cnae.startsWith('8122') || c.cnae.startsWith('4322') || c.cnae.startsWith('4329') || c.cnae.startsWith('7111') || ['elétrica', 'eletrônica', 'eletrotécnica', 'manutenção', 'limpeza', 'ar condicionado', 'jardin', 'paisag', 'dedetiz', 'extintor'].some(k => c.desc.toLowerCase().includes(k) || c.obs.toLowerCase().includes(k)))) return false;
         if (buscaRapidaFiltroChip === 'LOGISTICA' && !(c.cnae.startsWith('49') || c.cnae.startsWith('53') || c.cnae.startsWith('52') || c.desc.toLowerCase().includes('transporte') || c.desc.toLowerCase().includes('frete') || c.desc.toLowerCase().includes('motoboy'))) return false;
         if (buscaRapidaFiltroChip === 'TI' && !(c.cnae.startsWith('62') || c.cnae.startsWith('63') || c.desc.toLowerCase().includes('software') || c.desc.toLowerCase().includes('computador'))) return false;
         if (buscaRapidaFiltroChip === 'RETENCAO' && !c.retFederal && !c.issRetido) return false;
@@ -5468,6 +5515,8 @@
         }
       }
       if (item.responsavel) {
+        const inputResp1 = document.getElementById('solicitante_despesa_aba1');
+        if (inputResp1) inputResp1.value = item.responsavel;
         const inputResp = document.getElementById('solicitante_despesa');
         if (inputResp) inputResp.value = item.responsavel;
       }
@@ -5546,9 +5595,12 @@
           }
         }
         if (match.responsavel) {
+          const resp1 = document.getElementById('solicitante_despesa_aba1');
+          if (resp1 && (!resp1.value || resp1.value === 'Compras')) resp1.value = match.responsavel;
           const resp = document.getElementById('solicitante_despesa');
           if (resp && (!resp.value || resp.value === 'Compras')) resp.value = match.responsavel;
         }
+        atualizarHistoricoDinamico();
         if (match.forma_pgto) {
           const selForma = document.getElementById('forma_pagamento');
           if (selForma) {
@@ -6118,6 +6170,10 @@
   let abaAtivaAtual = 'aba-geral';
 
   function trocarAba(tabId, btn) {
+    if (tabId === 'aba-detalhes') {
+      tabId = 'aba-geral';
+      btn = null;
+    }
     abaAtivaAtual = tabId;
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -6522,6 +6578,95 @@
     }
   }
 
+  window._historicoEditadoManual = false;
+  window._modoHistoricoContabil = 'COMPLETO';
+
+  function alternarPainelIva2026(forcarAberto = null) {
+    const corpo = document.getElementById('corpo-painel-iva-2026');
+    const btn = document.getElementById('btn-toggle-iva-2026');
+    if (!corpo || !btn) return;
+    const estaAberto = corpo.style.display !== 'none';
+    const novoEstado = forcarAberto !== null ? forcarAberto : !estaAberto;
+    corpo.style.display = novoEstado ? 'grid' : 'none';
+    btn.innerText = novoEstado ? 'Recolher IVA 2026' : 'Expandir IVA 2026';
+  }
+
+  function alternarDetalhesExtrasLancamento(forcarAberto = null) {
+    const painel = document.getElementById('painel-extras-historico');
+    const btn = document.getElementById('btn-toggle-extras-historico');
+    if (!painel || !btn) return;
+    const estaAberto = painel.style.display !== 'none';
+    const novoEstado = forcarAberto !== null ? forcarAberto : !estaAberto;
+    painel.style.display = novoEstado ? 'grid' : 'none';
+    btn.innerText = novoEstado ? 'Recolher Histórico / O.S.' : '+ Contrato / O.S. & Histórico';
+  }
+
+  function obterObjetoDespesaAutomatico() {
+    const desc = document.getElementById('descricao_detalhada')?.value.trim() || '';
+    if (desc) return desc;
+
+    const catRaw = document.getElementById('categoria_rapida_aba1')?.value.trim() || document.getElementById('centro_custo')?.value.trim() || '';
+    if (catRaw) {
+      const idxHifen = catRaw.indexOf(' - ');
+      const catNome = idxHifen !== -1 ? catRaw.slice(idxHifen + 3).trim() : catRaw;
+      if (catNome) return catNome;
+    }
+
+    const cnaeRaw = document.getElementById('cnae_servico')?.value.trim() || '';
+    if (cnaeRaw) {
+      const idxHifen = cnaeRaw.indexOf(' - ');
+      const cnaeDesc = idxHifen !== -1 ? cnaeRaw.slice(idxHifen + 3).trim() : cnaeRaw;
+      if (cnaeDesc) return cnaeDesc;
+    }
+
+    return 'Despesa operacional';
+  }
+
+  function preencherObjetoRapido(origem) {
+    const inputDesc = document.getElementById('descricao_detalhada');
+    if (!inputDesc) return;
+    let texto = '';
+    if (origem === 'cnae') {
+      const raw = document.getElementById('cnae_servico')?.value.trim() || '';
+      const idx = raw.indexOf(' - ');
+      texto = idx !== -1 ? raw.slice(idx + 3).trim() : raw;
+    } else {
+      const raw = document.getElementById('categoria_rapida_aba1')?.value.trim() || document.getElementById('centro_custo')?.value.trim() || '';
+      const idx = raw.indexOf(' - ');
+      texto = idx !== -1 ? raw.slice(idx + 3).trim() : raw;
+    }
+    if (texto) {
+      inputDesc.value = texto;
+      window._historicoEditadoManual = false;
+      atualizarHistoricoDinamico(true);
+    }
+  }
+
+  function marcarHistoricoManual() {
+    window._historicoEditadoManual = true;
+    const badge = document.getElementById('badge-modo-historico');
+    if (badge) {
+      badge.innerText = 'Editado Manualmente';
+      badge.style.background = '#fef3c7';
+      badge.style.color = '#92400e';
+    }
+  }
+
+  function setModoHistorico(modo) {
+    window._modoHistoricoContabil = modo === 'ENXUTO' ? 'ENXUTO' : 'COMPLETO';
+    const btnComp = document.getElementById('btn-hist-completo');
+    const btnEnx = document.getElementById('btn-hist-enxuto');
+    if (btnComp) btnComp.className = window._modoHistoricoContabil === 'COMPLETO' ? 'tool-btn primary' : 'tool-btn';
+    if (btnEnx) btnEnx.className = window._modoHistoricoContabil === 'ENXUTO' ? 'tool-btn primary' : 'tool-btn';
+    window._historicoEditadoManual = false;
+    atualizarHistoricoDinamico(true);
+  }
+
+  function regerarHistoricoAutomatico() {
+    window._historicoEditadoManual = false;
+    atualizarHistoricoDinamico(true);
+  }
+
   function ajustarTipoDocumento() {
     const tipo = document.getElementById('tipo_documento').value;
     const lblNum = document.getElementById('lbl-numero-doc');
@@ -6650,16 +6795,18 @@
     const elMun = document.getElementById('tot-municipal');
     if (elMun) elMun.innerText = formatarMoeda(iss);
 
-    // Cálculos do Novo Padrão Tributário (Reforma Tributária - EC 132/2023: CBS 0,90% + IBS 0,10%)
-    const vlrCbs = bruto * 0.009;
-    const vlrIbs = bruto * 0.001;
+    // Cálculos do Novo Padrão Tributário (Reforma Tributária - LC 214/2025: CBS 0,90% + IBS 0,10% em 2026)
+    const regimeIva = document.getElementById('regime_prestador_iva')?.value || 'NORMAL';
+    const isSimplesMei = regimeIva === 'SIMPLES_MEI';
+    const vlrCbs = isSimplesMei ? 0 : bruto * 0.009;
+    const vlrIbs = isSimplesMei ? 0 : bruto * 0.001;
     const vlrIvaDual = vlrCbs + vlrIbs;
     const elCbs = document.getElementById('nt-valor-cbs');
     const elIbs = document.getElementById('nt-valor-ibs');
     const elIva = document.getElementById('nt-valor-iva-dual');
     if (elCbs) elCbs.innerText = formatarMoeda(vlrCbs);
     if (elIbs) elIbs.innerText = formatarMoeda(vlrIbs);
-    if (elIva) elIva.innerText = formatarMoeda(vlrIvaDual);
+    if (elIva) elIva.innerText = isSimplesMei ? 'R$ 0,00 (Dispensado)' : formatarMoeda(vlrIvaDual);
 
     const cardBruto = document.getElementById('card-espelho-bruto');
     if (cardBruto) cardBruto.innerText = formatarMoeda(bruto);
@@ -6687,15 +6834,17 @@
     atualizarBarraRodape();
   }
 
-  function atualizarHistoricoDinamico() {
+  function atualizarHistoricoDinamico(forcar = false) {
     const fornecedor = document.getElementById('razao_favorecido')?.value.trim() || '';
     const cnpj = document.getElementById('cnpj_favorecido')?.value.trim() || '';
     const doc = document.getElementById('numero_doc')?.value.trim() || '';
     const tipo = document.getElementById('tipo_documento')?.value || 'NFSE';
     const servico = document.getElementById('descricao_detalhada')?.value.trim() || '';
-    const ccusto = document.getElementById('centro_custo')?.value || '';
-    const solicitante = document.getElementById('solicitante_despesa')?.value.trim() || '';
+    const unidade = document.getElementById('unidade_loja_lancamento')?.value.trim() || '';
+    const ccusto = document.getElementById('categoria_rapida_aba1')?.value.trim() || document.getElementById('centro_custo')?.value || '';
+    const solicitante = document.getElementById('solicitante_despesa_aba1')?.value.trim() || document.getElementById('solicitante_despesa')?.value.trim() || '';
     const contrato = document.getElementById('num_contrato_pedido')?.value.trim() || '';
+    const dataEntrada = document.getElementById('data_entrada')?.value || document.getElementById('data_emissao')?.value || '';
 
     const idLanc = gerarProximoIdLancamento();
     const cnpjFmt = formatarCnpjCpf(cnpj);
@@ -6705,27 +6854,49 @@
 
     let prefixoDoc = 'Doc';
     if (tipo === 'NFSE') prefixoDoc = 'NFS-e';
+    else if (tipo === 'NFE') prefixoDoc = 'NF-e';
     else if (tipo === 'RECIBO') prefixoDoc = 'Recibo';
     else if (tipo === 'CONTRATO') prefixoDoc = 'Contrato';
     else if (tipo === 'FATURA') prefixoDoc = 'Fatura';
     else if (tipo === 'DESPESA_INTERNA') prefixoDoc = 'Despesa Interna';
+    else if (tipo === 'FOLHA') prefixoDoc = 'Folha';
+    else if (tipo === 'DOMINGO_FERIADO') prefixoDoc = 'Dom/Fer';
 
-    // Formato Enxuto e Objetivo solicitado pelo gestor Roberto:
-    // Exclui 'conf. doc ... de ... [Ref. S/N]' pois Documento, CNPJ e Favorecido já possuem colunas próprias na tabela.
-    let partes = [];
-    if (servico) {
-      partes.push(`Vlr. ref. ${servico}`);
-    } else {
-      partes.push('Vlr. ref. despesa operacional');
+    if (!window._historicoEditadoManual || forcar === true) {
+      const objetoBase = servico || obterObjetoDespesaAutomatico();
+      let compMesAno = '';
+      if (dataEntrada && dataEntrada.includes('-')) {
+        const partesDt = dataEntrada.split('-');
+        if (partesDt.length >= 2) compMesAno = `${partesDt[1]}/${partesDt[0]}`;
+      }
+
+      let texto = '';
+      if (window._modoHistoricoContabil === 'ENXUTO') {
+        texto = `Vlr. ref. ${objetoBase}${unidade ? ' • ' + unidade : ''}${doc ? ' • ' + prefixoDoc + ' ' + doc : ''}${ccusto ? ' [' + ccusto + ']' : ''}`;
+      } else {
+        const blocoDoc = `[${prefixoDoc}${doc ? ' nº ' + doc : ''}]`;
+        const blocoForn = fornecedor ? `[${fornecedor.toUpperCase()}]` : '';
+        const blocoUnid = unidade ? `[Unid: ${unidade}]` : '';
+        const metaItens = [];
+        if (ccusto) metaItens.push(`Cat: ${ccusto}`);
+        if (solicitante) metaItens.push(`Aut: ${solicitante}`);
+        if (contrato && contrato.toUpperCase() !== 'S/N') metaItens.push(`O.S./Contr: ${contrato}`);
+        if (compMesAno) metaItens.push(`Comp: ${compMesAno}`);
+        const blocoMeta = metaItens.length > 0 ? `[${metaItens.join(' | ')}]` : '';
+
+        texto = [blocoDoc, blocoForn, `- Ref. ${objetoBase}`, blocoUnid, blocoMeta].filter(Boolean).join(' ');
+      }
+
+      const elHist = document.getElementById('historico_contabil_completo');
+      if (elHist) elHist.value = texto;
+
+      const badgeModo = document.getElementById('badge-modo-historico');
+      if (badgeModo) {
+        badgeModo.innerText = window._modoHistoricoContabil === 'ENXUTO' ? 'Automático • Enxuto' : 'Automático • Contábil';
+        badgeModo.style.background = '#dcfce7';
+        badgeModo.style.color = '#047857';
+      }
     }
-    if (solicitante) partes.push(`[Aut: ${solicitante}]`);
-    if (ccusto) partes.push(`[C.Custo: ${ccusto}]`);
-    if (contrato && contrato.toUpperCase() !== 'S/N') partes.push(`[Ref: ${contrato}]`);
-
-    const texto = partes.join(' ');
-
-    const elHist = document.getElementById('historico_contabil_completo');
-    if (elHist) elHist.value = texto;
 
     const rotuloOrigem = `${doc ? prefixoDoc + ' nº ' + doc : 'doc'} de ${fornecedor || 'prestador'}${cnpjFmt && cnpjFmt !== '-' ? ' (CNPJ: ' + cnpjFmt + ')' : ''}`;
     const elIss = document.getElementById('prev-hist-iss');
@@ -6878,9 +7049,9 @@
     const vencimento_principal = document.getElementById('vencimento_principal').value;
     const valor_bruto = parseFloat(document.getElementById('valor_bruto').value) || 0;
     const historico = document.getElementById('historico_contabil_completo').value.trim();
-    const descricao = document.getElementById('descricao_detalhada').value.trim();
+    const descricao = document.getElementById('descricao_detalhada').value.trim() || obterObjetoDespesaAutomatico();
     const ccusto = document.getElementById('categoria_rapida_aba1')?.value.trim() || document.getElementById('centro_custo')?.value || '';
-    const solicitante = document.getElementById('solicitante_despesa').value.trim();
+    const solicitante = document.getElementById('solicitante_despesa_aba1')?.value.trim() || document.getElementById('solicitante_despesa')?.value.trim() || '';
     const contrato = document.getElementById('num_contrato_pedido').value.trim();
     const forma_pgto = document.getElementById('forma_pagamento').value;
     const dados_banco = document.getElementById('dados_bancarios').value.trim();
@@ -10220,6 +10391,8 @@
     document.getElementById('numero_doc').value = '2026' + Math.floor(100 + Math.random() * 900);
     document.getElementById('razao_favorecido').value = 'DATACENTER & CLOUD SERVIÇOS DE REDE LTDA';
     document.getElementById('cnpj_favorecido').value = '08.999.888/0001-22';
+    const respAba1 = document.getElementById('solicitante_despesa_aba1');
+    if (respAba1) respAba1.value = 'Roberto - Gestão de TI';
     document.getElementById('solicitante_despesa').value = 'Roberto - Gestão de TI';
     document.getElementById('num_contrato_pedido').value = 'CONTRATO-TI-2026/08';
     document.getElementById('descricao_detalhada').value = 'Hospedagem em nuvem dedicada, link redundante de fibra óptica e manutenção preventiva mensal do servidor ERP';
@@ -10234,16 +10407,23 @@
     document.getElementById('ret_cofins').value = '240.00';
     document.getElementById('ret_csll').value = '80.00';
 
+    window._historicoEditadoManual = false;
     sugerirVencimentosFiscais();
     recalcularValores();
-    atualizarHistoricoDinamico();
+    atualizarHistoricoDinamico(true);
   }
 
   function novoDocumento() {
     document.getElementById('numero_doc').value = '';
     document.getElementById('razao_favorecido').value = '';
     document.getElementById('cnpj_favorecido').value = '';
+    const respAba1 = document.getElementById('solicitante_despesa_aba1');
+    if (respAba1) respAba1.value = '';
     document.getElementById('solicitante_despesa').value = '';
+    const elUnid = document.getElementById('unidade_loja_lancamento');
+    if (elUnid) elUnid.value = '';
+    const elRegIva = document.getElementById('regime_prestador_iva');
+    if (elRegIva) elRegIva.value = 'NORMAL';
     document.getElementById('num_contrato_pedido').value = '';
     document.getElementById('descricao_detalhada').value = '';
     document.getElementById('dados_bancarios').value = '';
@@ -10254,10 +10434,11 @@
     document.getElementById('ret_pis').value = '';
     document.getElementById('ret_cofins').value = '';
     document.getElementById('ret_csll').value = '';
+    window._historicoEditadoManual = false;
     const elHist = document.getElementById('historico_contabil_completo');
     if (elHist) elHist.value = '';
     recalcularValores();
-    atualizarHistoricoDinamico();
+    atualizarHistoricoDinamico(true);
     trocarAba('aba-geral', document.querySelectorAll('.tab-btn')[0]);
   }
 

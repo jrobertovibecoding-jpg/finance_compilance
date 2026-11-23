@@ -347,7 +347,7 @@ def test_frontend_pwa_servido_na_raiz(client):
 
     r_sw = client.get("/sw.js")
     assert r_sw.status_code == 200
-    assert "jr-fincloud-v4" in r_sw.text
+    assert "jr-fincloud-v5" in r_sw.text
 
     r_info = client.get("/api/info")
     assert r_info.status_code == 200

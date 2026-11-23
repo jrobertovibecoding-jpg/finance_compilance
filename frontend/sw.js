@@ -1,5 +1,5 @@
 // Service Worker do JR FinCloud
-const CACHE_NAME = 'jr-fincloud-v4';
+const CACHE_NAME = 'jr-fincloud-v5';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
