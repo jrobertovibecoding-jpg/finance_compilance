@@ -1377,16 +1377,13 @@
           <thead>
             <tr>
               <th style="width: 30px; text-align: center;"><input type="checkbox" id="chk-master-titulos" onchange="alternarSelecaoTodosTitulos(this.checked)" title="Selecionar todos os títulos filtrados"></th>
-              <th onclick="ordenarPorColuna('tipo')" style="width: 85px; cursor: pointer;" title="Clique para ordenar por Tipo">Tipo Título <span id="sort-icon-tipo" style="font-size: 9px; opacity: 0.6;">↕</span></th>
-              <th onclick="ordenarPorColuna('id')" style="width: 110px; cursor: pointer;" title="Clique para ordenar por ID">ID <span id="sort-icon-id" style="font-size: 9px; opacity: 0.6;">↕</span></th>
-              <th onclick="ordenarPorColuna('documento')" style="width: 90px; cursor: pointer;" title="Clique para ordenar por Documento">Documento <span id="sort-icon-documento" style="font-size: 9px; opacity: 0.6;">↕</span></th>
-              <th onclick="ordenarPorColuna('cnpj')" style="width: 135px; cursor: pointer;" title="Clique para ordenar por CNPJ/CPF">CNPJ / CPF <span id="sort-icon-cnpj" style="font-size: 9px; opacity: 0.6;">↕</span></th>
-              <th onclick="ordenarPorColuna('favorecido')" style="width: 190px; cursor: pointer;" title="Clique para ordenar por Favorecido">Favorecido <span id="sort-icon-favorecido" style="font-size: 9px; opacity: 0.6;">↕</span></th>
-              <th onclick="ordenarPorColuna('historico')" style="cursor: pointer;" title="Clique para ordenar por Detalhes">Detalhes / Forma Pgto &amp; Chave <span id="sort-icon-historico" style="font-size: 9px; opacity: 0.6;">↕</span></th>
+              <th onclick="ordenarPorColuna('documento')" style="width: 105px; cursor: pointer;" title="Clique para ordenar por Documento">Doc / Tipo <span id="sort-icon-documento" style="font-size: 9px; opacity: 0.6;">↕</span></th>
+              <th onclick="ordenarPorColuna('favorecido')" style="width: 215px; cursor: pointer;" title="Clique para ordenar por Favorecido">Favorecido / CNPJ <span id="sort-icon-favorecido" style="font-size: 9px; opacity: 0.6;">↕</span></th>
+              <th onclick="ordenarPorColuna('historico')" style="cursor: pointer;" title="Clique para ordenar por Descrição (Clique na linha para ver tudo)">Descrição &amp; Pgto <span id="sort-icon-historico" style="font-size: 9px; opacity: 0.6;">↕</span></th>
               <th onclick="ordenarPorColuna('vencimento')" style="width: 95px; cursor: pointer;" title="Clique para ordenar por Vencimento">Vencimento <span id="sort-icon-vencimento" style="font-size: 9px; opacity: 0.6;">↕</span></th>
               <th onclick="ordenarPorColuna('valor')" style="width: 115px; text-align: right; cursor: pointer;" title="Clique para ordenar por Valor">Valor (R$) <span id="sort-icon-valor" style="font-size: 9px; opacity: 0.6;">↕</span></th>
-              <th onclick="ordenarPorColuna('situacao')" style="width: 85px; text-align: center; cursor: pointer;" title="Clique para ordenar por Situação">Situação <span id="sort-icon-situacao" style="font-size: 9px; opacity: 0.6;">↕</span></th>
-              <th style="width: 145px; text-align: center;">Ações</th>
+              <th onclick="ordenarPorColuna('situacao')" style="width: 95px; text-align: center; cursor: pointer;" title="Clique para ordenar por Situação">Situação <span id="sort-icon-situacao" style="font-size: 9px; opacity: 0.6;">↕</span></th>
+              <th style="width: 82px; text-align: center;">Ações</th>
             </tr>
           </thead>
           <tbody id="grid-titulos-body"></tbody>
@@ -2851,6 +2848,24 @@
         </div>
       </form>
     </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL DETALHES & AÇÕES DO TÍTULO ==================== -->
+<div id="jr-modal-detalhes-titulo" onclick="if(event.target===this) fecharModalDetalhesTitulo()" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.72); backdrop-filter: blur(3px); z-index: 99996; justify-content: center; align-items: center; padding: 14px;">
+  <div style="background: #ffffff; border: 2px solid #004b87; border-radius: 6px; width: 700px; max-width: 96vw; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);">
+    <div style="background: linear-gradient(to right, #003661, #004b87); color: #ffffff; padding: 9px 14px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <span style="font-weight: 800; font-size: 12px;" id="det-tit-header">Detalhes do Lançamento</span>
+        <span id="det-tit-id-badge" style="font-family: monospace; font-size: 10.5px; background: rgba(255,255,255,0.18); padding: 1px 7px; border-radius: 3px; font-weight: 700;">LCT-2026</span>
+        <span id="det-tit-status-badge" class="status-badge status-pendente">ABERTO</span>
+      </div>
+      <button type="button" onclick="fecharModalDetalhesTitulo()" style="background: transparent; border: none; color: #ffffff; cursor: pointer; font-size: 15px; font-weight: 700;">✕</button>
+    </div>
+
+    <div id="det-tit-conteudo" style="padding: 14px 16px; overflow-y: auto; flex: 1; background: #f8fafc; font-size: 11.5px;"></div>
+
+    <div id="det-tit-acoes" style="padding: 10px 16px; background: #ffffff; border-top: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;"></div>
   </div>
 </div>
 
@@ -7966,117 +7981,69 @@
       const formaUp = formaRaw.toUpperCase();
       const badgeFormaBg = formaUp.includes('PIX') ? '#dcfce7' : (formaUp.includes('BOL') ? '#dbeafe' : '#f1f5f9');
       const badgeFormaCor = formaUp.includes('PIX') ? '#15803d' : (formaUp.includes('BOL') ? '#1e40af' : '#334155');
-      const dadosBancoResolvido = obterDadosBancoTitulo(item);
       const isSelecionado = window._titulosSelecionadosIds.has(String(item.id));
+      const tipoBadgeHtml = (item.tipo_doc === 'DOMINGO_FERIADO' || (item.tipo_doc && item.tipo_doc.includes('21412')) || (item.numero_doc && String(item.numero_doc).startsWith('DOM-')) || (item.descricao && item.descricao.toUpperCase().includes('DOMINGO')) || (item.descricao && item.descricao.toUpperCase().includes('FERIADO')))
+        ? `<span class="tag-tipo" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a;">DOM / FER</span>`
+        : (item.tipo_doc === 'FOLHA'
+          ? `<span class="tag-tipo" style="background: #ede9fe; color: #5b21b6; border: 1px solid #ddd6fe;">FOLHA</span>`
+          : `<span class="tag-tipo ${isForn ? (item.tipo_doc === 'NFSE' ? 'tag-fornecedor' : 'tag-sem-nf') : 'tag-imposto'}">${isForn ? (item.tipo_doc === 'NFSE' ? 'PRESTADOR' : (item.tipo_doc || 'DESPESA')) : (item.tipo || '').replace('IMPOSTO_', '')}</span>`);
+
+      tr.style.cursor = 'pointer';
+      tr.title = 'Clique na linha para abrir detalhes, copiar PIX/Boleto, editar, repetir ou imprimir';
+      tr.onclick = () => abrirModalDetalhesTitulo(item.id);
 
       tr.innerHTML = `
-        <!-- 0. Seleção em Lote -->
-        <td style="text-align: center;">
+        <!-- 1. Seleção em Lote -->
+        <td style="text-align: center;" onclick="event.stopPropagation()">
           <input type="checkbox" class="chk-linha-titulo" ${isSelecionado ? 'checked' : ''} onchange="alternarSelecaoTituloIndividual('${item.id}', this.checked)" title="Selecionar título">
         </td>
 
-        <!-- 1. Tipo Título -->
+        <!-- 2. Documento & Tipo -->
         <td>
-          ${(item.tipo_doc === 'DOMINGO_FERIADO' || (item.tipo_doc && item.tipo_doc.includes('21412')) || (item.numero_doc && String(item.numero_doc).startsWith('DOM-')) || (item.descricao && item.descricao.toUpperCase().includes('DOMINGO')) || (item.descricao && item.descricao.toUpperCase().includes('FERIADO'))) ? `
-            <span class="tag-tipo" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a;">${bimerIcon('shoppingBag', 'bimer-svg-xs')} DOM / FER</span>
-          ` : (item.tipo_doc === 'FOLHA' ? `
-            <span class="tag-tipo" style="background: #ede9fe; color: #5b21b6; border: 1px solid #ddd6fe;">${bimerIcon('users', 'bimer-svg-xs')} FOLHA</span>
-          ` : `
-            <span class="tag-tipo ${isForn ? (item.tipo_doc === 'NFSE' ? 'tag-fornecedor' : 'tag-sem-nf') : 'tag-imposto'}">
-              ${isForn ? (item.tipo_doc === 'NFSE' ? bimerIcon('building', 'bimer-svg-xs') + ' PRESTADOR' : bimerIcon('file', 'bimer-svg-xs') + ' ' + (item.tipo_doc || 'DESPESA')) : bimerIcon('bank', 'bimer-svg-xs') + ' ' + (item.tipo || '').replace('IMPOSTO_', '')}
-            </span>
-          `)}
+          <strong style="color: var(--alterdata-blue); font-size: 12px; display: block;">${escapeHtml(item.numero_doc || '-')}</strong>
+          <div style="margin-top: 2px;">${tipoBadgeHtml}</div>
         </td>
 
-        <!-- 2. ID -->
+        <!-- 3. Favorecido / CNPJ -->
         <td>
-          <span style="font-family: monospace; font-size: 10.5px; font-weight: 700; background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 3px; border: 1px solid #c7d2fe; white-space: nowrap;" title="ID do Lançamento Oficial">
-            ${escapeHtml(item.numero_id || (item.id ? item.id.replace('TIT_', 'LCT-').slice(-13) : 'LCT-2026'))}
-          </span>
+          <strong style="color: #0f172a; font-size: 11.5px; display: block; line-height: 1.25;">${escapeHtml(item.favorecido || '-')}</strong>
+          <span style="font-family: monospace; font-size: 10px; color: #64748b;">${escapeHtml(formatarCnpjCpf(item.cnpj))}</span>
         </td>
 
-        <!-- 3. Documento -->
+        <!-- 4. Descrição & Pgto (compacto) -->
         <td>
-          <strong style="color: var(--alterdata-blue); font-size: 12px;">${escapeHtml(item.numero_doc || '-')}</strong>
-          ${item.contrato ? `<div style="font-size: 9.5px; color: var(--text-muted);">${escapeHtml(item.contrato)}</div>` : ''}
-        </td>
-
-        <!-- 4. CNPJ / CPF -->
-        <td>
-          <span style="font-family: monospace; font-size: 11px; font-weight: 600; color: #1e293b; white-space: nowrap;">
-            ${escapeHtml(formatarCnpjCpf(item.cnpj))}
-          </span>
-        </td>
-
-        <!-- 5. Favorecido -->
-        <td>
-          <strong style="color: #0f172a; font-size: 12px; display: block; line-height: 1.3;">
-            ${escapeHtml(item.favorecido || '-')}
-          </strong>
-        </td>
-
-        <!-- 6. Histórico Completo / Detalhes + Forma Pgto & Chave PIX / Boleto -->
-        <td>
-          <div style="font-weight: 600; color: #1e293b; font-size: 11.5px; margin-bottom: 3px;">
-            ${escapeHtml(limparHistoricoRedundante(item.descricao || item.historico))}
-          </div>
-          <div style="display: flex; gap: 5px; flex-wrap: wrap; align-items: center;">
-            <span style="font-size: 9.5px; font-weight: 800; background: ${badgeFormaBg}; color: ${badgeFormaCor}; padding: 1.5px 6px; border-radius: 3px;">
-              ${escapeHtml(formaUp)}
-            </span>
-            ${dadosBancoResolvido ? `
-              <span style="font-size: 10px; background: #f0fdf4; color: #166534; padding: 1.5px 6px; border-radius: 3px; border: 1px solid #bbf7d0; font-family: monospace;" title="${escapeHtml(dadosBancoResolvido)}">
-                ${escapeHtml(dadosBancoResolvido)}
-              </span>
-              <button type="button" class="tool-btn" style="padding: 1px 6px; font-size: 9.5px; font-weight: 700; color: #15803d; border-color: #86efac; background: #ffffff;" onclick="copiarPagamentoTitulo('${item.id}', 'dados')" title="Copiar ${formaUp.includes('PIX') ? 'Chave PIX' : 'Dados Bancários'}">
-                ${formaUp.includes('PIX') ? 'Copiar PIX' : 'Copiar Dados'}
-              </button>
-            ` : ''}
-            ${item.linha_dig ? `
-              <button type="button" class="tool-btn" style="padding: 1px 6px; font-size: 9.5px; font-weight: 700; color: #92400e; border-color: #fde68a; background: #fef3c7;" onclick="copiarPagamentoTitulo('${item.id}', 'boleto')" title="${escapeHtml(item.linha_dig)}">
-                ${bimerIcon('creditCard', 'bimer-svg-xs')} Copiar Boleto
-              </button>
-            ` : ''}
-            ${item.solicitante ? `<span style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 1.5px 6px; border-radius: 3px; border: 1px solid #bae6fd;">${bimerIcon('user', 'bimer-svg-xs')} Resp: ${escapeHtml(item.solicitante)}</span>` : ''}
-            ${item.ccusto ? `<span style="font-size: 10px; background: #f8fafc; color: #475569; padding: 1.5px 6px; border-radius: 3px; border: 1px solid #e2e8f0;">${bimerIcon('tag', 'bimer-svg-xs')} C.Custo: ${escapeHtml(item.ccusto)}</span>` : ''}
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <span style="font-size: 9.5px; font-weight: 800; background: ${badgeFormaBg}; color: ${badgeFormaCor}; padding: 1px 6px; border-radius: 3px; white-space: nowrap;">${escapeHtml(formaUp)}</span>
+            <span style="font-weight: 600; color: #1e293b; font-size: 11.5px;">${escapeHtml(limparHistoricoRedundante(item.descricao || item.historico))}</span>
           </div>
         </td>
 
-        <!-- 7. Vencimento -->
+        <!-- 5. Vencimento -->
         <td style="white-space: nowrap;">
           ${formatarData(item.vencimento)}
           ${vencDestaque}
         </td>
 
-        <!-- 8. Valor (R$) com sublinha Bruto vs Retenção -->
+        <!-- 6. Valor (R$) com sublinha Bruto vs Retenção -->
         <td style="text-align: right; white-space: nowrap;">
           <strong style="color: ${isForn ? 'var(--alterdata-blue)' : 'var(--tax-purple)'}; font-size: 12.5px;">${formatarMoeda(vLiq)}</strong>
-          ${temRetencaoNota ? `<div style="font-size: 9.5px; color: #64748b; margin-top: 2px;">Bruto: ${formatarMoeda(vBruto)} <span style="color: #7e22ce;">(-${formatarMoeda(vRetNota)})</span></div>` : ''}
+          ${temRetencaoNota ? `<div style="font-size: 9.5px; color: #64748b; margin-top: 1px;">Bruto: ${formatarMoeda(vBruto)} <span style="color: #7e22ce;">(-${formatarMoeda(vRetNota)})</span></div>` : ''}
         </td>
 
-        <!-- 9. Situação -->
+        <!-- 7. Situação -->
         <td style="text-align: center;">
           <span class="status-badge ${isPago ? 'status-pago' : 'status-pendente'}">
-            ${isPago ? (item.conciliado_com_extrato ? bimerIcon('checkCircle', 'bimer-svg-xs', 'stroke:#166534;') + ' BAIXADO (CONCILIADO)' : bimerIcon('checkCircle', 'bimer-svg-xs', 'stroke:#166534;') + ' BAIXADO') : bimerIcon('clock', 'bimer-svg-xs') + ' ABERTO'}
+            ${isPago ? (item.conciliado_com_extrato ? bimerIcon('checkCircle', 'bimer-svg-xs', 'stroke:#166534;') + ' CONCILIADO' : bimerIcon('checkCircle', 'bimer-svg-xs', 'stroke:#166534;') + ' BAIXADO') : bimerIcon('clock', 'bimer-svg-xs') + ' ABERTO'}
           </span>
-          ${item.data_baixa ? `<div style="font-size: 9px; color: #166534; font-weight: 700; margin-top: 2px;">Pago: ${formatarData(item.data_baixa)}</div>` : ''}
+          ${item.data_baixa ? `<div style="font-size: 9px; color: #166534; font-weight: 700; margin-top: 1px;">${formatarData(item.data_baixa)}</div>` : ''}
         </td>
 
-        <!-- 10. Ações -->
-        <td style="text-align: center; white-space: nowrap;">
-          <button class="tool-btn" style="display: inline-flex; align-items: center; justify-content: center; padding: 3px 6px; font-size: 10.5px; color: var(--alterdata-blue);" onclick="abrirModalEdicaoTitulo('${item.id}')" title="Editar Lançamento (CFOP, Categoria, Valores...)">
-            ${bimerIcon('pencil', 'bimer-svg-xs')}
-          </button>
-          <button class="tool-btn" style="display: inline-flex; align-items: center; justify-content: center; padding: 3px 6px; font-size: 10.5px;" onclick="alternarBaixa('${item.id}')" title="${isPago ? 'Reabrir título' : 'Baixar / Liquidar'}">
+        <!-- 8. Ações Rápidas (Baixar / Desfazer Baixa / Deletar) -->
+        <td style="text-align: center; white-space: nowrap;" onclick="event.stopPropagation()">
+          <button class="tool-btn" style="display: inline-flex; align-items: center; justify-content: center; padding: 3px 7px; font-size: 10.5px; ${isPago ? 'color: #b45309;' : 'color: #15803d;'}" onclick="alternarBaixa('${item.id}')" title="${isPago ? 'Desfazer baixa (Reabrir título)' : 'Baixar / Liquidar título'}">
             ${isPago ? bimerIcon('undo', 'bimer-svg-xs') : bimerIcon('check', 'bimer-svg-xs')}
           </button>
-          <button class="tool-btn" style="display: inline-flex; align-items: center; gap: 3px; padding: 3px 6px; font-size: 10.5px; color: #0369a1;" onclick="repetirLancamentoTitulo('${item.id}')" title="Repetir / Clonar este lançamento para nova NF/mês">
-            ${bimerIcon('refresh', 'bimer-svg-xs')}
-          </button>
-          <button class="tool-btn" style="display: inline-flex; align-items: center; gap: 3px; padding: 3px 6px; font-size: 10.5px; font-weight: 600;" onclick="abrirFolhaRostoTitulo('${item.id}')" title="Imprimir Folha de Rosto deste Documento">
-            ${bimerIcon('printer', 'bimer-svg-xs')} Folha
-          </button>
-          <button class="tool-btn" style="display: inline-flex; align-items: center; justify-content: center; padding: 3px 6px; font-size: 10.5px; color: var(--danger);" onclick="excluirTitulo('${item.id}')" title="Excluir">
+          <button class="tool-btn" style="display: inline-flex; align-items: center; justify-content: center; padding: 3px 7px; font-size: 10.5px; color: var(--danger);" onclick="excluirTitulo('${item.id}')" title="Deletar título">
             ${bimerIcon('trash', 'bimer-svg-xs', 'stroke:#dc2626;')}
           </button>
         </td>
@@ -8085,21 +8052,120 @@
     });
 
     if (tfoot) {
-      const resumoRetStr = totRetNotas > 0 ? ` • Bruto Notas: ${formatarMoeda(totBrutoNotas)} • Retenções: -${formatarMoeda(totRetNotas)}` : '';
+      const resumoRetStr = totRetNotas > 0 ? ` • Bruto: ${formatarMoeda(totBrutoNotas)} • Retenções: -${formatarMoeda(totRetNotas)}` : '';
       tfoot.innerHTML = `
         <tr style="background: #f1f5f9; font-weight: 800; border-top: 2px solid var(--alterdata-blue);">
-          <td colspan="8" style="text-align: right; color: #1e293b; font-size: 11px;">
+          <td colspan="5" style="text-align: right; color: #1e293b; font-size: 11px;">
             SUBTOTAL DO FILTRO (${lista.length} ${lista.length === 1 ? 'título' : 'títulos'}${resumoRetStr}):
           </td>
           <td style="text-align: right; color: var(--alterdata-blue); font-size: 12.5px; white-space: nowrap;">
             ${formatarMoeda(totValorCol)}
           </td>
           <td colspan="2" style="text-align: center; font-size: 10px; color: #475569;">
-            Total Líquido / Guias Exibidos
+            Total Exibido
           </td>
         </tr>
       `;
     }
+  }
+
+  function abrirModalDetalhesTitulo(id) {
+    const item = (titulos || []).find(t => String(t.id) === String(id));
+    if (!item) return;
+
+    const isPago = isTituloBaixadoOuConciliado(item);
+    const isForn = item.tipo === 'FORNECEDOR' || item.tipo === 'DESPESA_GERAL';
+    const vLiq = Number(item.valor || 0);
+    const vBruto = Number(item.valor_bruto || vLiq);
+    const vRet = (isForn && vBruto > vLiq + 0.009) ? (vBruto - vLiq) : 0;
+    const formaUp = String(item.forma_pgto || 'PIX').toUpperCase();
+    const dadosBanco = obterDadosBancoTitulo(item);
+
+    const headerEl = document.getElementById('det-tit-header');
+    const idBadgeEl = document.getElementById('det-tit-id-badge');
+    const stBadgeEl = document.getElementById('det-tit-status-badge');
+    const corpoEl = document.getElementById('det-tit-conteudo');
+    const acoesEl = document.getElementById('det-tit-acoes');
+
+    if (headerEl) headerEl.innerText = `${item.tipo_doc || 'DOC'} Nº ${item.numero_doc || '-'} — ${item.favorecido || '-'}`;
+    if (idBadgeEl) idBadgeEl.innerText = item.numero_id || item.id || 'LCT';
+    if (stBadgeEl) {
+      stBadgeEl.className = `status-badge ${isPago ? 'status-pago' : 'status-pendente'}`;
+      stBadgeEl.innerText = isPago ? (item.conciliado_com_extrato ? 'BAIXADO & CONCILIADO' : 'BAIXADO') : 'EM ABERTO';
+    }
+
+    if (corpoEl) {
+      corpoEl.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+          <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px;">
+            <div style="font-size: 10px; font-weight: 800; color: #004b87; text-transform: uppercase; margin-bottom: 6px;">Favorecido &amp; Documento</div>
+            <div style="margin-bottom: 4px;"><strong>Favorecido:</strong> ${escapeHtml(item.favorecido || '-')}</div>
+            <div style="margin-bottom: 4px;"><strong>CNPJ / CPF:</strong> <span style="font-family: monospace;">${escapeHtml(formatarCnpjCpf(item.cnpj))}</span></div>
+            <div style="margin-bottom: 4px;"><strong>Documento / Tipo:</strong> ${escapeHtml(item.tipo_doc || '-')} Nº <strong>${escapeHtml(item.numero_doc || '-')}</strong></div>
+            <div style="margin-bottom: 4px;"><strong>Nº Pedido / Contrato / O.S.:</strong> ${escapeHtml(item.contrato || '-')}</div>
+            <div><strong>Vencimento:</strong> ${formatarData(item.vencimento)} ${item.data_baixa ? `• <span style="color:#15803d; font-weight:700;">Pago em ${formatarData(item.data_baixa)}</span>` : ''}</div>
+          </div>
+
+          <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px;">
+            <div style="font-size: 10px; font-weight: 800; color: #004b87; text-transform: uppercase; margin-bottom: 6px;">Valores &amp; Enquadramento</div>
+            <div style="margin-bottom: 4px;"><strong>Valor Bruto:</strong> ${formatarMoeda(vBruto)}</div>
+            <div style="margin-bottom: 4px;"><strong>Retenções na Fonte:</strong> <span style="color: #7e22ce; font-weight: 700;">${vRet > 0 ? '- ' + formatarMoeda(vRet) : 'R$ 0,00'}</span></div>
+            <div style="margin-bottom: 6px;"><strong>Valor Líquido a Pagar:</strong> <span style="color: #004b87; font-size: 14px; font-weight: 800;">${formatarMoeda(vLiq)}</span></div>
+            <div style="margin-bottom: 4px;"><strong>Categoria / C.Custo:</strong> ${escapeHtml(item.ccusto || '-')}</div>
+            <div><strong>Responsável:</strong> ${escapeHtml(item.solicitante || '-')}</div>
+          </div>
+        </div>
+
+        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px; margin-bottom: 10px;">
+          <div style="font-size: 10px; font-weight: 800; color: #004b87; text-transform: uppercase; margin-bottom: 4px;">Descrição / Histórico &amp; Fiscal</div>
+          <div style="font-weight: 600; color: #0f172a; margin-bottom: 6px;">${escapeHtml(limparHistoricoRedundante(item.descricao || item.historico || '-'))}</div>
+          <div style="font-size: 10.5px; color: #475569;">
+            <strong>CFOP:</strong> ${escapeHtml(item.cod_operacao || '-')}
+            ${item.cnae ? ` • <strong>CNAE:</strong> ${escapeHtml(item.cnae)}` : ''}
+            ${item.item_lc116 ? ` • <strong>LC 116:</strong> ${escapeHtml(item.item_lc116)}` : ''}
+          </div>
+        </div>
+
+        <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 4px; padding: 10px;">
+          <div style="font-size: 10px; font-weight: 800; color: #166534; text-transform: uppercase; margin-bottom: 6px;">Dados para Pagamento (${escapeHtml(formaUp)})</div>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: ${item.linha_dig ? '6px' : '0'};">
+            <div><strong>Chave PIX / Dados Bancários:</strong> <span style="font-family: monospace; color: #0f172a;">${escapeHtml(dadosBanco || 'Não informado')}</span></div>
+            ${dadosBanco ? `<button type="button" class="tool-btn primary" style="background: #16a34a; border-color: #15803d; padding: 3px 10px; font-size: 11px;" onclick="copiarPagamentoTitulo('${item.id}', 'dados')">${formaUp.includes('PIX') ? 'Copiar Chave PIX' : 'Copiar Dados Bancários'}</button>` : ''}
+          </div>
+          ${item.linha_dig ? `
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding-top: 6px; border-top: 1px dashed #86efac;">
+              <div style="word-break: break-all;"><strong>Linha Digitável:</strong> <span style="font-family: monospace;">${escapeHtml(item.linha_dig)}</span></div>
+              <button type="button" class="tool-btn" style="background: #fef3c7; border-color: #fcd34d; color: #92400e; font-weight: 700; padding: 3px 10px; font-size: 11px;" onclick="copiarPagamentoTitulo('${item.id}', 'boleto')">Copiar Boleto</button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    if (acoesEl) {
+      acoesEl.innerHTML = `
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button type="button" class="tool-btn" onclick="fecharModalDetalhesTitulo(); abrirModalEdicaoTitulo('${item.id}')">${bimerIcon('pencil', 'bimer-svg-xs')} Editar</button>
+          <button type="button" class="tool-btn" onclick="fecharModalDetalhesTitulo(); repetirLancamentoTitulo('${item.id}')">${bimerIcon('refresh', 'bimer-svg-xs')} Repetir / Clonar</button>
+          <button type="button" class="tool-btn" onclick="fecharModalDetalhesTitulo(); abrirFolhaRostoTitulo('${item.id}')">${bimerIcon('printer', 'bimer-svg-xs')} Folha de Rosto</button>
+        </div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+          <button type="button" class="tool-btn primary" style="background: ${isPago ? '#b45309' : '#16a34a'}; border-color: ${isPago ? '#92400e' : '#15803d'};" onclick="fecharModalDetalhesTitulo(); alternarBaixa('${item.id}')">
+            ${isPago ? bimerIcon('undo', 'bimer-svg-xs') + ' Desfazer Baixa' : bimerIcon('check', 'bimer-svg-xs') + ' Baixar Título'}
+          </button>
+          <button type="button" class="tool-btn" style="color: var(--danger); border-color: #fca5a5;" onclick="fecharModalDetalhesTitulo(); excluirTitulo('${item.id}')">${bimerIcon('trash', 'bimer-svg-xs', 'stroke:#dc2626;')} Deletar</button>
+          <button type="button" class="tool-btn" onclick="fecharModalDetalhesTitulo()">Fechar</button>
+        </div>
+      `;
+    }
+
+    const modal = document.getElementById('jr-modal-detalhes-titulo');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function fecharModalDetalhesTitulo() {
+    const modal = document.getElementById('jr-modal-detalhes-titulo');
+    if (modal) modal.style.display = 'none';
   }
 
   function atualizarTotaisGerais() {
