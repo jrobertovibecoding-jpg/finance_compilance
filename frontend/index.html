@@ -1896,7 +1896,27 @@
             <span style="font-size: 10px; color: #93c5fd;" id="conc-sistema-contador">0 títulos</span>
           </div>
 
-          <div style="max-height: 480px; overflow-y: auto;">
+          <!-- BARRA DE FILTRO POR DATA (VENCIMENTO / LANÇADO NO DIA) E BUSCA -->
+          <div style="background: #f8fafc; border-bottom: 1px solid #cbd5e1; padding: 6px 10px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <div style="display: inline-flex; align-items: center; gap: 4px;">
+              <label style="font-size: 10px; font-weight: 700; color: #1e3a8a; white-space: nowrap;">Data:</label>
+              <input type="date" id="conc-filtro-data-sistema" onchange="renderizarTelasConciliacao()" style="padding: 3px 5px; font-size: 10.5px; border: 1px solid #94a3b8; border-radius: 3px; background: #ffffff;">
+            </div>
+            <select id="conc-filtro-tipo-data" onchange="renderizarTelasConciliacao()" style="padding: 3px 5px; font-size: 10.5px; border: 1px solid #94a3b8; border-radius: 3px; background: #ffffff; font-weight: 600; color: #334155;" title="Escolha se a data filtra Vencimento, Lançamento ou ambos">
+              <option value="VENC_OU_LANC">Vencimento ou Lançado no Dia</option>
+              <option value="VENCIMENTO">Somente Vencimento</option>
+              <option value="LANCAMENTO">Somente Lançado no Dia</option>
+            </select>
+            <select id="conc-filtro-status-sistema" onchange="renderizarTelasConciliacao()" style="padding: 3px 5px; font-size: 10.5px; border: 1px solid #94a3b8; border-radius: 3px; background: #ffffff; font-weight: 600; color: #334155;">
+              <option value="TODOS">Todos</option>
+              <option value="ABERTO">Em Aberto</option>
+              <option value="CONCILIADO">Conciliados</option>
+            </select>
+            <input type="text" id="conc-filtro-busca-sistema" oninput="renderizarTelasConciliacao()" placeholder="Buscar favorecido / doc..." style="flex: 1; min-width: 120px; padding: 3px 6px; font-size: 10.5px; border: 1px solid #94a3b8; border-radius: 3px; background: #ffffff;">
+            <button type="button" class="tool-btn" onclick="limparFiltroSistemaConciliacao()" style="padding: 2px 7px; font-size: 10px;" title="Limpar filtros da grade direita">Limpar</button>
+          </div>
+
+          <div style="max-height: 440px; overflow-y: auto;">
             <table class="alterdata-grid" style="width: 100%; border-collapse: collapse; font-size: 11px;">
               <thead>
                 <tr>
@@ -9239,6 +9259,141 @@
     }
   }
 
+  const STOPWORDS_CONC = new Set([
+    'pag', 'pix', 'ted', 'doc', 'boleto', 'pagamento', 'ltda', 'eireli', 'mei', 'epp',
+    'com', 'para', 'dos', 'das', 'que', 'banco', 'itau', 'bradesco', 'santander', 'caixa',
+    'transf', 'enviado', 'recebido', 'cia', 's/a', 'sa', 'srv', 'servicos', 'servico'
+  ]);
+
+  function encontrarMelhorSugestaoConciliacao(ext) {
+    if (!ext || ext.conciliado) return null;
+    const memoRaw = String(ext.memo || '');
+    const memoNorm = normalizarTextoBusca(memoRaw);
+    const memoDigits = memoRaw.replace(/\D/g, '');
+    const fitidNorm = normalizarTextoBusca(ext.fitid || '');
+    const vExt = Number(ext.valor) || 0;
+    const dExt = parseDataVencimento(ext.data);
+
+    let melhor = null;
+
+    for (const t of (titulos || [])) {
+      if (isTituloBaixadoOuConciliado(t) || t.conciliado_com_extrato) continue;
+      const vTit = Number(t.valor) || 0;
+      if (vTit <= 0) continue;
+
+      let score = 0;
+      const motivos = [];
+
+      const diffVal = Math.abs(vTit - vExt);
+      const diffPct = vTit > 0 ? (diffVal / vTit) * 100 : 100;
+      if (diffVal < 0.06) {
+        score += 50;
+        motivos.push('Valor exato');
+      } else if (diffPct <= 5) {
+        score += 20;
+        motivos.push('Valor aprox.');
+      }
+
+      const textoTitNorm = normalizarTextoBusca(`${t.favorecido || ''} ${t.descricao || ''}`);
+      const tokensTit = [...new Set(textoTitNorm.split(/[^a-z0-9]+/).filter(w => w.length >= 3 && !STOPWORDS_CONC.has(w)))];
+      const hits = tokensTit.filter(tok => memoNorm.includes(tok));
+      let temMatchTexto = false;
+      if (hits.length >= 2) {
+        score += 45;
+        temMatchTexto = true;
+        motivos.push(`Nome (${hits.slice(0, 2).join(', ')})`);
+      } else if (hits.length === 1) {
+        score += 25;
+        temMatchTexto = true;
+        motivos.push(`Nome (${hits[0]})`);
+      }
+
+      const docDigits = String(t.numero_doc || '').replace(/\D/g, '');
+      const cnpjRaiz = String(t.cnpj || '').replace(/\D/g, '').slice(0, 8);
+      let temMatchDoc = false;
+      if (docDigits.length >= 3 && (memoNorm.includes(docDigits) || fitidNorm.includes(docDigits))) {
+        score += 40;
+        temMatchDoc = true;
+        motivos.push(`Doc ${t.numero_doc}`);
+      }
+      if (cnpjRaiz.length === 8 && memoDigits.includes(cnpjRaiz)) {
+        score += 40;
+        temMatchDoc = true;
+        motivos.push('CNPJ');
+      }
+
+      const dTit = parseDataVencimento(t.vencimento || t.dataCriacao);
+      if (dExt && dTit) {
+        const diffDias = Math.round(Math.abs(dExt.getTime() - dTit.getTime()) / 86400000);
+        if (diffDias === 0) {
+          score += 25;
+          motivos.push('Mesma data');
+        } else if (diffDias <= 2) {
+          score += 18;
+          motivos.push(`Data ±${diffDias}d`);
+        } else if (diffDias <= 5) {
+          score += 10;
+          motivos.push(`Data ±${diffDias}d`);
+        }
+      }
+
+      const elegivel = score >= 45 && (diffPct <= 10 || temMatchTexto || temMatchDoc);
+      if (elegivel && (!melhor || score > melhor.score)) {
+        melhor = {
+          titulo: t,
+          score,
+          confianca: Math.min(99, score),
+          diffVal,
+          motivos
+        };
+      }
+    }
+
+    return melhor;
+  }
+
+  function aceitarSugestaoConciliacao(extId, tituloId) {
+    const ext = (extratoBancario || []).find(e => String(e.id) === String(extId));
+    const tit = (titulos || []).find(t => String(t.id) === String(tituloId));
+    if (!ext || !tit) return;
+
+    efetivarBaixaTitulo(tit, ext);
+    const diff = Number(ext.valor) - Number(tit.valor);
+    if (Math.abs(diff) > 0.05) {
+      tit.valor_pago = ext.valor;
+      if (diff > 0) {
+        tit.juros_multa = Math.round(diff * 100) / 100;
+        ext.juros_valor = tit.juros_multa;
+        ext.tipo_diferenca = 'JUROS';
+      } else {
+        tit.desconto = Math.round(Math.abs(diff) * 100) / 100;
+        ext.desconto_valor = tit.desconto;
+        ext.tipo_diferenca = 'DESCONTO';
+      }
+    }
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(titulos));
+    salvarExtratoConciliacao();
+    renderizarGridTitulos();
+    renderizarTelasConciliacao();
+    atualizarAgendaFinanceira();
+    atualizarBarraRodape();
+    atualizarTotaisGerais();
+    mostrarToastSucesso(`Conciliado com ${escapeHtml(tit.favorecido)} (Doc ${escapeHtml(tit.numero_doc)})!`);
+  }
+
+  function limparFiltroSistemaConciliacao() {
+    const dtEl = document.getElementById('conc-filtro-data-sistema');
+    const tpEl = document.getElementById('conc-filtro-tipo-data');
+    const stEl = document.getElementById('conc-filtro-status-sistema');
+    const qEl = document.getElementById('conc-filtro-busca-sistema');
+    if (dtEl) dtEl.value = '';
+    if (tpEl) tpEl.value = 'VENC_OU_LANC';
+    if (stEl) stEl.value = 'TODOS';
+    if (qEl) qEl.value = '';
+    renderizarTelasConciliacao();
+  }
+
   async function conciliarAutomaticamente() {
     if (!extratoBancario || extratoBancario.length === 0) {
       alert('Nenhum extrato carregado. Carregue um extrato primeiro!');
@@ -9252,8 +9407,9 @@
     for (const ext of extratoBancario) {
       if (ext.conciliado) continue;
 
-      // === ESTRATÉGIA 1: Match exato por valor (+/- R$ 0.05) ===
-      const matchExato = titulos.find(t => {
+      // === ESTRATÉGIA 1: Match inteligente por Valor + Nome + Data + Documento ===
+      const sug = encontrarMelhorSugestaoConciliacao(ext);
+      const matchExato = (sug && sug.diffVal < 0.06) ? sug.titulo : titulos.find(t => {
         if (t.conciliado_com_extrato && t.conciliado_com_extrato !== ext.id) return false;
         if (t.situacao === 'BAIXADO' || t.status === 'CONCILIADO') return false;
         return Math.abs(Number(t.valor) - Number(ext.valor)) < 0.06;
@@ -9695,19 +9851,31 @@
             ? `<span style="background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 10px; border: 1px solid #fde68a;">Tarifa Bancária</span>`
             : `<span style="background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 10px; border: 1px solid #fca5a5;">Pendente</span>`);
 
+        let sugHtml = '';
         let acaoBtn = '';
         if (item.conciliado) {
           acaoBtn = `<button class="tool-btn" onclick="desvincularConciliacao('${escapeHtml(item.id)}')" style="padding: 2px 6px; font-size: 10px;" title="Desfazer conciliação deste item"><svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Desvincular</button>`;
         } else if (item.tipo === 'TARIFA') {
           acaoBtn = `<button class="tool-btn primary" onclick="lancarTarifaRapida('${escapeHtml(item.id)}')" style="padding: 2px 6px; font-size: 10px; background: #004b87;" title="Criar título no Contas a Pagar e conciliar na hora"><svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Criar</button>`;
         } else {
-          acaoBtn = `<button class="tool-btn primary" onclick="abrirModalVincular('${escapeHtml(item.id)}')" style="padding: 2px 6px; font-size: 10px; background: #004b87;" title="Vincular manualmente a títulos do sistema"><svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg> Vincular</button>`;
+          const sug = encontrarMelhorSugestaoConciliacao(item);
+          if (sug) {
+            sugHtml = `<div style="margin-top: 3px; background: #ecfdf5; border: 1px solid #86efac; border-radius: 3px; padding: 2px 6px; font-size: 9.5px; color: #065f46;">
+              <strong>Sugestão (${sug.confianca}% • ${escapeHtml(sug.motivos.join(' + '))}):</strong> ${escapeHtml(sug.titulo.favorecido)} (Doc ${escapeHtml(sug.titulo.numero_doc || '-')} • ${formatarMoeda(sug.titulo.valor)})
+            </div>`;
+            acaoBtn = `<div style="display: inline-flex; gap: 3px;">
+              <button class="tool-btn primary" onclick="aceitarSugestaoConciliacao('${escapeHtml(item.id)}', '${escapeHtml(sug.titulo.id)}')" style="padding: 2px 6px; font-size: 10px; background: #16a34a; border-color: #15803d;" title="Conciliar em 1 clique com a sugestão">${bimerIcon('check', 'bimer-svg-xs')} Aceitar</button>
+              <button class="tool-btn" onclick="abrirModalVincular('${escapeHtml(item.id)}')" style="padding: 2px 6px; font-size: 10px;" title="Escolher outro título manualmente">Vincular</button>
+            </div>`;
+          } else {
+            acaoBtn = `<button class="tool-btn primary" onclick="abrirModalVincular('${escapeHtml(item.id)}')" style="padding: 2px 6px; font-size: 10px; background: #004b87;" title="Vincular manualmente a títulos do sistema"><svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg> Vincular</button>`;
+          }
         }
 
         htmlExt += `
           <tr style="${item.conciliado ? 'background: #f0fdf4;' : ''}">
             <td style="white-space: nowrap; font-weight: 600;">${formatarData(item.data)}</td>
-            <td><strong style="color: #0f172a;">${escapeHtml(item.memo)}</strong></td>
+            <td><strong style="color: #0f172a;">${escapeHtml(item.memo)}</strong>${sugHtml}</td>
             <td style="font-family: monospace; font-size: 10px; color: #64748b;">${escapeHtml(item.fitid || '-')}</td>
             <td style="text-align: right; font-weight: 700; color: #dc2626; white-space: nowrap;">- ${formatarMoeda(item.valor)}</td>
             <td style="text-align: center;">${statusBadge}</td>
@@ -9718,20 +9886,45 @@
       tbodyExt.innerHTML = htmlExt;
     }
 
-    // 2. RENDERIZA CONTAS A PAGAR DO SISTEMA (LADO DIREITO)
-    const titulosSistema = titulos || [];
+    // 2. RENDERIZA CONTAS A PAGAR DO SISTEMA (LADO DIREITO COM FILTRO POR DATA / BUSCA)
+    const dtFiltroSis = document.getElementById('conc-filtro-data-sistema')?.value || '';
+    const tipoDataSis = document.getElementById('conc-filtro-tipo-data')?.value || 'VENC_OU_LANC';
+    const statusFiltroSis = document.getElementById('conc-filtro-status-sistema')?.value || 'TODOS';
+    const buscaSis = normalizarTextoBusca(document.getElementById('conc-filtro-busca-sistema')?.value || '');
+
+    const titulosSistema = (titulos || []).filter(item => {
+      const isConc = isTituloBaixadoOuConciliado(item);
+      if (statusFiltroSis === 'ABERTO' && isConc) return false;
+      if (statusFiltroSis === 'CONCILIADO' && !isConc) return false;
+
+      if (dtFiltroSis) {
+        const dtVenc = (item.vencimento || '').slice(0, 10);
+        const dtLanc = (item.dataCriacao || item.data_emissao || '').slice(0, 10);
+        if (tipoDataSis === 'VENCIMENTO' && dtVenc !== dtFiltroSis) return false;
+        if (tipoDataSis === 'LANCAMENTO' && dtLanc !== dtFiltroSis) return false;
+        if (tipoDataSis === 'VENC_OU_LANC' && dtVenc !== dtFiltroSis && dtLanc !== dtFiltroSis) return false;
+      }
+
+      if (buscaSis) {
+        const txt = normalizarTextoBusca(`${item.favorecido || ''} ${item.numero_doc || ''} ${item.numero_id || ''} ${item.descricao || ''} ${item.historico || ''}`);
+        if (!txt.includes(buscaSis)) return false;
+      }
+
+      return true;
+    });
+
     if (titulosSistema.length === 0) {
       tbodySis.innerHTML = `
         <tr>
           <td colspan="6" style="text-align: center; padding: 30px; color: #64748b;">
-            Nenhum título cadastrado no Contas a Pagar.
+            ${(titulos || []).length === 0 ? 'Nenhum título cadastrado no Contas a Pagar.' : 'Nenhum título encontrado para os filtros de data/busca selecionados.'}
           </td>
         </tr>
       `;
     } else {
       let htmlSis = '';
       titulosSistema.forEach(item => {
-        const isConc = item.situacao === 'CONCILIADO' || item.status === 'CONCILIADO';
+        const isConc = isTituloBaixadoOuConciliado(item);
         const sitBadge = isConc
           ? `<span style="background: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 10px; border: 1px solid #86efac;"><svg class="bimer-svg bimer-svg-green bimer-svg-xs" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> Conciliado</span>`
           : `<span style="background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 10px; border: 1px solid #fde68a;"><svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Aberto</span>`;
