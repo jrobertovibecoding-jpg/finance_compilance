@@ -379,6 +379,7 @@ def switch_tenant(
     if not tenant:
         raise HTTPException(status_code=404, detail="Workspace não encontrado.")
 
+    set_rls_context(db, tenant.id)
     ip = extrair_ip(request)
     access_token, raw_refresh, _ = emitir_par_tokens(
         db=db,
