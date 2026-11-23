@@ -3045,8 +3045,16 @@
   }
 
   const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  const CLOUD_DEFAULT_API = 'https://jr-fincloud-api-production.up.railway.app/api/v2/erp';
-  const LOCAL_DEFAULT_API = 'http://localhost:8000/api/v2/erp';
+  const isSameOriginHosted =
+    window.location.hostname.endsWith('.up.railway.app') ||
+    window.location.port === '8000' ||
+    window.location.port === '8080';
+  const CLOUD_DEFAULT_API = isSameOriginHosted
+    ? `${window.location.origin}/api/v2/erp`
+    : 'https://jr-fincloud-api-production.up.railway.app/api/v2/erp';
+  const LOCAL_DEFAULT_API = isSameOriginHosted
+    ? `${window.location.origin}/api/v2/erp`
+    : 'http://localhost:8000/api/v2/erp';
   let storedApi = localStorage.getItem('bimer_cloud_api_url');
   if (storedApi && (storedApi.includes('api.jrfincloud.com.br') || storedApi.includes('/api/contas-a-pagar'))) {
     storedApi = CLOUD_DEFAULT_API;

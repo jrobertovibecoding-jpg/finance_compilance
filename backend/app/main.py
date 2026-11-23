@@ -2,10 +2,10 @@ from contextlib import asynccontextmanager
 import logging
 from fastapi import Depends, FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy import text
 
-from .core.config import PROJECT_NAME, VERSION, API_PREFIX, API_V2_PREFIX, CORS_ORIGINS, CORS_ORIGIN_REGEX
+from .core.config import BASE_DIR, PROJECT_NAME, VERSION, API_PREFIX, API_V2_PREFIX, CORS_ORIGINS, CORS_ORIGIN_REGEX
 from .core.database import get_connection, init_db
 from .core.security import obter_usuario_logado
 from .db.session import get_engine
@@ -75,15 +75,79 @@ app.include_router(fornecedores.router, prefix="/api/contas-a-pagar", dependenci
 
 app.include_router(v2_router, prefix=API_V2_PREFIX)
 
+_CANDIDATOS_FRONTEND = [
+    BASE_DIR / "frontend",
+    BASE_DIR.parent / "frontend",
+]
+FRONTEND_DIR = next((p for p in _CANDIDATOS_FRONTEND if (p / "index.html").exists()), None)
 
-@app.get("/")
-def root():
+
+def _servir_asset_pwa(filename: str, media_type: str, fallback: str | None = None):
+    if FRONTEND_DIR is None:
+        return JSONResponse(status_code=404, content={"detail": "Frontend não disponível."})
+    alvo = FRONTEND_DIR / filename
+    if not alvo.exists() and fallback:
+        alvo = FRONTEND_DIR / fallback
+    if not alvo.exists():
+        return JSONResponse(status_code=404, content={"detail": "Arquivo não encontrado."})
+    return FileResponse(alvo, media_type=media_type)
+
+
+@app.get("/api/info")
+def api_info():
     return {
         "app": PROJECT_NAME,
         "version": VERSION,
         "status": "online",
         "docs": "/docs",
     }
+
+
+@app.get("/")
+def root():
+    if FRONTEND_DIR is not None:
+        return FileResponse(FRONTEND_DIR / "index.html", media_type="text/html")
+    return {
+        "app": PROJECT_NAME,
+        "version": VERSION,
+        "status": "online",
+        "docs": "/docs",
+    }
+
+
+@app.get("/index.html")
+def pwa_index():
+    return _servir_asset_pwa("index.html", "text/html")
+
+
+@app.get("/manifest.json")
+def pwa_manifest():
+    return _servir_asset_pwa("manifest.json", "application/manifest+json")
+
+
+@app.get("/sw.js")
+def pwa_sw():
+    return _servir_asset_pwa("sw.js", "application/javascript")
+
+
+@app.get("/grupos_categorias.json")
+def pwa_grupos_categorias():
+    return _servir_asset_pwa("grupos_categorias.json", "application/json")
+
+
+@app.get("/icon-192.png")
+def pwa_icon_192():
+    return _servir_asset_pwa("icon-192.png", "image/png")
+
+
+@app.get("/icon-512.png")
+def pwa_icon_512():
+    return _servir_asset_pwa("icon-512.png", "image/png")
+
+
+@app.get("/favicon.png")
+def pwa_favicon():
+    return _servir_asset_pwa("favicon.png", "image/png", fallback="icon-192.png")
 
 
 @app.get("/health")

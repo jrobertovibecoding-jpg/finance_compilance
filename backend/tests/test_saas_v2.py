@@ -333,3 +333,22 @@ def test_normalize_database_url_e_healthcheck_v2(client):
     body = resp.json()
     assert body["db"] == "ok"
     assert body["db_v2"] == "ok"
+
+
+def test_frontend_pwa_servido_na_raiz(client):
+    r_root = client.get("/")
+    assert r_root.status_code == 200
+    assert "text/html" in r_root.headers.get("content-type", "")
+    assert "JR FinCloud" in r_root.text
+
+    r_man = client.get("/manifest.json")
+    assert r_man.status_code == 200
+    assert "JR FinCloud" in r_man.json().get("name", "")
+
+    r_sw = client.get("/sw.js")
+    assert r_sw.status_code == 200
+    assert "jr-fincloud-v4" in r_sw.text
+
+    r_info = client.get("/api/info")
+    assert r_info.status_code == 200
+    assert r_info.json()["status"] == "online"
