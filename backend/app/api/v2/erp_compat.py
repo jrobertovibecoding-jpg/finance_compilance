@@ -10,6 +10,7 @@ import requests
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, Response, UploadFile, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
@@ -362,7 +363,25 @@ def _upsert_fornecedor_v2(
             item_lc116=item_lc116.strip()[:20] if item_lc116 else None,
             ativo=True,
         )
-        db.add(forn)
+        try:
+            with db.begin_nested():
+                db.add(forn)
+                db.flush()
+        except IntegrityError:
+            if doc_limpo:
+                forn = (
+                    db.query(Fornecedor)
+                    .filter(Fornecedor.tenant_id == tenant_id, Fornecedor.cnpj_cpf == doc_limpo)
+                    .first()
+                )
+            if not forn:
+                forn = (
+                    db.query(Fornecedor)
+                    .filter(Fornecedor.tenant_id == tenant_id, func.lower(Fornecedor.razao_social) == razao.lower())
+                    .first()
+                )
+            if not forn:
+                raise
     db.flush()
     return forn
 

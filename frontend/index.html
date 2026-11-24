@@ -9301,21 +9301,23 @@
       rateios: window.rateioLancamentoAtual || []
     };
 
-    // Auto-salvar no cadastro de fornecedores/prestadores
-    autoSalvarFornecedorLocal({
-      razao_social: favorecido,
-      nome_fantasia: favorecido,
-      cnpj_cpf: cnpj,
-      tipo: tipo_doc === 'NFSE' ? 'PRESTADOR' : ((tipo_doc === 'DOMINGO_FERIADO' || tipo_doc === 'FOLHA') ? 'COLABORADOR' : 'FORNECEDOR'),
-      categoria: ccusto,
-      ccusto: document.getElementById('centro_custo')?.value || 'MATRIZ',
-      responsavel: solicitante,
-      forma_pgto,
-      dados_banco,
-      cod_operacao,
-      cnae,
-      item_lc116
-    });
+    if (!isBackendOnline) {
+      // Auto-salvar localmente apenas quando offline (no online o /gravar-documento já faz upsert no backend)
+      autoSalvarFornecedorLocal({
+        razao_social: favorecido,
+        nome_fantasia: favorecido,
+        cnpj_cpf: cnpj,
+        tipo: tipo_doc === 'NFSE' ? 'PRESTADOR' : ((tipo_doc === 'DOMINGO_FERIADO' || tipo_doc === 'FOLHA') ? 'COLABORADOR' : 'FORNECEDOR'),
+        categoria: ccusto,
+        ccusto: document.getElementById('centro_custo')?.value || 'MATRIZ',
+        responsavel: solicitante,
+        forma_pgto,
+        dados_banco,
+        cod_operacao,
+        cnae,
+        item_lc116
+      });
+    }
 
     if (isBackendOnline) {
       try {
