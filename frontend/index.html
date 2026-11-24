@@ -7533,9 +7533,11 @@
         _xmlPrimeiroTexto(valores, ['ValorServicos', 'vServ', 'vServPrest', 'ValorTotalServicos', 'vLiq', 'ValorLiquidoNfse', 'ValorLiquido', 'valor_total', 'valor'])
         || _xmlPrimeiroTexto(infNfse, ['ValorServicos', 'vServ', 'vServPrest', 'ValorTotalServicos', 'vLiq', 'ValorLiquidoNfse', 'ValorLiquido', 'valor_total'])
       );
-      const issRetidoFlag = _xmlPrimeiroTexto(valores, ['IssRetido', 'tpRetISSQN']);
+      const issRetidoAbrasf = _xmlPrimeiroTexto(valores, ['IssRetido']);
+      const tpRetIssqn = _xmlPrimeiroTexto(valores, ['tpRetISSQN']) || _xmlPrimeiroTexto(infNfse, ['tpRetISSQN']);
+      const opSimpNac = _xmlPrimeiroTexto(infNfse, ['opSimpNac']) || _xmlPrimeiroTexto(doc, ['opSimpNac']);
       let vIssRet = _xmlParseValor(_xmlPrimeiroTexto(valores, ['ValorIssRetido', 'vISSQNRet']));
-      if (!vIssRet && (issRetidoFlag === '1' || issRetidoFlag === '2' || issRetidoFlag === '3' || issRetidoFlag.toLowerCase() === 'true')) {
+      if (!vIssRet && (issRetidoAbrasf === '1' || issRetidoAbrasf.toLowerCase() === 'true' || tpRetIssqn === '2' || tpRetIssqn === '3')) {
         vIssRet = _xmlParseValor(_xmlPrimeiroTexto(valores, ['ValorIss', 'vISSQN']));
       }
       const vIr = _xmlParseValor(_xmlPrimeiroTexto(valores, ['ValorIr', 'vRetIRRF', 'ValorIR']));
@@ -7607,17 +7609,21 @@
         ['ret_csll', vCsll]
       ];
       mapRet.forEach(([id, val]) => {
+        const el = document.getElementById(id);
         if (val > 0) {
           temRetencao = true;
-          const el = document.getElementById(id);
           if (el) el.value = val.toFixed(2);
+        } else {
+          // Segue exatamente o XML: não mantém retenções sugeridas pelo CNAE quando a nota não retém
+          if (el) el.value = '0.00';
         }
       });
-      if (temRetencao && typeof alternarVisibilidadeRetencoes === 'function') {
-        alternarVisibilidadeRetencoes(true);
+      if (typeof alternarVisibilidadeRetencoes === 'function') {
+        alternarVisibilidadeRetencoes(temRetencao);
       }
 
-      infoExtra = (temRetencao ? 'Retenções preenchidas automaticamente' : 'Sem retenções no XML') + (vencXml ? '' : ' • Confira o vencimento');
+      const labelSimples = opSimpNac === '2' ? ' (Prestador MEI — isento de retenções federais)' : (opSimpNac === '3' ? ' (Prestador Simples Nacional — isento de PCC/IRRF)' : '');
+      infoExtra = (temRetencao ? 'Retenções preenchidas automaticamente' : `Sem retenções no XML${labelSimples}`) + (vencXml ? '' : ' • Confira o vencimento');
     }
 
     // Dispara gatilhos padrão do formulário (preservando CNAE/LC116 vindos do XML quando presentes)
