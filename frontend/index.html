@@ -998,6 +998,7 @@
             <select id="tipo_documento" onchange="ajustarTipoDocumento()">
               <option value="NFSE">NFS-e - Nota Fiscal de Serviços Eletrônica</option>
               <option value="NFE">NF-e - Nota Fiscal de Produtos/Mercadorias</option>
+              <option value="CTE">CT-e / DACTE - Conhecimento de Transporte (Frete)</option>
               <option value="DOMINGO_FERIADO">Domingo / Feriado Trabalhado (Individual Vendedora)</option>
               <option value="FOLHA">Folha de Pagamento / Salários (Total Consolidado)</option>
               <option value="RECIBO">Recibo / RPA (Sem Documento Fiscal)</option>
@@ -1171,8 +1172,8 @@
             <input type="text" id="descricao_detalhada" placeholder="Descreva o serviço, produto ou motivo da despesa (ex: Manutenção e poda do jardim da fachada)..." oninput="atualizarHistoricoDinamico()" style="font-size: 12px; font-weight: 600;">
           </div>
           <div class="form-field">
-            <label>Nº Pedido / Contrato / O.S. (Opcional)</label>
-            <input type="text" id="num_contrato_pedido" placeholder="Ex: OS-8841 ou CT-2026" oninput="atualizarHistoricoDinamico()">
+            <label>Nº Pedido / Contrato / NF Ref. (Frete)</label>
+            <input type="text" id="num_contrato_pedido" placeholder="Ex: NF-e 140235, OS-8841 ou CT-2026" oninput="atualizarHistoricoDinamico()">
           </div>
         </div>
       </fieldset>
@@ -7450,9 +7451,14 @@
     const cnpjFmt = cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
 
     const selTipo = document.getElementById('tipo_documento');
-    if (selTipo && (mod === '55' || mod === '65' || mod === '57')) {
-      selTipo.value = 'NFE';
-      if (typeof ajustarTipoDocumento === 'function') ajustarTipoDocumento();
+    if (selTipo) {
+      if (mod === '57') {
+        selTipo.value = 'CTE';
+        if (typeof ajustarTipoDocumento === 'function') ajustarTipoDocumento();
+      } else if (mod === '55' || mod === '65') {
+        selTipo.value = 'NFE';
+        if (typeof ajustarTipoDocumento === 'function') ajustarTipoDocumento();
+      }
     }
 
     const elNum = document.getElementById('numero_doc');
@@ -7520,6 +7526,49 @@
     reader.readAsText(file, 'UTF-8');
   }
 
+  function _xmlExtrairDadosCTe(infCte) {
+    const ide = _xmlPrimeiroElemento(infCte, ['ide']);
+    const emit = _xmlPrimeiroElemento(infCte, ['emit']);
+    const vPrest = _xmlPrimeiroElemento(infCte, ['vPrest']);
+    const nCT = _xmlPrimeiroTexto(ide, ['nCT']);
+    const serie = _xmlPrimeiroTexto(ide, ['serie']);
+    const dhEmi = _xmlExtrairDataISO(_xmlPrimeiroTexto(ide, ['dhEmi', 'dEmi']));
+    const cfopSaida = _xmlPrimeiroTexto(ide, ['CFOP']);
+    const cfopEnt = typeof _xmlConverterCFOPSaidaParaEntrada === 'function' ? _xmlConverterCFOPSaidaParaEntrada(cfopSaida) : cfopSaida;
+    const xMunIni = _xmlPrimeiroTexto(ide, ['xMunIni']);
+    const xMunFim = _xmlPrimeiroTexto(ide, ['xMunFim']);
+    const cnpj = _xmlFormatarCNPJCPF(_xmlPrimeiroTexto(emit, ['CNPJ', 'CPF']));
+    const favorecido = _xmlPrimeiroTexto(emit, ['xNome', 'xFant']);
+    const valor = _xmlParseValor(_xmlPrimeiroTexto(vPrest, ['vTPrest', 'vRec']));
+
+    // Extrai NFs referenciadas dentro de <infDoc> (<infNFe><chave> ou <infNF><nDoc>)
+    const refsNF = [];
+    const infNFes = _xmlTodosElementos(infCte, 'infNFe');
+    infNFes.forEach(el => {
+      const chave = _xmlPrimeiroTexto(el, ['chave']).replace(/\D/g, '');
+      if (chave.length === 44) {
+        const nNfRef = String(parseInt(chave.slice(25, 34), 10) || '');
+        if (nNfRef && !refsNF.includes(nNfRef)) refsNF.push(nNfRef);
+      }
+    });
+    const infNFs = _xmlTodosElementos(infCte, 'infNF');
+    infNFs.forEach(el => {
+      const nDoc = _xmlPrimeiroTexto(el, ['nDoc']).trim();
+      if (nDoc && !refsNF.includes(nDoc)) refsNF.push(nDoc);
+    });
+
+    const refTexto = refsNF.length ? `NF-e ${refsNF.join(', ')}` : '';
+    const rota = (xMunIni && xMunFim) ? ` (${xMunIni} → ${xMunFim})` : '';
+    const descricao = `Frete CT-e nº ${nCT || '-'}${rota}${refTexto ? ` • Ref. ${refTexto}` : ''}`;
+    const rawId = infCte.getAttribute('Id') || '';
+    const chave = rawId.replace(/^CTe/i, '');
+    return {
+      nCT, serie, dhEmi, cnpj, favorecido, valor,
+      cod_operacao: cfopEnt || '1.353 - Aquisição de serviço de transporte por estabelecimento comercial',
+      refTexto, refsNF, descricao, chave
+    };
+  }
+
   let _xmlLoteItens = [];
 
   async function processarListaArquivosXML(fileList) {
@@ -7574,8 +7623,9 @@
     if (doc.getElementsByTagName('parsererror').length > 0) return baseErro('XML corrompido');
 
     const infNFe = _xmlPrimeiroElemento(doc, ['infNFe']);
-    const isNFSe = Boolean(!infNFe && _xmlPrimeiroElemento(doc, ['CompNfse', 'Nfse', 'InfNfse', 'NFSe', 'infNFSe', 'PrestadorServico', 'prest', 'Discriminacao', 'xDescServ', 'nfse', 'nota_fiscal']));
-    if (!infNFe && !isNFSe) return baseErro('Não reconhecido como NF-e ou NFS-e');
+    const infCte = _xmlPrimeiroElemento(doc, ['infCte']);
+    const isNFSe = Boolean(!infNFe && !infCte && _xmlPrimeiroElemento(doc, ['CompNfse', 'Nfse', 'InfNfse', 'NFSe', 'infNFSe', 'PrestadorServico', 'prest', 'Discriminacao', 'xDescServ', 'nfse', 'nota_fiscal']));
+    if (!infNFe && !infCte && !isNFSe) return baseErro('Não reconhecido como NF-e, CT-e ou NFS-e');
 
     const hoje = new Date().toISOString().slice(0, 10);
     let out = {
@@ -7604,10 +7654,24 @@
       impostos: [],
       itens: [],
       parcelas: [],
-      duplicado: false
+      duplicado: false,
+      contrato: ''
     };
 
-    if (infNFe) {
+    if (infCte) {
+      const cte = _xmlExtrairDadosCTe(infCte);
+      out.tipo_doc = 'CTE';
+      out.resumoTipo = 'CT-e / DACTE';
+      out.numero_doc = cte.nCT;
+      out.data_emissao = cte.dhEmi || hoje;
+      out.vencimento = cte.dhEmi || hoje;
+      out.cnpj = cte.cnpj;
+      out.favorecido = cte.favorecido;
+      out.valor_bruto = cte.valor;
+      out.cod_operacao = cte.cod_operacao;
+      out.contrato = cte.refTexto;
+      out.descricao = cte.descricao;
+    } else if (infNFe) {
       const ide = _xmlPrimeiroElemento(infNFe, ['ide']);
       const emit = _xmlPrimeiroElemento(infNFe, ['emit']);
       const icmsTot = _xmlPrimeiroElemento(infNFe, ['ICMSTot']);
@@ -7757,11 +7821,15 @@
 
       const badgeTipo = it.tipo_doc === 'NFE'
         ? `<span style="background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:3px;font-weight:700;font-size:10px;">NF-e Prod</span>`
-        : `<span style="background:#d1fae5;color:#065f46;padding:1px 6px;border-radius:3px;font-weight:700;font-size:10px;">NFS-e Serv</span>`;
+        : (it.tipo_doc === 'CTE'
+          ? `<span style="background:#ede9fe;color:#5b21b6;padding:1px 6px;border-radius:3px;font-weight:700;font-size:10px;">CT-e / DACTE</span>`
+          : `<span style="background:#d1fae5;color:#065f46;padding:1px 6px;border-radius:3px;font-weight:700;font-size:10px;">NFS-e Serv</span>`);
 
       const detalheExtra = it.tipo_doc === 'NFE'
         ? `${it.itens.length} item(ns)${it.parcelas.length > 1 ? ` • ${it.parcelas.length} parc.` : ''}`
-        : (it.impostos.length > 0 ? `Ret: ${formatarMoeda(it.impostos.reduce((a, b) => a + b.valor, 0))}` : 'Sem retenção');
+        : (it.tipo_doc === 'CTE'
+          ? (it.contrato ? `Ref: ${it.contrato}` : 'Frete sem NF ref.')
+          : (it.impostos.length > 0 ? `Ret: ${formatarMoeda(it.impostos.reduce((a, b) => a + b.valor, 0))}` : 'Sem retenção'));
 
       let statusHtml = `<span style="color:#475569;font-size:10px;">Pronta</span>`;
       if (it.erroLeitura) statusHtml = `<span style="color:#b91c1c;font-weight:700;font-size:10px;">${escapeHtml(it.erroLeitura)}</span>`;
@@ -7801,6 +7869,7 @@
         <td style="padding:6px 4px;vertical-align:top;">
           <div style="font-weight:700;color:#0f172a;">${escapeHtml(it.favorecido || '-')}</div>
           <div style="font-size:10px;color:#475569;font-family:monospace;">${escapeHtml(it.cnpj || '-')}</div>
+          ${it.tipo_doc === 'CTE' ? `<input type="text" value="${escapeHtml(it.contrato || '')}" oninput="_xmlLoteItens[${idx}].contrato = this.value" placeholder="NF-e ref. do frete (ex: NF-e 140235)" style="width:100%;margin-top:3px;font-size:10px;padding:2px 5px;border:1px solid #c4b5fd;background:#f5f3ff;border-radius:3px;">` : ''}
         </td>
         <td style="padding:6px 4px;vertical-align:top;">
           <input type="text" list="lista-categorias-oficiais" value="${escapeHtml(it.ccusto || '')}" oninput="_xmlLoteItens[${idx}].ccusto = this.value" placeholder="Categoria / Plano de Contas..." style="width:100%;font-size:10.5px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:4px;margin-bottom:4px;">
@@ -7915,7 +7984,7 @@
         descricao: it.descricao,
         ccusto: it.ccusto,
         solicitante: '',
-        contrato: '',
+        contrato: it.contrato || '',
         forma_pgto: it.forma_pgto || 'BOLETO',
         dados_banco: it.dados_banco || '',
         linha_dig: it.linha_dig || '',
@@ -7983,14 +8052,15 @@
     }
 
     const infNFe = _xmlPrimeiroElemento(doc, ['infNFe']);
+    const infCte = _xmlPrimeiroElemento(doc, ['infCte']);
     const isNFSe = Boolean(
-      !infNFe && (
+      !infNFe && !infCte && (
         _xmlPrimeiroElemento(doc, ['CompNfse', 'Nfse', 'InfNfse', 'NFSe', 'infNFSe', 'PrestadorServico', 'prest', 'Discriminacao', 'xDescServ', 'nfse', 'nota_fiscal'])
       )
     );
 
-    if (!infNFe && !isNFSe) {
-      alert('XML não reconhecido como NF-e (Produto) nem NFS-e (Serviço). Verifique o arquivo enviado.');
+    if (!infNFe && !infCte && !isNFSe) {
+      alert('XML não reconhecido como NF-e (Produto), CT-e (DACTE) nem NFS-e (Serviço). Verifique o arquivo enviado.');
       return;
     }
 
@@ -8026,7 +8096,38 @@
     let infoExtra = '';
     let temRetencao = false;
 
-    if (infNFe) {
+    if (infCte) {
+      // ── CT-e / DACTE (TRANSPORTE / FRETE - MODELO 57) ──
+      resumoTipo = 'CT-e / DACTE (Frete)';
+      window.xmlItensNFeAtual = [];
+      window.xmlParcelasNFeAtual = [];
+      if (selTipo) {
+        selTipo.value = 'CTE';
+        ajustarTipoDocumento();
+      }
+      const cte = _xmlExtrairDadosCTe(infCte);
+      chaveOuCod = cte.chave;
+      const inpChaveXml = document.getElementById('input-chave-acesso-nfe');
+      if (inpChaveXml && /^\d{44}$/.test(chaveOuCod)) inpChaveXml.value = chaveOuCod;
+
+      if (elNum && cte.nCT) elNum.value = cte.nCT;
+      if (elSerie && cte.serie) elSerie.value = cte.serie;
+      if (elCfop && cte.cod_operacao) {
+        elCfop.value = cte.cod_operacao;
+        if (typeof autocompletarCFOPLive === 'function') autocompletarCFOPLive(elCfop);
+      }
+      if (elCnpj && cte.cnpj) elCnpj.value = cte.cnpj;
+      if (elRazao && cte.favorecido) elRazao.value = cte.favorecido;
+      if (elEmissao && cte.dhEmi) elEmissao.value = cte.dhEmi;
+      if (elEntrada && !elEntrada.value) elEntrada.value = new Date().toISOString().slice(0, 10);
+      if (elBruto && cte.valor > 0) elBruto.value = cte.valor.toFixed(2);
+      if (elDesc) elDesc.value = cte.descricao;
+      if (elPedido && cte.refTexto) elPedido.value = cte.refTexto;
+
+      infoExtra = cte.refTexto
+        ? `NF Referenciada: ${cte.refTexto} • Confira Categoria e Vencimento`
+        : 'Sem NF referenciada no XML • Informe a NF em "Nº Pedido / NF Ref."';
+    } else if (infNFe) {
       // ── NF-e PRODUTO / MERCADORIA (MODELO 55 / 65) ──
       resumoTipo = 'NF-e Produto (Mod. 55)';
       if (selTipo) {
