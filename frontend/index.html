@@ -1155,10 +1155,15 @@
           <div class="form-field">
             <label>Forma de Pagamento</label>
             <select id="forma_pagamento" onchange="atualizarHistoricoDinamico()">
-              <option value="BOLETO">Boleto Bancário (Cód. Barras)</option>
-              <option value="PIX">Transferência Instantânea - PIX</option>
-              <option value="TED_DOC">Transferência Bancária - TED / DOC</option>
-              <option value="DEBITO">Débito Automático em Conta</option>
+              <option value="Boleto Itaú">Boleto Itaú</option>
+              <option value="Boleto Outros Bancos">Boleto Outros Bancos</option>
+              <option value="PIX Chave CNPJ">PIX Chave CNPJ</option>
+              <option value="PIX Chave CPF">PIX Chave CPF</option>
+              <option value="PIX Chave Tel / E-mail">PIX Chave Tel / E-mail</option>
+              <option value="Transferência Bancária">Transferência Bancária</option>
+              <option value="Débito Automático">Débito Automático</option>
+              <option value="Guia Municipal">Guia Municipal</option>
+              <option value="DARF Federal">DARF Federal</option>
             </select>
           </div>
           <div class="form-field">
@@ -2150,10 +2155,15 @@
             </select>
             <button type="button" class="tool-btn" onclick="aplicarLojaMassaXMLLote()" style="font-size: 11px; padding: 4px 8px;">Aplicar Loja</button>
             <select id="lote-xml-pgto-massa" style="font-size: 11px; padding: 4px 7px; border: 1px solid #cbd5e1; border-radius: 4px;">
-              <option value="BOLETO">Boleto</option>
-              <option value="PIX">PIX</option>
-              <option value="TED_DOC">TED / DOC</option>
-              <option value="DEBITO">Débito Auto.</option>
+              <option value="Boleto Itaú">Boleto Itaú</option>
+              <option value="Boleto Outros Bancos">Boleto Outros Bancos</option>
+              <option value="PIX Chave CNPJ">PIX Chave CNPJ</option>
+              <option value="PIX Chave CPF">PIX Chave CPF</option>
+              <option value="PIX Chave Tel / E-mail">PIX Chave Tel / E-mail</option>
+              <option value="Transferência Bancária">Transferência Bancária</option>
+              <option value="Débito Automático">Débito Automático</option>
+              <option value="Guia Municipal">Guia Municipal</option>
+              <option value="DARF Federal">DARF Federal</option>
             </select>
             <button type="button" class="tool-btn" onclick="aplicarPgtoMassaXMLLote()" style="font-size: 11px; padding: 4px 8px;">Aplicar Pgto</button>
           </div>
@@ -3073,6 +3083,7 @@
               <option value="PIX Chave CPF">PIX Chave CPF</option>
               <option value="PIX Chave Tel / E-mail">PIX Chave Tel / E-mail</option>
               <option value="Transferência Bancária">Transferência Bancária</option>
+              <option value="Débito Automático">Débito Automático</option>
               <option value="Guia Municipal">Guia Municipal</option>
               <option value="DARF Federal">DARF Federal</option>
             </select>
@@ -7872,11 +7883,16 @@
         .map(u => `<option value="${escapeHtml(u)}" ${it.loja === u ? 'selected' : ''}>${escapeHtml(u)}</option>`).join('');
 
       const pgtosOpts = [
-        ['BOLETO', 'Boleto Bancário'],
-        ['PIX', 'PIX'],
-        ['TED_DOC', 'TED / DOC'],
-        ['DEBITO', 'Débito Auto.']
-      ].map(([v, lbl]) => `<option value="${v}" ${(it.forma_pgto || 'BOLETO') === v ? 'selected' : ''}>${lbl}</option>`).join('');
+        'Boleto Itaú',
+        'Boleto Outros Bancos',
+        'PIX Chave CNPJ',
+        'PIX Chave CPF',
+        'PIX Chave Tel / E-mail',
+        'Transferência Bancária',
+        'Débito Automático',
+        'Guia Municipal',
+        'DARF Federal'
+      ].map(v => `<option value="${v}" ${(it.forma_pgto || 'Boleto Outros Bancos') === v ? 'selected' : ''}>${v}</option>`).join('');
 
       const qtdRat = (it.rateios || []).length;
       const btnRateioStyle = qtdRat > 0
