@@ -95,7 +95,11 @@ def _servir_asset_pwa(filename: str, media_type: str, fallback: str | None = Non
         alvo = FRONTEND_DIR / fallback
     if not alvo.exists():
         return JSONResponse(status_code=404, content={"detail": "Arquivo não encontrado."})
-    headers = {"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"} if filename in ("index.html", "sw.js") else None
+    headers = {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "Expires": "0",
+    } if filename in ("index.html", "sw.js") else None
     return FileResponse(alvo, media_type=media_type, headers=headers)
 
 
@@ -115,7 +119,11 @@ def root():
         return FileResponse(
             FRONTEND_DIR / "index.html",
             media_type="text/html",
-            headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
+            headers={
+                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+                "Pragma": "no-cache",
+                "Expires": "0",
+            },
         )
     return {
         "app": PROJECT_NAME,

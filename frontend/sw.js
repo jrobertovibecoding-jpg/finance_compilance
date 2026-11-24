@@ -1,8 +1,6 @@
 // Service Worker do JR FinCloud
-const CACHE_NAME = 'jr-fincloud-v7';
+const CACHE_NAME = 'jr-fincloud-v8';
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png'
@@ -24,14 +22,15 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Network-First para assets estaticos; nunca intercepta /api/
+// Nunca intercepta /api/ nem paginas HTML (evita cache obsoleto apos deploy)
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   if (event.request.url.includes('/api/')) return;
-
   const isHtml = event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html');
+  if (isHtml) return;
+
   event.respondWith(
-    fetch(isHtml ? new Request(event.request, { cache: 'no-store' }) : event.request)
+    fetch(event.request)
       .then((response) => {
         if (response && response.status === 200 && response.type === 'basic') {
           const responseClone = response.clone();
