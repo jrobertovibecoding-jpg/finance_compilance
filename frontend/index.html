@@ -10646,8 +10646,68 @@
     document.getElementById('modal-relatorio-autorizacao').style.display = 'none';
   }
 
+  function imprimirDocumentoLimpo(elementoId, tituloDoc = 'JR_FinCloud_Relatorio', orientacao = 'landscape') {
+    const origem = document.getElementById(elementoId);
+    if (!origem) {
+      window.print();
+      return;
+    }
+    const clone = origem.cloneNode(true);
+    // Converte inputs editáveis em texto limpo para impressão
+    clone.querySelectorAll('input[type="text"], input[type="number"], input[type="date"]').forEach(inp => {
+      const span = document.createElement('span');
+      span.style.fontWeight = '600';
+      span.textContent = inp.value || '';
+      inp.replaceWith(span);
+    });
+    clone.querySelectorAll('.no-print').forEach(el => el.remove());
+
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>${escapeHtml(tituloDoc)}</title>
+  <style>
+    @page { size: A4 ${orientacao}; margin: 10mm; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    html, body { margin: 0; padding: 0; background: #ffffff; color: #0f172a; font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; }
+    table { width: 100% !important; border-collapse: collapse !important; font-size: 9px !important; }
+    thead { display: table-header-group; }
+    tfoot { display: table-row-group; }
+    tr { page-break-inside: avoid; break-inside: avoid; }
+    th, td { border: 1px solid #cbd5e1; padding: 4px 6px !important; line-height: 1.25 !important; vertical-align: top; }
+    th { background: #0f172a !important; color: #ffffff !important; font-weight: 700; }
+    .bimer-svg { width: 11px; height: 11px; vertical-align: middle; stroke: currentColor; fill: none; stroke-width: 2; }
+    .no-print { display: none !important; }
+  </style>
+</head>
+<body>${clone.innerHTML}</body>
+</html>`);
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      setTimeout(() => {
+        try { document.body.removeChild(iframe); } catch (_) {}
+      }, 1500);
+    }, 180);
+  }
+
   function imprimirRelatorioAutorizacao() {
-    window.print();
+    const dt = document.getElementById('aut-data-lote')?.value || new Date().toISOString().slice(0, 10);
+    imprimirDocumentoLimpo('rel-autorizacao-documento', `Autorizacao_Pagamentos_${dt}`, 'landscape');
   }
 
   async function importarOFXLojasAutorizacao(event) {
@@ -12990,11 +13050,8 @@
   }
 
   function imprimirRelatorioBimer() {
-    document.body.classList.add('imprimindo-relatorio-bimer');
-    window.print();
-    setTimeout(() => {
-      document.body.classList.remove('imprimindo-relatorio-bimer');
-    }, 1000);
+    const dt = new Date().toISOString().slice(0, 10);
+    imprimirDocumentoLimpo('relatorio-paper-container', `Relatorio_${relatorioAtivo || 'BI'}_${dt}`, 'landscape');
   }
 
   function exportarRelatorioCSV() {
