@@ -7602,17 +7602,19 @@
       if (elCtn) elCtn.value = cTribNac || (cnaeResolvidoXml ? elCtn.value : '');
 
       const mapRet = [
-        ['ret_iss', vIssRet],
-        ['ret_irrf', vIr],
-        ['ret_pis', vPis],
-        ['ret_cofins', vCofins],
-        ['ret_csll', vCsll]
+        ['ret_iss', 'chk_iss', vIssRet],
+        ['ret_irrf', 'chk_irrf', vIr],
+        ['ret_pis', 'chk_pis', vPis],
+        ['ret_cofins', 'chk_cofins', vCofins],
+        ['ret_csll', 'chk_csll', vCsll]
       ];
-      mapRet.forEach(([id, val]) => {
+      mapRet.forEach(([id, chkId, val]) => {
         const el = document.getElementById(id);
+        const chkEl = document.getElementById(chkId);
         if (val > 0) {
           temRetencao = true;
           if (el) el.value = val.toFixed(2);
+          if (chkEl) chkEl.checked = true;
         } else {
           // Segue exatamente o XML: não mantém retenções sugeridas pelo CNAE quando a nota não retém
           if (el) el.value = '0.00';
@@ -7623,19 +7625,33 @@
       }
 
       const labelSimples = opSimpNac === '2' ? ' (Prestador MEI — isento de retenções federais)' : (opSimpNac === '3' ? ' (Prestador Simples Nacional — isento de PCC/IRRF)' : '');
-      infoExtra = (temRetencao ? 'Retenções preenchidas automaticamente' : `Sem retenções no XML${labelSimples}`) + (vencXml ? '' : ' • Confira o vencimento');
+      infoExtra = (temRetencao ? 'Retenções destacadas automaticamente do XML' : `Sem retenções no XML${labelSimples}`) + (vencXml ? '' : ' • Confira o vencimento');
     }
 
-    // Dispara gatilhos padrão do formulário (preservando CNAE/LC116 vindos do XML quando presentes)
+    // Dispara gatilhos padrão do formulário (preservando CNAE/LC116 e retenções vindas do XML)
     const cnaeAntesForn = elCnae ? elCnae.value : '';
     const lcAntesForn = elItemLc ? elItemLc.value : '';
     const ctnAntesForn = elCtn ? elCtn.value : '';
+    const retAntesForn = ['ret_iss', 'ret_irrf', 'ret_pis', 'ret_cofins', 'ret_csll'].map(id => {
+      const el = document.getElementById(id);
+      return [id, el ? el.value : ''];
+    });
+    const temRetAntesForn = retAntesForn.some(([, v]) => (parseFloat(v) || 0) > 0);
     if (elCnpj && typeof onInputCNPJFavorecidoLive === 'function') onInputCNPJFavorecidoLive(elCnpj);
     if (elCnae && cnaeAntesForn && elCnae.value !== cnaeAntesForn) {
       elCnae.value = cnaeAntesForn;
     }
     if (elItemLc && lcAntesForn) elItemLc.value = lcAntesForn;
     if (elCtn && ctnAntesForn) elCtn.value = ctnAntesForn;
+    if (ehNFSe) {
+      retAntesForn.forEach(([id, v]) => {
+        const el = document.getElementById(id);
+        if (el) el.value = v;
+      });
+      if (typeof alternarVisibilidadeRetencoes === 'function') {
+        alternarVisibilidadeRetencoes(temRetAntesForn);
+      }
+    }
     if (typeof sugerirVencimentosFiscais === 'function') sugerirVencimentosFiscais();
     if (typeof recalcularValores === 'function') recalcularValores();
     if (typeof checarDuplicidadeLive === 'function') checarDuplicidadeLive();
