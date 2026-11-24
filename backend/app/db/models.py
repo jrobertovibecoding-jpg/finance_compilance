@@ -229,6 +229,7 @@ class Titulo(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
     conciliado: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     impostos: Mapped[list["TituloImposto"]] = relationship(back_populates="titulo", cascade="all, delete-orphan")
+    itens: Mapped[list["TituloItem"]] = relationship(back_populates="titulo", cascade="all, delete-orphan")
     rateios: Mapped[list["TituloRateio"]] = relationship(back_populates="titulo", cascade="all, delete-orphan")
     aprovacoes: Mapped[list["TituloAprovacao"]] = relationship(back_populates="titulo", cascade="all, delete-orphan")
 
@@ -252,6 +253,32 @@ class TituloImposto(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
     codigo_receita: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
 
     titulo: Mapped["Titulo"] = relationship(back_populates="impostos")
+
+
+class TituloItem(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):
+    __tablename__ = "titulo_itens"
+
+    titulo_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("titulos.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    numero_item: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    codigo_produto: Mapped[Optional[str]] = mapped_column(String(60), nullable=True)
+    descricao: Mapped[str] = mapped_column(String(300), nullable=False)
+    ncm: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    cfop: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    unidade: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    quantidade: Mapped[Decimal] = mapped_column(Numeric(15, 4), default=Decimal("1.0000"), nullable=False)
+    valor_unitario: Mapped[Decimal] = mapped_column(Numeric(15, 4), default=Decimal("0.0000"), nullable=False)
+    valor_total: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=Decimal("0.00"), nullable=False)
+    fornecedor_nome: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    numero_nf: Mapped[Optional[str]] = mapped_column(String(60), nullable=True)
+    dt_emissao: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+
+    titulo: Mapped["Titulo"] = relationship(back_populates="itens")
+
+    __table_args__ = (
+        Index("ix_titulo_itens_tenant_titulo", "tenant_id", "titulo_id"),
+    )
 
 
 class TituloRateio(UUIDPrimaryKeyMixin, TenantMixin, TimestampMixin, Base):

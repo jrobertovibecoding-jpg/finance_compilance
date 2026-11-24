@@ -32,6 +32,7 @@ from ...db.models import (
     PlanoConta,
     Titulo,
     TituloImposto,
+    TituloItem,
     TituloRateio,
 )
 from ...db.session import get_db
@@ -76,6 +77,24 @@ class ImpostoCompatItem(BaseModel):
     historico: Optional[str] = None
 
 
+class ItemNFCompatItem(BaseModel):
+    numero_item: Optional[int] = 1
+    codigo_produto: Optional[str] = ""
+    descricao: str
+    ncm: Optional[str] = ""
+    cfop: Optional[str] = ""
+    unidade: Optional[str] = "UN"
+    quantidade: float = 1.0
+    valor_unitario: float = 0.0
+    valor_total: float = 0.0
+
+
+class ParcelaCompatItem(BaseModel):
+    numero: Optional[str] = ""
+    vencimento: str
+    valor: float
+
+
 class DocumentoCompatEntrada(BaseModel):
     tipo_doc: str = Field(..., description="NFSE, NFE, RECIBO, CONTRATO, FATURA, DESPESA_INTERNA")
     numero_doc: str
@@ -97,6 +116,8 @@ class DocumentoCompatEntrada(BaseModel):
     cnae: Optional[str] = ""
     item_lc116: Optional[str] = ""
     impostos: Optional[List[ImpostoCompatItem]] = []
+    itens: Optional[List[ItemNFCompatItem]] = []
+    parcelas: Optional[List[ParcelaCompatItem]] = []
 
 
 class TituloCompatEdicao(BaseModel):
@@ -577,6 +598,7 @@ def compat_listar_titulos(
     tit_ids = [t.id for t in titulos_db]
 
     impostos_map: dict[str, list[TituloImposto]] = {}
+    itens_map: dict[str, list[TituloItem]] = {}
     rateios_count: dict[str, int] = {}
     if tit_ids:
         for imp in (
@@ -585,6 +607,13 @@ def compat_listar_titulos(
             .all()
         ):
             impostos_map.setdefault(imp.titulo_id, []).append(imp)
+        for it in (
+            db.query(TituloItem)
+            .filter(TituloItem.tenant_id == ctx.tenant_id, TituloItem.titulo_id.in_(tit_ids))
+            .order_by(TituloItem.numero_item.asc())
+            .all()
+        ):
+            itens_map.setdefault(it.titulo_id, []).append(it)
         for tid, cnt in (
             db.query(TituloRateio.titulo_id, func.count(TituloRateio.id))
             .filter(TituloRateio.tenant_id == ctx.tenant_id, TituloRateio.titulo_id.in_(tit_ids))
@@ -644,6 +673,22 @@ def compat_listar_titulos(
             "valor_pago": float(to_dec(t.valor_pago)) if t.valor_pago else 0.0,
             "juros_multa": float(to_dec(t.juros_multa)),
             "desconto": float(to_dec(t.desconto)),
+            "data_emissao": t.dt_emissao.isoformat() if t.dt_emissao else None,
+            "itens": [
+                {
+                    "id": it.id,
+                    "numero_item": it.numero_item,
+                    "codigo": it.codigo_produto or "",
+                    "descricao": it.descricao,
+                    "ncm": it.ncm or "",
+                    "cfop": it.cfop or "",
+                    "unidade": it.unidade or "UN",
+                    "quantidade": float(it.quantidade or 0),
+                    "valor_unitario": float(it.valor_unitario or 0),
+                    "valor_total": float(it.valor_total or 0),
+                }
+                for it in itens_map.get(t.id, [])
+            ],
         })
 
         for imp in impostos_map.get(t.id, []):
@@ -742,34 +787,78 @@ def compat_gravar_documento(
     dt_emissao = _parse_date(doc.data_emissao, date.today()) or date.today()
     dt_venc = _parse_date(doc.vencimento, dt_emissao) or dt_emissao
 
-    titulo = Titulo(
-        tenant_id=ctx.tenant_id,
-        empresa_id=emp.id,
-        fornecedor_id=forn.id,
-        centro_custo_id=ccusto_obj.id if ccusto_obj else None,
-        plano_conta_id=plano_obj.id if plano_obj else None,
-        tipo_movimento="PAGAR",
-        tipo_documento=(doc.tipo_doc or "NFSE").strip().upper()[:30],
-        numero_tx=f"TX_{datetime.now().strftime('%Y%m%d%H%M%S')}",
-        numero_documento=doc.numero_doc.strip()[:60],
-        favorecido_nome=doc.favorecido.strip()[:200],
-        favorecido_doc=limpar_documento(doc.cnpj) if doc.cnpj else None,
-        dt_emissao=dt_emissao,
-        dt_vencimento=dt_venc,
-        valor_bruto=bruto,
-        valor_liquido=valor_liquido,
-        status="PENDENTE",
-        forma_pgto=(doc.forma_pgto or "PIX").strip().upper()[:30],
-        cod_barras=doc.linha_dig.strip()[:80] if doc.linha_dig else None,
-        cod_operacao=doc.cod_operacao[:120] if doc.cod_operacao else None,
-        cnae=doc.cnae[:40] if doc.cnae else None,
-        item_lc116=doc.item_lc116[:20] if doc.item_lc116 else None,
-        descricao=doc.descricao,
-        observacao=doc.historico,
-        solicitante=doc.solicitante[:120] if doc.solicitante else None,
-    )
-    db.add(titulo)
-    db.flush()
+    parcelas_lista = [p for p in (doc.parcelas or []) if to_dec(p.valor) > Decimal("0.00")]
+    itens_lista = doc.itens or []
+    lote_tx = f"TX_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    titulos_criados: list[Titulo] = []
+
+    if len(parcelas_lista) > 1:
+        total_parc = len(parcelas_lista)
+        for idx, parc in enumerate(parcelas_lista, start=1):
+            v_parc_bruto = to_dec(parc.valor)
+            v_parc_liq = max(Decimal("0.00"), v_parc_bruto - total_impostos) if idx == 1 else v_parc_bruto
+            dt_venc_parc = _parse_date(parc.vencimento, dt_venc) or dt_venc
+            num_doc_parc = f"{doc.numero_doc.strip()} ({idx}/{total_parc})"[:60]
+            t_parc = Titulo(
+                tenant_id=ctx.tenant_id,
+                empresa_id=emp.id,
+                fornecedor_id=forn.id,
+                centro_custo_id=ccusto_obj.id if ccusto_obj else None,
+                plano_conta_id=plano_obj.id if plano_obj else None,
+                tipo_movimento="PAGAR",
+                tipo_documento=(doc.tipo_doc or "NFSE").strip().upper()[:30],
+                numero_tx=lote_tx,
+                numero_documento=num_doc_parc,
+                favorecido_nome=doc.favorecido.strip()[:200],
+                favorecido_doc=limpar_documento(doc.cnpj) if doc.cnpj else None,
+                dt_emissao=dt_emissao,
+                dt_vencimento=dt_venc_parc,
+                valor_bruto=v_parc_bruto,
+                valor_liquido=v_parc_liq,
+                status="PENDENTE",
+                forma_pgto=(doc.forma_pgto or "PIX").strip().upper()[:30],
+                cod_barras=doc.linha_dig.strip()[:80] if (doc.linha_dig and idx == 1) else None,
+                cod_operacao=doc.cod_operacao[:120] if doc.cod_operacao else None,
+                cnae=doc.cnae[:40] if doc.cnae else None,
+                item_lc116=doc.item_lc116[:20] if doc.item_lc116 else None,
+                descricao=doc.descricao,
+                observacao=(f"[Parcela {idx}/{total_parc}] {doc.historico or ''}").strip(),
+                solicitante=doc.solicitante[:120] if doc.solicitante else None,
+            )
+            db.add(t_parc)
+            titulos_criados.append(t_parc)
+        db.flush()
+        titulo = titulos_criados[0]
+    else:
+        titulo = Titulo(
+            tenant_id=ctx.tenant_id,
+            empresa_id=emp.id,
+            fornecedor_id=forn.id,
+            centro_custo_id=ccusto_obj.id if ccusto_obj else None,
+            plano_conta_id=plano_obj.id if plano_obj else None,
+            tipo_movimento="PAGAR",
+            tipo_documento=(doc.tipo_doc or "NFSE").strip().upper()[:30],
+            numero_tx=lote_tx,
+            numero_documento=doc.numero_doc.strip()[:60],
+            favorecido_nome=doc.favorecido.strip()[:200],
+            favorecido_doc=limpar_documento(doc.cnpj) if doc.cnpj else None,
+            dt_emissao=dt_emissao,
+            dt_vencimento=dt_venc,
+            valor_bruto=bruto,
+            valor_liquido=valor_liquido,
+            status="PENDENTE",
+            forma_pgto=(doc.forma_pgto or "PIX").strip().upper()[:30],
+            cod_barras=doc.linha_dig.strip()[:80] if doc.linha_dig else None,
+            cod_operacao=doc.cod_operacao[:120] if doc.cod_operacao else None,
+            cnae=doc.cnae[:40] if doc.cnae else None,
+            item_lc116=doc.item_lc116[:20] if doc.item_lc116 else None,
+            descricao=doc.descricao,
+            observacao=doc.historico,
+            solicitante=doc.solicitante[:120] if doc.solicitante else None,
+        )
+        db.add(titulo)
+        db.flush()
+        titulos_criados.append(titulo)
 
     for imp in impostos_lista:
         db.add(
@@ -784,6 +873,29 @@ def compat_gravar_documento(
             )
         )
 
+    for idx_it, it in enumerate(itens_lista, start=1):
+        desc_it = (it.descricao or "").strip()[:300]
+        if not desc_it:
+            continue
+        db.add(
+            TituloItem(
+                tenant_id=ctx.tenant_id,
+                titulo_id=titulo.id,
+                numero_item=it.numero_item or idx_it,
+                codigo_produto=(it.codigo_produto or "").strip()[:60] or None,
+                descricao=desc_it,
+                ncm=(it.ncm or "").strip()[:16] or None,
+                cfop=(it.cfop or "").strip()[:10] or None,
+                unidade=(it.unidade or "UN").strip()[:16] or "UN",
+                quantidade=Decimal(str(it.quantidade or 0)).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP),
+                valor_unitario=Decimal(str(it.valor_unitario or 0)).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP),
+                valor_total=to_dec(it.valor_total),
+                fornecedor_nome=doc.favorecido.strip()[:200],
+                numero_nf=doc.numero_doc.strip()[:60],
+                dt_emissao=dt_emissao,
+            )
+        )
+
     registrar_audit_v2(
         db,
         ctx.tenant_id,
@@ -791,7 +903,13 @@ def compat_gravar_documento(
         "GRAVAR_DOCUMENTO_ERP",
         "titulos",
         titulo.id,
-        dados_depois={"numero_documento": titulo.numero_documento, "valor_bruto": str(bruto), "qtd_impostos": len(impostos_lista)},
+        dados_depois={
+            "numero_documento": titulo.numero_documento,
+            "valor_bruto": str(bruto),
+            "qtd_impostos": len(impostos_lista),
+            "qtd_itens": len(itens_lista),
+            "qtd_parcelas": len(titulos_criados),
+        },
         ip=extrair_ip(request),
     )
     db.commit()
@@ -801,6 +919,8 @@ def compat_gravar_documento(
         "lote_tx": titulo.numero_tx,
         "valor_liquido_fornecedor": float(valor_liquido),
         "impostos_gravados": len(impostos_lista),
+        "itens_gravados": len(itens_lista),
+        "parcelas_geradas": len(titulos_criados),
     }
 
 

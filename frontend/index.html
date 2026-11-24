@@ -2066,6 +2066,9 @@
           <button class="btn-filtro-rapido" id="btn-rel-fluxo" onclick="selecionarRelatorioBimer('fluxo')" style="padding: 6px 12px; font-weight: 700; font-size: 11px;">
             <svg class="bimer-svg" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg> D) Fluxo de Caixa (Realizado vs. Previsto)
           </button>
+          <button class="btn-filtro-rapido" id="btn-rel-itens" onclick="selecionarRelatorioBimer('itens')" style="padding: 6px 12px; font-weight: 700; font-size: 11px;">
+            <svg class="bimer-svg" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg> E) Itens &amp; Compras (NF-e)
+          </button>
         </div>
 
         <!-- BARRA DE FILTROS ESPECÍFICOS & BOTÕES DE AÇÃO -->
@@ -2100,6 +2103,11 @@
                 <option value="Tributário / Fiscal">Tributário / Fiscal (ISS, DARF, GNRE)</option>
                 <option value="Despesas Bancárias / Administrativo">Despesas Bancárias / Tarifas Itaú</option>
               </select>
+            </div>
+
+            <div id="rel-filtro-item-box" style="display: none;">
+              <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Buscar Produto / NCM / Fornecedor:</label>
+              <input type="text" id="rel-filtro-item-busca" oninput="renderizarRelatorioAtual()" placeholder="Ex: tecido, malha, NCM ou fornecedor..." style="padding: 4px 8px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 3px; min-width: 220px; color: #090d16;">
             </div>
           </div>
 
@@ -7189,7 +7197,12 @@
     return `${entr[0]}.${entr.slice(1)}`;
   }
 
+  window.xmlItensNFeAtual = [];
+  window.xmlParcelasNFeAtual = [];
+
   function limparBannerXMLNF() {
+    window.xmlItensNFeAtual = [];
+    window.xmlParcelasNFeAtual = [];
     const badge = document.getElementById('badge-xml-importado');
     if (badge) {
       badge.style.display = 'none';
@@ -7298,20 +7311,53 @@
       const cfopSaida = dets.length ? _xmlPrimeiroTexto(dets[0], ['CFOP']) : '';
       const cfopEntrada = _xmlConverterCFOPSaidaParaEntrada(cfopSaida);
 
-      // Produtos para descrição
+      // Produtos para descrição + extração estruturada completa de itens
       const nomesProds = [];
       let xPed = '';
-      dets.forEach(d => {
+      const itensExtraidos = [];
+      dets.forEach((d, idxDet) => {
         const xp = _xmlPrimeiroTexto(d, ['xProd']);
         if (xp && nomesProds.length < 3) nomesProds.push(xp);
         if (!xPed) xPed = _xmlPrimeiroTexto(d, ['xPed']);
+        const nItemAttr = parseInt(d.getAttribute('nItem') || String(idxDet + 1), 10) || (idxDet + 1);
+        const cProd = _xmlPrimeiroTexto(d, ['cProd']);
+        const ncm = _xmlPrimeiroTexto(d, ['NCM']);
+        const cfopIt = _xmlPrimeiroTexto(d, ['CFOP']);
+        const uCom = _xmlPrimeiroTexto(d, ['uCom']) || 'UN';
+        const qCom = _xmlParseValor(_xmlPrimeiroTexto(d, ['qCom'])) || 1;
+        const vUnCom = _xmlParseValor(_xmlPrimeiroTexto(d, ['vUnCom']));
+        const vProd = _xmlParseValor(_xmlPrimeiroTexto(d, ['vProd']));
+        if (xp) {
+          itensExtraidos.push({
+            numero_item: nItemAttr,
+            codigo_produto: cProd || '',
+            descricao: xp,
+            ncm: ncm || '',
+            cfop: cfopIt || '',
+            unidade: uCom,
+            quantidade: qCom,
+            valor_unitario: vUnCom || (qCom > 0 ? Number((vProd / qCom).toFixed(4)) : 0),
+            valor_total: vProd || Number((qCom * vUnCom).toFixed(2))
+          });
+        }
       });
+      window.xmlItensNFeAtual = itensExtraidos;
       const sufItens = dets.length > 3 ? ` (+${dets.length - 3} itens)` : '';
       const descProdutos = nomesProds.length ? `Ref. NF-e ${nNF}: ${nomesProds.join('; ')}${sufItens}` : `Aquisição de mercadorias - NF-e ${nNF}`;
 
-      // Duplicatas / Vencimentos
+      // Duplicatas / Vencimentos (com desdobramento automático de parcelas)
       const dups = cobr ? _xmlTodosElementos(cobr, 'dup') : [];
       const primeiroVenc = dups.length ? _xmlExtrairDataISO(_xmlPrimeiroTexto(dups[0], ['dVenc'])) : '';
+      const parcelasExtraidas = [];
+      dups.forEach((dp, idxDp) => {
+        const vDup = _xmlParseValor(_xmlPrimeiroTexto(dp, ['vDup']));
+        const dVenc = _xmlExtrairDataISO(_xmlPrimeiroTexto(dp, ['dVenc']));
+        const nDup = _xmlPrimeiroTexto(dp, ['nDup']) || String(idxDp + 1);
+        if (vDup > 0 && dVenc) {
+          parcelasExtraidas.push({ numero: nDup, vencimento: dVenc, valor: vDup });
+        }
+      });
+      window.xmlParcelasNFeAtual = parcelasExtraidas;
 
       if (elNum) elNum.value = nNF;
       if (elSerie && serie) elSerie.value = serie;
@@ -7331,6 +7377,8 @@
       infoExtra = `${dets.length} item(ns)` + (dups.length ? ` • ${dups.length} duplicata(s) (1º venc: ${primeiroVenc ? primeiroVenc.split('-').reverse().join('/') : '-'})` : ' • Sem duplicata no XML (confira o vencimento)');
     } else {
       // ── NFS-e SERVIÇO (ABRASF / GINFES / NACIONAL / PREFEITURAS) ──
+      window.xmlItensNFeAtual = [];
+      window.xmlParcelasNFeAtual = [];
       resumoTipo = 'NFS-e Serviço';
       if (selTipo) {
         selTipo.value = 'NFSE';
@@ -7876,7 +7924,9 @@
       cod_operacao: cod_operacao || '1.933 - Aquisição de serviço tributado pelo ISSQN',
       cnae: cnae || '',
       item_lc116: item_lc116 || '',
-      impostos
+      impostos,
+      itens: window.xmlItensNFeAtual || [],
+      parcelas: window.xmlParcelasNFeAtual || []
     };
 
     // Auto-salvar no cadastro de fornecedores/prestadores
@@ -7910,7 +7960,11 @@
 
         const resData = await resp.json();
         ultimoLoteGravado = resData.lote_tx;
-        alert(`[SUCESSO] GRAVAÇÃO REALIZADA!\nDocumento ${numero_doc} e ${resData.impostos_gravados} guias fiscais gravados no JR FinCloud.`);
+        window.xmlItensNFeAtual = [];
+        window.xmlParcelasNFeAtual = [];
+        const msgParc = (resData.parcelas_geradas && resData.parcelas_geradas > 1) ? `\n• ${resData.parcelas_geradas} parcelas geradas no Contas a Pagar` : '';
+        const msgItens = (resData.itens_gravados && resData.itens_gravados > 0) ? `\n• ${resData.itens_gravados} item(ns) da NF-e salvos para relatório e conferência` : '';
+        alert(`[SUCESSO] GRAVAÇÃO REALIZADA!\nDocumento ${numero_doc} e ${resData.impostos_gravados} guias fiscais gravados no JR FinCloud.${msgParc}${msgItens}`);
         await carregarDadosIniciais();
         trocarAba('aba-financeiro');
         return;
@@ -7952,8 +8006,12 @@
       dados_banco,
       linha_dig,
       dataCriacao: hoje,
+      data_emissao: data_emissao || hoje,
+      itens: window.xmlItensNFeAtual || [],
       status: 'PENDENTE'
     });
+    window.xmlItensNFeAtual = [];
+    window.xmlParcelasNFeAtual = [];
 
     impostos.forEach(imp => {
       titulos.push({
@@ -8555,6 +8613,45 @@
             ${item.item_lc116 ? ` • <strong>LC 116:</strong> ${escapeHtml(item.item_lc116)}` : ''}
           </div>
         </div>
+
+        ${(item.itens && item.itens.length > 0) ? `
+          <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px; margin-bottom: 10px;">
+            <div style="font-size: 10px; font-weight: 800; color: #004b87; text-transform: uppercase; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+              <span>Itens da Nota Fiscal (${item.itens.length})</span>
+              <span style="font-size: 10px; font-weight: 700; color: #0f172a;">Total Itens: ${formatarMoeda(item.itens.reduce((acc, it) => acc + (Number(it.valor_total) || 0), 0))}</span>
+            </div>
+            <div style="max-height: 190px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 3px;">
+              <table class="alterdata-grid" style="margin-top: 0; font-size: 10.5px;">
+                <thead>
+                  <tr>
+                    <th style="width: 30px; text-align: center;">#</th>
+                    <th style="width: 75px;">Código</th>
+                    <th>Produto / Descrição</th>
+                    <th style="width: 72px; text-align: center;">NCM</th>
+                    <th style="width: 44px; text-align: center;">Un.</th>
+                    <th style="width: 64px; text-align: right;">Qtd.</th>
+                    <th style="width: 82px; text-align: right;">Vlr. Unit.</th>
+                    <th style="width: 86px; text-align: right;">Vlr. Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${item.itens.map((it, idxIt) => `
+                    <tr>
+                      <td style="text-align: center;">${it.numero_item || (idxIt + 1)}</td>
+                      <td style="font-family: monospace; font-size: 10px;">${escapeHtml(it.codigo || '-')}</td>
+                      <td style="font-weight: 600; color: #090d16;">${escapeHtml(it.descricao || '-')}</td>
+                      <td style="text-align: center; font-family: monospace; font-size: 10px;">${escapeHtml(it.ncm || '-')}</td>
+                      <td style="text-align: center;">${escapeHtml(it.unidade || 'UN')}</td>
+                      <td style="text-align: right;">${Number(it.quantidade || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</td>
+                      <td style="text-align: right;">${formatarMoeda(it.valor_unitario || 0)}</td>
+                      <td style="text-align: right; font-weight: 700;">${formatarMoeda(it.valor_total || 0)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ` : ''}
 
         <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 4px; padding: 10px;">
           <div style="font-size: 10px; font-weight: 800; color: #166534; text-transform: uppercase; margin-bottom: 6px;">Dados para Pagamento (${escapeHtml(formaUp)})</div>
@@ -10454,7 +10551,8 @@
       'vencimento': 'btn-rel-vencimento',
       'retencoes': 'btn-rel-retencoes',
       'ccusto': 'btn-rel-ccusto',
-      'fluxo': 'btn-rel-fluxo'
+      'fluxo': 'btn-rel-fluxo',
+      'itens': 'btn-rel-itens'
     };
     const activeBtn = document.getElementById(btnMap[tipo]);
     if (activeBtn) activeBtn.classList.add('active');
@@ -10462,8 +10560,10 @@
     // Visibilidade dos filtros contextuais
     const boxStatus = document.getElementById('rel-filtro-status-box');
     const boxCcusto = document.getElementById('rel-filtro-ccusto-box');
+    const boxItem = document.getElementById('rel-filtro-item-box');
     if (boxStatus) boxStatus.style.display = (tipo === 'vencimento' || tipo === 'retencoes') ? 'block' : 'none';
     if (boxCcusto) boxCcusto.style.display = (tipo === 'vencimento' || tipo === 'ccusto') ? 'block' : 'none';
+    if (boxItem) boxItem.style.display = (tipo === 'itens') ? 'block' : 'none';
 
     renderizarRelatorioAtual();
     atualizarBarraRodape();
@@ -10481,6 +10581,8 @@
       container.innerHTML = gerarHtmlRelatorioCentroCusto();
     } else if (relatorioAtivo === 'fluxo') {
       container.innerHTML = gerarHtmlRelatorioFluxoCaixa();
+    } else if (relatorioAtivo === 'itens') {
+      container.innerHTML = gerarHtmlRelatorioItensNF();
     }
   }
 
@@ -11093,6 +11195,192 @@
   }
 
   // 5. IMPRESSÃO A4 & EXPORTAÇÃO CSV
+  function gerarHtmlRelatorioItensNF() {
+    const { dataIni, dataFim } = obterFiltrosRelatorio();
+    const termo = (document.getElementById('rel-filtro-item-busca')?.value || '').trim().toLowerCase();
+
+    const compras = [];
+    const notasComItens = new Set();
+
+    (titulos || []).forEach(t => {
+      if (!t.itens || !t.itens.length) return;
+      const dtRef = (t.data_emissao || t.vencimento || '').slice(0, 10);
+      if (dtRef && (dtRef < dataIni || dtRef > dataFim)) return;
+
+      t.itens.forEach(it => {
+        const desc = String(it.descricao || '').trim();
+        const cod = String(it.codigo || '').trim();
+        const ncm = String(it.ncm || '').trim();
+        const forn = String(t.favorecido || '').trim();
+        if (termo) {
+          const match = desc.toLowerCase().includes(termo) || cod.toLowerCase().includes(termo) || ncm.toLowerCase().includes(termo) || forn.toLowerCase().includes(termo);
+          if (!match) return;
+        }
+        notasComItens.add(t.numero_doc || t.id);
+        compras.push({
+          data: dtRef || '-',
+          numero_nf: t.numero_doc || '-',
+          fornecedor: forn,
+          codigo: cod,
+          descricao: desc,
+          ncm: ncm || '-',
+          unidade: it.unidade || 'UN',
+          quantidade: Number(it.quantidade || 0),
+          valor_unitario: Number(it.valor_unitario || 0),
+          valor_total: Number(it.valor_total || 0),
+        });
+      });
+    });
+
+    const totalGasto = compras.reduce((acc, c) => acc + c.valor_total, 0);
+
+    // Agrupamento Curva ABC por produto (descrição normalizada)
+    const gruposMap = {};
+    compras.forEach(c => {
+      const chave = (c.descricao || '').toUpperCase();
+      if (!gruposMap[chave]) {
+        gruposMap[chave] = {
+          descricao: c.descricao,
+          ncm: c.ncm,
+          unidade: c.unidade,
+          qtdTotal: 0,
+          valorTotal: 0,
+          ocorrencias: 0,
+          menorUnit: c.valor_unitario,
+          maiorUnit: c.valor_unitario,
+          ultimoUnit: c.valor_unitario,
+          ultimaData: c.data
+        };
+      }
+      const g = gruposMap[chave];
+      g.qtdTotal += c.quantidade;
+      g.valorTotal += c.valor_total;
+      g.ocorrencias += 1;
+      if (c.valor_unitario > 0 && (g.menorUnit <= 0 || c.valor_unitario < g.menorUnit)) g.menorUnit = c.valor_unitario;
+      if (c.valor_unitario > g.maiorUnit) g.maiorUnit = c.valor_unitario;
+      if (c.data >= g.ultimaData) {
+        g.ultimaData = c.data;
+        g.ultimoUnit = c.valor_unitario;
+      }
+    });
+
+    const rankingABC = Object.values(gruposMap).sort((a, b) => b.valorTotal - a.valorTotal);
+    const maiorItem = rankingABC[0] ? `${rankingABC[0].descricao.slice(0, 28)}${rankingABC[0].descricao.length > 28 ? '...' : ''}` : '-';
+    compras.sort((a, b) => b.data.localeCompare(a.data));
+
+    const headerHtml = gerarCabecalhoRelatorio(
+      'RELATÓRIO DE ITENS & COMPRAS DE PRODUTOS (NF-e)',
+      `Período: ${formatarData(dataIni)} a ${formatarData(dataFim)}${termo ? ` • Filtro: "${escapeHtml(termo)}"` : ''}`
+    );
+
+    if (compras.length === 0) {
+      return `
+        ${headerHtml}
+        <div style="text-align: center; padding: 36px 20px; border: 1px dashed #cbd5e1; border-radius: 6px; background: #f8fafc; color: #334155;">
+          <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Nenhum item de NF-e encontrado no período selecionado</div>
+          <div style="font-size: 11px;">Importe arquivos XML de NF-e (Produtos) na Aba 1 para começar a acompanhar o ranking de itens e o histórico de preços unitários.</div>
+        </div>
+      `;
+    }
+
+    const kpisHtml = `
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px;">
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #004b87; padding: 8px 12px; border-radius: 3px;">
+          <div style="font-size: 9.5px; text-transform: uppercase; font-weight: 700; color: #334155;">Total Comprado em Itens</div>
+          <div style="font-size: 15px; font-weight: 800; color: #004b87; margin-top: 2px;">${formatarMoeda(totalGasto)}</div>
+        </div>
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #16a34a; padding: 8px 12px; border-radius: 3px;">
+          <div style="font-size: 9.5px; text-transform: uppercase; font-weight: 700; color: #334155;">Produtos / Itens Únicos</div>
+          <div style="font-size: 15px; font-weight: 800; color: #15803d; margin-top: 2px;">${rankingABC.length}</div>
+        </div>
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #7e22ce; padding: 8px 12px; border-radius: 3px;">
+          <div style="font-size: 9.5px; text-transform: uppercase; font-weight: 700; color: #334155;">NF-es com Itens</div>
+          <div style="font-size: 15px; font-weight: 800; color: #6b21a8; margin-top: 2px;">${notasComItens.size}</div>
+        </div>
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #ea580c; padding: 8px 12px; border-radius: 3px;">
+          <div style="font-size: 9.5px; text-transform: uppercase; font-weight: 700; color: #334155;">Item de Maior Gasto</div>
+          <div style="font-size: 11.5px; font-weight: 800; color: #9a3412; margin-top: 4px;">${escapeHtml(maiorItem)}</div>
+        </div>
+      </div>
+    `;
+
+    const tabelaABC = `
+      <div style="font-size: 11px; font-weight: 800; color: #004b87; text-transform: uppercase; margin: 12px 0 6px 0;">1. Curva ABC de Itens Comprados (Ranking por Valor Total)</div>
+      <table class="alterdata-grid" style="font-size: 10.5px; margin-bottom: 16px;">
+        <thead>
+          <tr>
+            <th style="width: 34px; text-align: center;">#</th>
+            <th>Produto / Insumo</th>
+            <th style="width: 72px; text-align: center;">NCM</th>
+            <th style="width: 44px; text-align: center;">Un.</th>
+            <th style="width: 70px; text-align: right;">Qtd. Total</th>
+            <th style="width: 84px; text-align: right;">Preço Médio</th>
+            <th style="width: 84px; text-align: right;">Último Preço</th>
+            <th style="width: 115px; text-align: center;">Mín. / Máx. Unit.</th>
+            <th style="width: 92px; text-align: right;">Total Gasto</th>
+            <th style="width: 52px; text-align: right;">%</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rankingABC.map((g, idx) => {
+            const precoMedio = g.qtdTotal > 0 ? (g.valorTotal / g.qtdTotal) : g.ultimoUnit;
+            const pct = totalGasto > 0 ? (g.valorTotal / totalGasto) * 100 : 0;
+            return `
+              <tr>
+                <td style="text-align: center; font-weight: 700;">${idx + 1}</td>
+                <td style="font-weight: 600; color: #090d16;">${escapeHtml(g.descricao)} <span style="font-size: 9.5px; color: #334155;">(${g.ocorrencias}x)</span></td>
+                <td style="text-align: center; font-family: monospace; font-size: 10px;">${escapeHtml(g.ncm)}</td>
+                <td style="text-align: center;">${escapeHtml(g.unidade)}</td>
+                <td style="text-align: right;">${g.qtdTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</td>
+                <td style="text-align: right;">${formatarMoeda(precoMedio)}</td>
+                <td style="text-align: right; font-weight: 700; color: #004b87;">${formatarMoeda(g.ultimoUnit)}</td>
+                <td style="text-align: center; font-size: 9.5px; color: #1e293b;">${formatarMoeda(g.menorUnit)} / ${formatarMoeda(g.maiorUnit)}</td>
+                <td style="text-align: right; font-weight: 800; color: #090d16;">${formatarMoeda(g.valorTotal)}</td>
+                <td style="text-align: right; font-weight: 700; color: #334155;">${pct.toFixed(1)}%</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+
+    const tabelaHistorico = `
+      <div style="font-size: 11px; font-weight: 800; color: #004b87; text-transform: uppercase; margin: 12px 0 6px 0;">2. Histórico Analítico de Preço Unitário por Nota Fiscal</div>
+      <table class="alterdata-grid" style="font-size: 10.5px;">
+        <thead>
+          <tr>
+            <th style="width: 78px;">Emissão</th>
+            <th style="width: 82px;">NF-e</th>
+            <th>Fornecedor</th>
+            <th>Produto / Item</th>
+            <th style="width: 70px; text-align: center;">NCM</th>
+            <th style="width: 64px; text-align: right;">Qtd.</th>
+            <th style="width: 40px; text-align: center;">Un.</th>
+            <th style="width: 84px; text-align: right;">Vlr. Unitário</th>
+            <th style="width: 90px; text-align: right;">Vlr. Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${compras.map(c => `
+            <tr>
+              <td>${formatarData(c.data)}</td>
+              <td style="font-family: monospace; font-weight: 700;">${escapeHtml(c.numero_nf)}</td>
+              <td>${escapeHtml(c.fornecedor)}</td>
+              <td style="font-weight: 600; color: #090d16;">${escapeHtml(c.descricao)}</td>
+              <td style="text-align: center; font-family: monospace; font-size: 10px;">${escapeHtml(c.ncm)}</td>
+              <td style="text-align: right;">${c.quantidade.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 3 })}</td>
+              <td style="text-align: center;">${escapeHtml(c.unidade)}</td>
+              <td style="text-align: right; font-weight: 700; color: #004b87;">${formatarMoeda(c.valor_unitario)}</td>
+              <td style="text-align: right; font-weight: 700;">${formatarMoeda(c.valor_total)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    return `${headerHtml}${kpisHtml}${tabelaABC}${tabelaHistorico}`;
+  }
+
   function imprimirRelatorioBimer() {
     document.body.classList.add('imprimindo-relatorio-bimer');
     window.print();
@@ -11125,6 +11413,16 @@
       csv = 'Centro_Custo;Documento;Favorecido;Vencimento;Valor_Liquido;Situacao\n';
       (titulos || []).forEach(t => {
         csv += `"${t.ccusto || 'Geral'}";"${t.numero_doc || ''}";"${t.favorecido || ''}";"${t.vencimento || ''}";"${Number(t.valor || 0).toFixed(2)}";"${t.situacao || 'PENDENTE'}"\n`;
+      });
+    } else if (relatorioAtivo === 'itens') {
+      csv = 'Data_Emissao;NF_e;Fornecedor;Codigo;Produto;NCM;Unidade;Quantidade;Valor_Unitario;Valor_Total\n';
+      (titulos || []).forEach(t => {
+        if (!t.itens || !t.itens.length) return;
+        const dtRef = (t.data_emissao || t.vencimento || '').slice(0, 10);
+        if (dtRef && (dtRef < dataIni || dtRef > dataFim)) return;
+        t.itens.forEach(it => {
+          csv += `"${dtRef}";"${t.numero_doc || ''}";"${(t.favorecido || '').replace(/"/g, '""')}";"${it.codigo || ''}";"${(it.descricao || '').replace(/"/g, '""')}";"${it.ncm || ''}";"${it.unidade || 'UN'}";"${Number(it.quantidade || 0).toFixed(4)}";"${Number(it.valor_unitario || 0).toFixed(4)}";"${Number(it.valor_total || 0).toFixed(2)}"\n`;
+        });
       });
     } else {
       csv = 'Categoria;Favorecido;Dia_Vencimento;Valor_Previsto\n';
@@ -11493,8 +11791,12 @@
       dados_banco: '',
       linha_dig: codBarras,
       dataCriacao: hoje,
+      data_emissao: data_emissao || hoje,
+      itens: window.xmlItensNFeAtual || [],
       status: 'PENDENTE'
     });
+    window.xmlItensNFeAtual = [];
+    window.xmlParcelasNFeAtual = [];
 
     // 2. Marca previsão como EFETIVADA
     prev.status = 'EFETIVADA';

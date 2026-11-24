@@ -8,6 +8,7 @@ from sqlalchemy import text
 from .core.config import BASE_DIR, PROJECT_NAME, VERSION, API_PREFIX, API_V2_PREFIX, CORS_ORIGINS, CORS_ORIGIN_REGEX
 from .core.database import get_connection, init_db
 from .core.security import obter_usuario_logado
+from .db.models import TituloItem
 from .db.session import get_engine
 from .api import titulos, previsoes, adiantamentos, auth, fornecedores
 from .api.auth import garantir_admin_inicial
@@ -24,6 +25,10 @@ logger = logging.getLogger("jrfincloud.main")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    try:
+        TituloItem.__table__.create(bind=get_engine(), checkfirst=True)
+    except Exception as exc:
+        logger.warning("Aviso ao garantir tabela titulo_itens: %s", exc)
     garantir_admin_inicial()
     yield
 
