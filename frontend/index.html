@@ -7758,11 +7758,13 @@
       const vCofins = _xmlParseValor(_xmlPrimeiroTexto(valEl, ['ValorCofins', 'vRetCOFINS', 'ValorCOFINS']));
       const vCsll = _xmlParseValor(_xmlPrimeiroTexto(valEl, ['ValorCsll', 'vRetCSLL', 'ValorCSLL']));
 
-      if (vIss > 0) out.impostos.push({ tipo: 'ISS', aliquota: 5.0, valor: vIss, dt_venc_imp: out.vencimento });
-      if (vIr > 0) out.impostos.push({ tipo: 'IRRF', aliquota: 1.5, valor: vIr, dt_venc_imp: out.vencimento });
-      if (vPis > 0) out.impostos.push({ tipo: 'PIS', aliquota: 0.65, valor: vPis, dt_venc_imp: out.vencimento });
-      if (vCofins > 0) out.impostos.push({ tipo: 'COFINS', aliquota: 3.0, valor: vCofins, dt_venc_imp: out.vencimento });
-      if (vCsll > 0) out.impostos.push({ tipo: 'CSLL', aliquota: 1.0, valor: vCsll, dt_venc_imp: out.vencimento });
+      const vencIssLote = _calcularVencimentoFiscal(out.data_emissao, 5);
+      const vencFedLote = _calcularVencimentoFiscal(out.data_emissao, 20);
+      if (vIss > 0) out.impostos.push({ tipo: 'ISS', aliquota: 5.0, valor: vIss, dt_venc_imp: vencIssLote });
+      if (vIr > 0) out.impostos.push({ tipo: 'IRRF', aliquota: 1.5, valor: vIr, dt_venc_imp: vencFedLote });
+      if (vPis > 0) out.impostos.push({ tipo: 'PIS', aliquota: 0.65, valor: vPis, dt_venc_imp: vencFedLote });
+      if (vCofins > 0) out.impostos.push({ tipo: 'COFINS', aliquota: 3.0, valor: vCofins, dt_venc_imp: vencFedLote });
+      if (vCsll > 0) out.impostos.push({ tipo: 'CSLL', aliquota: 1.0, valor: vCsll, dt_venc_imp: vencFedLote });
     }
 
     // Pré-preenche categoria/forma pela memória do fornecedor
@@ -8491,21 +8493,30 @@
     }
   }
 
-  function sugerirVencimentosFiscais() {
-    const dataEmissaoStr = document.getElementById('data_emissao').value || hoje;
-    const [ano, mes, dia] = dataEmissaoStr.split('-').map(Number);
-
-    let proxMes = mes + 1;
-    let proxAno = ano;
+  function _calcularVencimentoFiscal(dataEmissaoStr, diaAlvo) {
+    const base = (dataEmissaoStr || new Date().toISOString().slice(0, 10)).slice(0, 10);
+    const [ano, mes] = base.split('-').map(Number);
+    let proxMes = (mes || 1) + 1;
+    let proxAno = ano || new Date().getFullYear();
     if (proxMes > 12) {
       proxMes = 1;
       proxAno++;
     }
+    const dt = new Date(proxAno, proxMes - 1, diaAlvo, 12, 0, 0);
+    const dow = dt.getDay();
+    if (dow === 6) dt.setDate(dt.getDate() - 1); // Sábado -> Sexta
+    else if (dow === 0) dt.setDate(dt.getDate() - 2); // Domingo -> Sexta
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const d = String(dt.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
 
-    const proxMesPad = String(proxMes).padStart(2, '0');
-    document.getElementById('venc_iss').value = `${proxAno}-${proxMesPad}-10`;
+  function sugerirVencimentosFiscais() {
+    const dataEmissaoStr = document.getElementById('data_emissao').value || hoje;
+    document.getElementById('venc_iss').value = _calcularVencimentoFiscal(dataEmissaoStr, 5);
 
-    const dia20 = `${proxAno}-${proxMesPad}-20`;
+    const dia20 = _calcularVencimentoFiscal(dataEmissaoStr, 20);
     document.getElementById('venc_irrf').value = dia20;
     document.getElementById('venc_pis').value = dia20;
     document.getElementById('venc_cofins').value = dia20;
