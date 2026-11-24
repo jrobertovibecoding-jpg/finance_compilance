@@ -93,6 +93,8 @@ class ParcelaCompatItem(BaseModel):
     numero: Optional[str] = ""
     vencimento: str
     valor: float
+    linha_dig: Optional[str] = ""
+    forma_pgto: Optional[str] = ""
 
 
 class RateioCompatItem(BaseModel):
@@ -826,8 +828,8 @@ def compat_gravar_documento(
                 valor_bruto=v_parc_bruto,
                 valor_liquido=v_parc_liq,
                 status="PENDENTE",
-                forma_pgto=(doc.forma_pgto or "PIX").strip().upper()[:30],
-                cod_barras=doc.linha_dig.strip()[:80] if (doc.linha_dig and idx == 1) else None,
+                forma_pgto=(parc.forma_pgto or doc.forma_pgto or "PIX").strip().upper()[:30],
+                cod_barras=((parc.linha_dig or (doc.linha_dig if idx == 1 else "") or "").strip()[:80] or None),
                 cod_operacao=doc.cod_operacao[:120] if doc.cod_operacao else None,
                 cnae=doc.cnae[:40] if doc.cnae else None,
                 item_lc116=doc.item_lc116[:20] if doc.item_lc116 else None,
