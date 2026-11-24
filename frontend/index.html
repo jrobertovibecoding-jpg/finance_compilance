@@ -2256,7 +2256,7 @@
             <svg class="bimer-svg" viewBox="0 0 24 24"><line x1="3" y1="21" x2="21" y2="21"></line><line x1="3" y1="10" x2="21" y2="10"></line><polyline points="5 10 5 21"></polyline><polyline points="19 10 19 21"></polyline><polygon points="12 2 2 7 22 7 12 2"></polygon></svg> B) Retenções Tributárias na Fonte (Fiscal / EFD-Reinf)
           </button>
           <button class="btn-filtro-rapido" id="btn-rel-ccusto" onclick="selecionarRelatorioBimer('ccusto')" style="padding: 6px 12px; font-weight: 700; font-size: 11px;">
-            <svg class="bimer-svg" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="9" y1="22" x2="9" y2="18"></line><line x1="15" y1="22" x2="15" y2="18"></line></svg> C) Realizado por Centro de Custo & Lojas (Gerencial)
+            <svg class="bimer-svg" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="9" y1="22" x2="9" y2="18"></line><line x1="15" y1="22" x2="15" y2="18"></line></svg> C) Por Categoria Financeira (DRE &amp; Pareto 80/20)
           </button>
           <button class="btn-filtro-rapido" id="btn-rel-fluxo" onclick="selecionarRelatorioBimer('fluxo')" style="padding: 6px 12px; font-weight: 700; font-size: 11px;">
             <svg class="bimer-svg" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg> D) Fluxo de Caixa (Realizado vs. Previsto)
@@ -2741,6 +2741,13 @@
         <div style="display: flex; align-items: center; gap: 6px;">
           <label style="font-size: 11px; font-weight: 700; color: #065f46;">Entradas Lojas (R$):</label>
           <input type="number" step="0.01" id="aut-entradas-lojas" value="0.00" autocomplete="off" oninput="recalcularFluxoAutorizacao()" style="width: 115px; padding: 4px 6px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 700; color: #065f46;">
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <input type="file" id="aut-ofx-lojas-input" accept=".ofx" multiple style="display: none;" onchange="importarOFXLojasAutorizacao(event)">
+          <button type="button" class="tool-btn" onclick="document.getElementById('aut-ofx-lojas-input').click()" style="border-color: #0284c7; color: #0369a1; background: #e0f2fe; font-weight: 700; padding: 4px 9px; font-size: 11px;" title="Selecione 1 ou vários arquivos .OFX das contas Itaú das lojas para preencher Saldo e Entradas automaticamente">
+            Importar OFX Lojas (Saldo &amp; Entradas)
+          </button>
+          <span id="aut-ofx-lojas-resumo" style="display: none; font-size: 10px; font-weight: 700; color: #065f46; background: #dcfce7; padding: 2px 7px; border-radius: 4px;"></span>
         </div>
         <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; color: #1e293b; cursor: pointer;">
           <input type="checkbox" id="aut-check-todos" onchange="renderizarRelatorioAutorizacao()">
@@ -10599,6 +10606,60 @@
 
   function imprimirRelatorioAutorizacao() {
     window.print();
+  }
+
+  async function importarOFXLojasAutorizacao(event) {
+    const files = Array.from(event?.target?.files || []);
+    if (files.length === 0) return;
+
+    let somaSaldos = 0;
+    let somaEntradas = 0;
+    const detalhes = [];
+
+    for (const file of files) {
+      const texto = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(String(e.target?.result || ''));
+        reader.onerror = () => resolve('');
+        reader.readAsText(file, 'ISO-8859-1');
+      });
+      if (!texto) continue;
+
+      const acctMatch = texto.match(/<ACCTID>([^<\r\n]+)/i);
+      const conta = acctMatch ? acctMatch[1].trim() : file.name;
+
+      const balMatch = texto.match(/<LEDGERBAL>[\s\S]*?<BALAMT>([^<\r\n]+)/i) || texto.match(/<BALAMT>([^<\r\n]+)/i);
+      const saldoConta = balMatch ? (parseFloat(balMatch[1].replace(',', '.')) || 0) : 0;
+
+      let entradasConta = 0;
+      const blocos = texto.split(/<STMTTRN>/i);
+      for (let i = 1; i < blocos.length; i++) {
+        const bloco = blocos[i].split(/<\/STMTTRN>/i)[0];
+        const valorMatch = bloco.match(/<TRNAMT>([^<\r\n]+)/i);
+        if (valorMatch) {
+          const val = parseFloat(valorMatch[1].replace(',', '.')) || 0;
+          if (val > 0) entradasConta += val;
+        }
+      }
+
+      somaSaldos += saldoConta;
+      somaEntradas += entradasConta;
+      detalhes.push(`• Conta ${conta}: Saldo ${formatarMoeda(saldoConta)} | Entradas ${formatarMoeda(entradasConta)}`);
+    }
+
+    const elSaldo = document.getElementById('aut-saldo-inicial');
+    const elEnt = document.getElementById('aut-entradas-lojas');
+    if (elSaldo) elSaldo.value = somaSaldos.toFixed(2);
+    if (elEnt) elEnt.value = somaEntradas.toFixed(2);
+    recalcularFluxoAutorizacao();
+
+    const resumo = document.getElementById('aut-ofx-lojas-resumo');
+    if (resumo) {
+      resumo.style.display = 'inline-block';
+      resumo.innerText = `${files.length} OFX: Saldo ${formatarMoeda(somaSaldos)} | Entradas ${formatarMoeda(somaEntradas)}`;
+    }
+    if (event?.target) event.target.value = '';
+    alert(`OFX das Lojas importado (${files.length} conta(s)):\n\n${detalhes.join('\n')}\n\nTotal Saldo: ${formatarMoeda(somaSaldos)}\nTotal Entradas: ${formatarMoeda(somaEntradas)}`);
   }
 
   function recalcularFluxoAutorizacao() {
