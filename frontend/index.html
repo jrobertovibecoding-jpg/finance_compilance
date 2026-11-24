@@ -7285,10 +7285,17 @@
     const elSerie = document.getElementById('serie_doc');
     const elCnpj = document.getElementById('cnpj_favorecido');
     const elRazao = document.getElementById('razao_favorecido');
+    const elEmissao = document.getElementById('data_emissao');
     const elEntrada = document.getElementById('data_entrada');
 
     if (elNum) elNum.value = numero;
     if (elSerie) elSerie.value = serie;
+    if (elEmissao) {
+      const ymChave = `${ano}-${mes}`;
+      if (!elEmissao.value || elEmissao.value.slice(0, 7) !== ymChave) {
+        elEmissao.value = `${ymChave}-01`;
+      }
+    }
     if (elEntrada && !elEntrada.value) elEntrada.value = new Date().toISOString().slice(0, 10);
     if (elCnpj) {
       elCnpj.value = cnpjFmt;
@@ -7305,7 +7312,7 @@
       badge.style.borderColor = '#86efac';
       badge.style.color = '#065f46';
       badge.innerHTML = `
-        <span><strong>Chave válida (${modLabel}):</strong> UF ${uf} • Emissão ${mes}/${ano} • Nº <strong>${numero}</strong> (Série ${serie}) • CNPJ ${cnpjFmt}. <em>Complete valor, vencimento e descrição.</em></span>
+        <span><strong>Chave válida (${modLabel}):</strong> UF ${uf} • Emissão ${mes}/${ano} • Nº <strong>${numero}</strong> (Série ${serie}) • CNPJ ${cnpjFmt}. <em>A chave só informa Mês/Ano (ajuste o dia da emissão, valor e vencimento).</em></span>
         <button type="button" onclick="limparBannerXMLNF()" style="background:none;border:none;color:#065f46;font-weight:700;cursor:pointer;text-decoration:underline;">Limpar</button>
       `;
     }
