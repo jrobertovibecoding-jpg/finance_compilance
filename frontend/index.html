@@ -2150,8 +2150,9 @@
                 <th style="text-align: left; min-width: 210px;">Categoria * &amp; Loja / Filial</th>
                 <th style="text-align: left; min-width: 250px;">Pagamento, Cód. Barras &amp; Dados Bancários</th>
                 <th style="text-align: center; width: 118px;">Vencimento *</th>
-                <th style="text-align: right; width: 120px;">Valor &amp; Rateio</th>
-                <th style="text-align: center; width: 90px;">Status</th>
+                <th style="text-align: right; width: 105px;">Valor (R$)</th>
+                <th style="text-align: center; width: 132px;">Parcelas / Rateio</th>
+                <th style="text-align: center; width: 80px;">Status</th>
               </tr>
             </thead>
             <tbody id="modal-xml-lote-tbody"></tbody>
@@ -7815,14 +7816,16 @@
           <input type="date" value="${escapeHtml(it.vencimento || '')}" onchange="_xmlLoteItens[${idx}].vencimento = this.value" style="width:100%;font-size:10.5px;padding:3px;border:1px solid #cbd5e1;border-radius:4px;">
         </td>
         <td style="padding:6px 4px;text-align:right;vertical-align:top;">
-          <div style="font-weight:800;font-family:monospace;color:#0f172a;">${formatarMoeda(it.valor_bruto || 0)}</div>
-          <div style="font-size:9.5px;color:#64748b;margin-bottom:4px;">${escapeHtml(detalheExtra)}</div>
-          <div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap;">
-            <button type="button" class="tool-btn" onclick="abrirModalParcelasParaLote(${idx})" style="padding:1px 6px;font-size:10px;${btnParcStyle}" title="Ver, editar ou gerar parcelas">
-              📅 ${qtdParc > 1 ? `${qtdParc}x Parc.` : 'Parcelar'}
+          <div style="font-weight:800;font-family:monospace;color:#0f172a;white-space:nowrap;">${formatarMoeda(it.valor_bruto || 0)}</div>
+          <div style="font-size:9.5px;color:#64748b;white-space:nowrap;">${escapeHtml(detalheExtra)}</div>
+        </td>
+        <td style="padding:6px 4px;text-align:center;vertical-align:top;">
+          <div style="display:inline-flex;gap:5px;flex-wrap:nowrap;align-items:center;justify-content:center;">
+            <button type="button" class="tool-btn" onclick="abrirModalParcelasParaLote(${idx})" style="padding:3px 8px;font-size:10.5px;border-radius:4px;white-space:nowrap;${btnParcStyle}" title="Ver, editar ou gerar parcelas">
+              ${qtdParc > 1 ? `${qtdParc}x Parc.` : 'Parcelar'}
             </button>
-            <button type="button" class="tool-btn" onclick="abrirModalRateioParaLote(${idx})" style="padding:1px 6px;font-size:10px;${btnRateioStyle}">
-              ⚖️ Rateio${qtdRat > 0 ? ` (${qtdRat})` : ''}
+            <button type="button" class="tool-btn" onclick="abrirModalRateioParaLote(${idx})" style="padding:3px 8px;font-size:10.5px;border-radius:4px;white-space:nowrap;${btnRateioStyle}" title="Configurar rateio por filiais ou categorias">
+              Rateio${qtdRat > 0 ? ` (${qtdRat})` : ''}
             </button>
           </div>
         </td>
