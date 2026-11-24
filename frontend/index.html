@@ -972,19 +972,19 @@
       <div id="box-importar-xml-nf"
            ondragover="event.preventDefault(); this.style.borderColor='#0284c7'; this.style.background='#e0f2fe';"
            ondragleave="this.style.borderColor='#93c5fd'; this.style.background='#eff6ff';"
-           ondrop="event.preventDefault(); this.style.borderColor='#93c5fd'; this.style.background='#eff6ff'; if(event.dataTransfer?.files?.length) importarArquivoXMLObjeto(event.dataTransfer.files[0]);"
+           ondrop="event.preventDefault(); this.style.borderColor='#93c5fd'; this.style.background='#eff6ff'; if(event.dataTransfer?.files?.length) processarListaArquivosXML(event.dataTransfer.files);"
            style="background: #eff6ff; border: 1.5px dashed #93c5fd; border-radius: 6px; padding: 7px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; transition: all 0.15s;">
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span style="background: #1d4ed8; color: #ffffff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.3px;">XML</span>
           <span style="font-size: 11.5px; font-weight: 700; color: #1e3a8a;">Lançar Nota Fiscal por XML (NF-e Produto ou NFS-e Serviço)</span>
-          <span style="font-size: 10.5px; color: #1e293b;">Arraste o arquivo .xml aqui ou clique ao lado para preencher todos os campos automaticamente.</span>
+          <span style="font-size: 10.5px; color: #1e293b;">Arraste 1 ou vários arquivos .xml aqui (lote misto produto + serviço).</span>
         </div>
         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
           <input type="text" id="input-chave-acesso-nfe" maxlength="54" oninput="processarChaveAcessoNFe(this.value)" placeholder="Ou cole a Chave de Acesso (44 dígitos)..." style="width: 265px; padding: 4px 8px; font-size: 11px; font-family: monospace; border: 1px solid #93c5fd; border-radius: 3px; background: #ffffff; color: #090d16;" title="Cole os 44 dígitos da Chave de Acesso da NF-e / NFC-e para preencher tipo, número, série e CNPJ automaticamente">
-          <input type="file" id="input-xml-nf" accept=".xml,text/xml,application/xml" style="display: none;" onchange="processarArquivoXMLNF(event)">
+          <input type="file" id="input-xml-nf" accept=".xml,text/xml,application/xml" multiple style="display: none;" onchange="processarArquivoXMLNF(event)">
           <button type="button" class="tool-btn" onclick="document.getElementById('input-xml-nf').click()" style="background: #1d4ed8; color: #ffffff; border-color: #1e40af; font-weight: 700; padding: 4px 11px; font-size: 11px;">
             <svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><polyline points="9 15 12 12 15 15"></polyline></svg>
-            Selecionar XML (NF-e / NFS-e)
+            Selecionar XML (1 ou Lote)
           </button>
         </div>
         <div id="badge-xml-importado" style="display: none; width: 100%; background: #ecfdf5; border: 1px solid #86efac; color: #065f46; border-radius: 4px; padding: 5px 9px; font-size: 11px; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;"></div>
@@ -2096,6 +2096,64 @@
           <div style="display: flex; gap: 8px;">
             <button type="button" class="tool-btn" onclick="fecharModalRateio()" style="font-size: 11px;">Cancelar</button>
             <button type="button" class="tool-btn primary" onclick="confirmarModalRateio()" style="font-size: 11.5px; padding: 6px 14px;">✓ Aplicar Rateio</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL POP-UP: IMPORTAÇÃO EM LOTE DE XML (NF-e PRODUTO & NFS-e SERVIÇO) -->
+    <div id="modal-xml-lote" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.65); z-index: 10000; align-items: center; justify-content: center; padding: 14px;">
+      <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; width: 100%; max-width: 1180px; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 22px 50px rgba(15,23,42,0.35); overflow: hidden;">
+        <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 14px; font-weight: 800; color: #0f172a;">📦 Importação em Lote de XML (NF-e Produto &amp; NFS-e Serviço)</div>
+            <div style="font-size: 11px; color: #475569;" id="modal-xml-lote-resumo">Conferência prévia antes de gravar no Contas a Pagar.</div>
+          </div>
+          <button type="button" onclick="fecharModalXMLLote()" style="background: none; border: none; font-size: 18px; color: #64748b; cursor: pointer; padding: 2px 6px;">✕</button>
+        </div>
+
+        <div style="padding: 9px 16px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <span style="font-size: 11px; font-weight: 700; color: #334155;">Aplicar em massa nas selecionadas:</span>
+            <input type="text" id="lote-xml-cat-massa" list="lista-categorias-oficiais" placeholder="Categoria / Plano de Contas..." style="width: 240px; font-size: 11px; padding: 4px 7px; border: 1px solid #cbd5e1; border-radius: 4px;">
+            <button type="button" class="tool-btn" onclick="aplicarCategoriaMassaXMLLote()" style="font-size: 11px; padding: 4px 9px;">Aplicar Categoria</button>
+            <select id="lote-xml-loja-massa" style="font-size: 11px; padding: 4px 7px; border: 1px solid #cbd5e1; border-radius: 4px;">
+              <option value="Matriz / Geral">Matriz / Geral</option>
+              <option value="Loja Barra">Loja Barra</option>
+              <option value="Loja SDB">Loja SDB</option>
+              <option value="Loja Paseo">Loja Paseo</option>
+              <option value="Loja Vilas">Loja Vilas</option>
+              <option value="Loja Horto">Loja Horto</option>
+              <option value="Atelier / Produção">Atelier / Produção</option>
+            </select>
+            <button type="button" class="tool-btn" onclick="aplicarLojaMassaXMLLote()" style="font-size: 11px; padding: 4px 9px;">Aplicar Loja</button>
+          </div>
+          <div id="modal-xml-lote-progresso" style="font-size: 11.5px; font-weight: 700; color: #0369a1;"></div>
+        </div>
+
+        <div style="padding: 10px 16px; overflow-y: auto; flex: 1;">
+          <table class="tabela-dados" style="width: 100%; border-collapse: collapse; font-size: 11px;">
+            <thead>
+              <tr>
+                <th style="width: 30px; text-align: center;"><input type="checkbox" id="lote-xml-check-all" onchange="alternarTodosXMLLote(this.checked)" checked></th>
+                <th style="text-align: left; width: 110px;">Tipo / Nº</th>
+                <th style="text-align: left; min-width: 190px;">Favorecido / CNPJ</th>
+                <th style="text-align: left; min-width: 200px;">Categoria / Plano de Contas *</th>
+                <th style="text-align: left; width: 135px;">Loja / Filial</th>
+                <th style="text-align: center; width: 120px;">Vencimento *</th>
+                <th style="text-align: right; width: 115px;">Valor / Detalhe</th>
+                <th style="text-align: center; width: 110px;">Status</th>
+              </tr>
+            </thead>
+            <tbody id="modal-xml-lote-tbody"></tbody>
+          </table>
+        </div>
+
+        <div style="padding: 10px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <div style="font-size: 11px; color: #475569;" id="modal-xml-lote-totais">0 selecionadas • Total: R$ 0,00</div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="tool-btn" onclick="fecharModalXMLLote()" style="font-size: 11px;">Fechar</button>
+            <button type="button" class="tool-btn primary" id="btn-gravar-xml-lote" onclick="gravarLoteXMLSelecionados()" style="font-size: 11.5px; padding: 6px 15px;">✓ Gravar Selecionadas</button>
           </div>
         </div>
       </div>
@@ -7388,8 +7446,8 @@
   }
 
   function processarArquivoXMLNF(event) {
-    const file = event?.target?.files?.[0];
-    if (file) importarArquivoXMLObjeto(file);
+    const files = event?.target?.files;
+    if (files && files.length) processarListaArquivosXML(files);
   }
 
   function importarArquivoXMLObjeto(file) {
@@ -7399,6 +7457,411 @@
       importarConteudoXMLNF(String(e.target?.result || ''), file.name);
     };
     reader.readAsText(file, 'UTF-8');
+  }
+
+  let _xmlLoteItens = [];
+
+  async function processarListaArquivosXML(fileList) {
+    const files = Array.from(fileList || []).filter(f => f && (/\.xml$/i.test(f.name) || (f.type || '').includes('xml')));
+    if (files.length === 0) {
+      alert('Nenhum arquivo .xml válido selecionado.');
+      return;
+    }
+    if (files.length === 1) {
+      importarArquivoXMLObjeto(files[0]);
+      return;
+    }
+
+    const leituras = await Promise.all(files.map(file => new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve({ name: file.name, text: String(e.target?.result || '') });
+      reader.onerror = () => resolve({ name: file.name, text: '' });
+      reader.readAsText(file, 'UTF-8');
+    })));
+
+    _xmlLoteItens = leituras.map(item => _extrairDadosXMLParaLote(item.text, item.name));
+    abrirModalXMLLote();
+    const inp = document.getElementById('input-xml-nf');
+    if (inp) inp.value = '';
+  }
+
+  function _extrairDadosXMLParaLote(xmlText, nomeArquivo) {
+    const baseErro = (msg) => ({
+      nomeArquivo,
+      erroLeitura: msg,
+      selecionado: false,
+      statusEnvio: 'ERRO',
+      tipo_doc: 'NFE',
+      resumoTipo: 'Inválido',
+      numero_doc: '',
+      favorecido: nomeArquivo,
+      cnpj: '',
+      data_emissao: new Date().toISOString().slice(0, 10),
+      vencimento: new Date().toISOString().slice(0, 10),
+      valor_bruto: 0,
+      ccusto: '',
+      loja: 'Matriz / Geral',
+      impostos: [],
+      itens: [],
+      parcelas: [],
+      duplicado: false
+    });
+
+    const txt = String(xmlText || '').trim();
+    if (!txt || !txt.includes('<')) return baseErro('Arquivo XML vazio/inválido');
+    const doc = new DOMParser().parseFromString(txt, 'text/xml');
+    if (doc.getElementsByTagName('parsererror').length > 0) return baseErro('XML corrompido');
+
+    const infNFe = _xmlPrimeiroElemento(doc, ['infNFe']);
+    const isNFSe = Boolean(!infNFe && _xmlPrimeiroElemento(doc, ['CompNfse', 'Nfse', 'InfNfse', 'NFSe', 'infNFSe', 'PrestadorServico', 'prest', 'Discriminacao', 'xDescServ', 'nfse', 'nota_fiscal']));
+    if (!infNFe && !isNFSe) return baseErro('Não reconhecido como NF-e ou NFS-e');
+
+    const hoje = new Date().toISOString().slice(0, 10);
+    let out = {
+      nomeArquivo,
+      erroLeitura: '',
+      selecionado: true,
+      statusEnvio: 'PENDENTE',
+      tipo_doc: 'NFE',
+      resumoTipo: 'NF-e Produto',
+      numero_doc: '',
+      favorecido: '',
+      cnpj: '',
+      data_emissao: hoje,
+      vencimento: hoje,
+      valor_bruto: 0,
+      descricao: '',
+      cod_operacao: '',
+      cnae: '',
+      item_lc116: '',
+      ccusto: '',
+      loja: 'Matriz / Geral',
+      forma_pgto: 'BOLETO',
+      dados_banco: '',
+      impostos: [],
+      itens: [],
+      parcelas: [],
+      duplicado: false
+    };
+
+    if (infNFe) {
+      const ide = _xmlPrimeiroElemento(infNFe, ['ide']);
+      const emit = _xmlPrimeiroElemento(infNFe, ['emit']);
+      const icmsTot = _xmlPrimeiroElemento(infNFe, ['ICMSTot']);
+      const cobr = _xmlPrimeiroElemento(infNFe, ['cobr']);
+      const dets = _xmlTodosElementos(infNFe, 'det');
+      const dups = cobr ? _xmlTodosElementos(cobr, 'dup') : [];
+
+      out.tipo_doc = 'NFE';
+      out.resumoTipo = 'NF-e Produto';
+      out.numero_doc = _xmlPrimeiroTexto(ide, ['nNF']);
+      out.data_emissao = _xmlExtrairDataISO(_xmlPrimeiroTexto(ide, ['dhEmi', 'dEmi'])) || hoje;
+      out.cnpj = _xmlFormatarCNPJCPF(_xmlPrimeiroTexto(emit, ['CNPJ', 'CPF']));
+      out.favorecido = _xmlPrimeiroTexto(emit, ['xNome', 'xFant']);
+      out.valor_bruto = _xmlParseValor(_xmlPrimeiroTexto(icmsTot, ['vNF'])) || _xmlParseValor(_xmlPrimeiroTexto(icmsTot, ['vProd']));
+
+      const cfopNota = _xmlPrimeiroTexto(dets[0], ['CFOP']);
+      const cfopEnt = _xmlMapearCFOPEntrada(cfopNota);
+      out.cod_operacao = cfopEnt || '1.102 - Compra para comercialização';
+
+      const itensExtraidos = [];
+      const nomesProds = [];
+      dets.forEach((det, idx) => {
+        const prod = _xmlPrimeiroElemento(det, ['prod']);
+        const xProd = _xmlPrimeiroTexto(prod || det, ['xProd']);
+        if (xProd) {
+          if (nomesProds.length < 3) nomesProds.push(xProd);
+          const qCom = _xmlParseValor(_xmlPrimeiroTexto(prod || det, ['qCom'])) || 1;
+          const vUnCom = _xmlParseValor(_xmlPrimeiroTexto(prod || det, ['vUnCom']));
+          const vProd = _xmlParseValor(_xmlPrimeiroTexto(prod || det, ['vProd']));
+          itensExtraidos.push({
+            numero_item: idx + 1,
+            codigo_produto: _xmlPrimeiroTexto(prod || det, ['cProd']) || '',
+            descricao: xProd.slice(0, 300),
+            ncm: _xmlPrimeiroTexto(prod || det, ['NCM']) || '',
+            cfop: _xmlPrimeiroTexto(prod || det, ['CFOP']) || cfopNota || '',
+            unidade: (_xmlPrimeiroTexto(prod || det, ['uCom']) || 'UN').slice(0, 16),
+            quantidade: qCom,
+            valor_unitario: vUnCom || (qCom > 0 ? Number((vProd / qCom).toFixed(4)) : 0),
+            valor_total: vProd || Number((qCom * vUnCom).toFixed(2))
+          });
+        }
+      });
+      out.itens = itensExtraidos;
+      const suf = dets.length > 3 ? ` (+${dets.length - 3} itens)` : '';
+      out.descricao = nomesProds.length ? `Ref. NF-e ${out.numero_doc}: ${nomesProds.join('; ')}${suf}` : `Aquisição de mercadorias - NF-e ${out.numero_doc}`;
+
+      const parcelas = [];
+      dups.forEach((dp, idx) => {
+        const vDup = _xmlParseValor(_xmlPrimeiroTexto(dp, ['vDup']));
+        const dVenc = _xmlExtrairDataISO(_xmlPrimeiroTexto(dp, ['dVenc']));
+        if (vDup > 0 && dVenc) parcelas.push({ numero: _xmlPrimeiroTexto(dp, ['nDup']) || String(idx + 1), vencimento: dVenc, valor: vDup });
+      });
+      out.parcelas = parcelas;
+      out.vencimento = parcelas[0]?.vencimento || out.data_emissao;
+    } else {
+      out.tipo_doc = 'NFSE';
+      out.resumoTipo = 'NFS-e Serviço';
+      const infNfse = _xmlPrimeiroElemento(doc, ['InfNfse', 'infNFSe', 'nf', 'Nfse', 'NFSe']) || doc.documentElement;
+      const excl = ['tomador', 'tomadorservico', 'toma', 'dest', 'intermediario', 'interm'];
+      const prest = _xmlPrimeiroElemento(infNfse, ['PrestadorServico', 'emit', 'prestador', 'Prestador', 'prest']) || _xmlPrimeiroElemento(doc, ['PrestadorServico', 'emit', 'prestador', 'Prestador', 'prest']) || infNfse;
+      const valEl = _xmlPrimeiroElemento(infNfse, ['ValoresNfse', 'Valores', 'valores', 'vServPrest']) || _xmlPrimeiroElemento(doc, ['ValoresNfse', 'Valores', 'valores', 'vServPrest']) || infNfse;
+
+      out.numero_doc = _xmlPrimeiroTexto(infNfse, ['nNFSe', 'numero_nfse', 'NumeroNfse', 'NumeroNFe', 'NumeroNota', 'Numero', 'nDF'], ['identificacaorps', 'rps'])
+        || _xmlPrimeiroTexto(doc, ['nNFSe', 'numero_nfse', 'NumeroNfse', 'NumeroNFe', 'NumeroNota', 'Numero', 'nDF'], ['identificacaorps', 'rps']);
+      out.data_emissao = _xmlExtrairDataISO(_xmlPrimeiroTexto(infNfse, ['DataEmissao', 'dhEmi', 'DataEmissaoNFe', 'dhProc', 'data_nfse', 'DataFatoGerador', 'dCompet'])) || hoje;
+      out.vencimento = _xmlExtrairDataISO(_xmlPrimeiroTexto(infNfse, ['DataVencimento', 'Vencimento', 'dVenc'])) || out.data_emissao;
+      out.cnpj = _xmlFormatarCNPJCPF(_xmlPrimeiroTexto(prest, ['Cnpj', 'CNPJ', 'Cpf', 'CPF', 'cpfcnpj'], excl) || _xmlPrimeiroTexto(infNfse, ['Cnpj', 'CNPJ', 'Cpf', 'CPF', 'cpfcnpj'], excl));
+      out.favorecido = _xmlPrimeiroTexto(prest, ['RazaoSocialPrestador', 'RazaoSocial', 'xNome', 'nome_razao_social', 'razao_social', 'NomePrestador', 'NomeFantasia', 'xFant', 'nome'], excl)
+        || _xmlPrimeiroTexto(infNfse, ['RazaoSocialPrestador', 'RazaoSocial', 'xNome', 'nome_razao_social', 'razao_social', 'NomePrestador', 'NomeFantasia', 'xFant'], excl);
+      out.valor_bruto = _xmlParseValor(_xmlPrimeiroTexto(valEl, ['ValorServicos', 'vServ', 'vServPrest', 'ValorTotalServicos', 'vLiq', 'ValorLiquidoNfse', 'ValorLiquido', 'valor_total', 'valor']) || _xmlPrimeiroTexto(infNfse, ['ValorServicos', 'vServ', 'vServPrest', 'ValorTotalServicos', 'vLiq', 'ValorLiquidoNfse', 'ValorLiquido']));
+      out.descricao = _xmlPrimeiroTexto(infNfse, ['Discriminacao', 'xDescServ', 'DiscriminacaoServicos']).replace(/\s+/g, ' ').trim().slice(0, 260) || `Serviço NFS-e ${out.numero_doc}`;
+      out.cod_operacao = '1.933 - Aquisição de serviço tributado pelo ISSQN';
+      out.cnae = _xmlPrimeiroTexto(infNfse, ['CodigoCnae', 'CNAE', 'cnae', 'cCNAE', 'CodigoAtividade'], excl) || '';
+      out.item_lc116 = _xmlPrimeiroTexto(infNfse, ['ItemListaServico', 'CodigoTributacaoMunicipio', 'cTribNac'], excl) || '';
+
+      const issRetAbrasf = _xmlPrimeiroTexto(valEl, ['IssRetido']);
+      const tpRetIssqn = _xmlPrimeiroTexto(valEl, ['tpRetISSQN']) || _xmlPrimeiroTexto(infNfse, ['tpRetISSQN']);
+      let vIss = _xmlParseValor(_xmlPrimeiroTexto(valEl, ['ValorIssRetido', 'vISSQNRet']));
+      if (!vIss && (issRetAbrasf === '1' || issRetAbrasf.toLowerCase() === 'true' || tpRetIssqn === '2' || tpRetIssqn === '3')) {
+        vIss = _xmlParseValor(_xmlPrimeiroTexto(valEl, ['ValorIss', 'vISSQN']));
+      }
+      const vIr = _xmlParseValor(_xmlPrimeiroTexto(valEl, ['ValorIr', 'vRetIRRF', 'ValorIR']));
+      const vPis = _xmlParseValor(_xmlPrimeiroTexto(valEl, ['ValorPis', 'vRetPIS', 'ValorPIS']));
+      const vCofins = _xmlParseValor(_xmlPrimeiroTexto(valEl, ['ValorCofins', 'vRetCOFINS', 'ValorCOFINS']));
+      const vCsll = _xmlParseValor(_xmlPrimeiroTexto(valEl, ['ValorCsll', 'vRetCSLL', 'ValorCSLL']));
+
+      if (vIss > 0) out.impostos.push({ tipo: 'ISS', aliquota: 5.0, valor: vIss, dt_venc_imp: out.vencimento });
+      if (vIr > 0) out.impostos.push({ tipo: 'IRRF', aliquota: 1.5, valor: vIr, dt_venc_imp: out.vencimento });
+      if (vPis > 0) out.impostos.push({ tipo: 'PIS', aliquota: 0.65, valor: vPis, dt_venc_imp: out.vencimento });
+      if (vCofins > 0) out.impostos.push({ tipo: 'COFINS', aliquota: 3.0, valor: vCofins, dt_venc_imp: out.vencimento });
+      if (vCsll > 0) out.impostos.push({ tipo: 'CSLL', aliquota: 1.0, valor: vCsll, dt_venc_imp: out.vencimento });
+    }
+
+    // Pré-preenche categoria/forma pela memória do fornecedor
+    const cnpjDig = (out.cnpj || '').replace(/\D/g, '');
+    const fornMem = (LISTA_FORNECEDORES || []).find(f => (f.cnpj_cpf || '').replace(/\D/g, '') === cnpjDig);
+    if (fornMem) {
+      if (fornMem.categoria) out.ccusto = fornMem.categoria;
+      if (fornMem.forma_pgto) out.forma_pgto = fornMem.forma_pgto;
+      if (fornMem.dados_banco) out.dados_banco = fornMem.dados_banco;
+    }
+
+    // Verifica duplicidade nos títulos já gravados
+    const numNorm = String(out.numero_doc || '').trim().toLowerCase();
+    if (cnpjDig && numNorm && Array.isArray(titulos)) {
+      const jaExiste = titulos.some(t => {
+        const tCnpj = String(t.cnpj || '').replace(/\D/g, '');
+        const tNum = String(t.numero_doc || '').trim().toLowerCase();
+        return tCnpj === cnpjDig && (tNum === numNorm || tNum.startsWith(`${numNorm} (`));
+      });
+      if (jaExiste) {
+        out.duplicado = true;
+        out.selecionado = false;
+      }
+    }
+    return out;
+  }
+
+  function abrirModalXMLLote() {
+    renderizarTabelaXMLLote();
+    const prog = document.getElementById('modal-xml-lote-progresso');
+    if (prog) prog.innerText = '';
+    const modal = document.getElementById('modal-xml-lote');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function fecharModalXMLLote() {
+    const modal = document.getElementById('modal-xml-lote');
+    if (modal) modal.style.display = 'none';
+  }
+
+  function renderizarTabelaXMLLote() {
+    const tbody = document.getElementById('modal-xml-lote-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    let qtdNFe = 0, qtdNFSe = 0, qtdDup = 0;
+    _xmlLoteItens.forEach((it, idx) => {
+      if (it.tipo_doc === 'NFE') qtdNFe++;
+      if (it.tipo_doc === 'NFSE') qtdNFSe++;
+      if (it.duplicado) qtdDup++;
+
+      const tr = document.createElement('tr');
+      if (it.duplicado || it.erroLeitura) tr.style.background = '#fef2f2';
+      else if (it.statusEnvio === 'GRAVADO') tr.style.background = '#ecfdf5';
+
+      const badgeTipo = it.tipo_doc === 'NFE'
+        ? `<span style="background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:3px;font-weight:700;font-size:10px;">NF-e Prod</span>`
+        : `<span style="background:#d1fae5;color:#065f46;padding:1px 6px;border-radius:3px;font-weight:700;font-size:10px;">NFS-e Serv</span>`;
+
+      const detalheExtra = it.tipo_doc === 'NFE'
+        ? `${it.itens.length} item(ns)${it.parcelas.length > 1 ? ` • ${it.parcelas.length} parc.` : ''}`
+        : (it.impostos.length > 0 ? `Ret: ${formatarMoeda(it.impostos.reduce((a, b) => a + b.valor, 0))}` : 'Sem retenção');
+
+      let statusHtml = `<span style="color:#475569;font-size:10px;">Pronta</span>`;
+      if (it.erroLeitura) statusHtml = `<span style="color:#b91c1c;font-weight:700;font-size:10px;">${escapeHtml(it.erroLeitura)}</span>`;
+      else if (it.duplicado) statusHtml = `<span style="background:#fee2e2;color:#991b1b;padding:1px 6px;border-radius:3px;font-weight:700;font-size:10px;">Duplicada</span>`;
+      else if (it.statusEnvio === 'GRAVADO') statusHtml = `<span style="background:#dcfce7;color:#166534;padding:1px 6px;border-radius:3px;font-weight:700;font-size:10px;">✓ Gravada</span>`;
+      else if (it.statusEnvio === 'ERRO') statusHtml = `<span style="color:#b91c1c;font-weight:700;font-size:10px;">Erro envio</span>`;
+
+      const lojasOpts = ['Matriz / Geral', 'Loja Barra', 'Loja SDB', 'Loja Paseo', 'Loja Vilas', 'Loja Horto', 'Atelier / Produção']
+        .map(u => `<option value="${escapeHtml(u)}" ${it.loja === u ? 'selected' : ''}>${escapeHtml(u)}</option>`).join('');
+
+      tr.innerHTML = `
+        <td style="text-align:center;padding:5px 4px;">
+          <input type="checkbox" ${it.selecionado ? 'checked' : ''} ${it.erroLeitura || it.statusEnvio === 'GRAVADO' ? 'disabled' : ''} onchange="_xmlLoteItens[${idx}].selecionado = this.checked; atualizarTotaisXMLLote();">
+        </td>
+        <td style="padding:5px 4px;">
+          <div>${badgeTipo}</div>
+          <div style="font-weight:700;margin-top:2px;">Nº ${escapeHtml(it.numero_doc || '-')}</div>
+          <div style="font-size:9.5px;color:#64748b;">Em: ${escapeHtml((it.data_emissao || '').split('-').reverse().join('/'))}</div>
+        </td>
+        <td style="padding:5px 4px;">
+          <div style="font-weight:700;color:#0f172a;">${escapeHtml(it.favorecido || '-')}</div>
+          <div style="font-size:10px;color:#475569;font-family:monospace;">${escapeHtml(it.cnpj || '-')}</div>
+        </td>
+        <td style="padding:5px 4px;">
+          <input type="text" list="lista-categorias-oficiais" value="${escapeHtml(it.ccusto || '')}" oninput="_xmlLoteItens[${idx}].ccusto = this.value" placeholder="Selecione a categoria..." style="width:100%;font-size:10.5px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:4px;">
+        </td>
+        <td style="padding:5px 4px;">
+          <select onchange="_xmlLoteItens[${idx}].loja = this.value" style="width:100%;font-size:10.5px;padding:3px;border:1px solid #cbd5e1;border-radius:4px;">${lojasOpts}</select>
+        </td>
+        <td style="padding:5px 4px;">
+          <input type="date" value="${escapeHtml(it.vencimento || '')}" onchange="_xmlLoteItens[${idx}].vencimento = this.value" style="width:100%;font-size:10.5px;padding:3px;border:1px solid #cbd5e1;border-radius:4px;">
+        </td>
+        <td style="padding:5px 4px;text-align:right;">
+          <div style="font-weight:800;font-family:monospace;color:#0f172a;">${formatarMoeda(it.valor_bruto || 0)}</div>
+          <div style="font-size:9.5px;color:#64748b;">${escapeHtml(detalheExtra)}</div>
+        </td>
+        <td style="padding:5px 4px;text-align:center;">${statusHtml}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const res = document.getElementById('modal-xml-lote-resumo');
+    if (res) res.innerText = `${_xmlLoteItens.length} arquivo(s) lido(s) • ${qtdNFe} NF-e Produto • ${qtdNFSe} NFS-e Serviço • ${qtdDup} duplicada(s)`;
+    atualizarTotaisXMLLote();
+  }
+
+  function atualizarTotaisXMLLote() {
+    const sels = _xmlLoteItens.filter(x => x.selecionado && !x.erroLeitura && x.statusEnvio !== 'GRAVADO');
+    const soma = sels.reduce((acc, x) => acc + (parseFloat(x.valor_bruto) || 0), 0);
+    const elTot = document.getElementById('modal-xml-lote-totais');
+    if (elTot) elTot.innerText = `${sels.length} selecionada(s) • Total Bruto: ${formatarMoeda(soma)}`;
+    const btn = document.getElementById('btn-gravar-xml-lote');
+    if (btn) btn.innerText = `✓ Gravar Selecionadas (${sels.length})`;
+  }
+
+  function alternarTodosXMLLote(marcar) {
+    _xmlLoteItens.forEach(it => {
+      if (!it.erroLeitura && it.statusEnvio !== 'GRAVADO') it.selecionado = Boolean(marcar);
+    });
+    renderizarTabelaXMLLote();
+  }
+
+  function aplicarCategoriaMassaXMLLote() {
+    const val = document.getElementById('lote-xml-cat-massa')?.value.trim();
+    if (!val) return;
+    _xmlLoteItens.forEach(it => {
+      if (it.selecionado && it.statusEnvio !== 'GRAVADO') it.ccusto = val;
+    });
+    renderizarTabelaXMLLote();
+  }
+
+  function aplicarLojaMassaXMLLote() {
+    const val = document.getElementById('lote-xml-loja-massa')?.value || 'Matriz / Geral';
+    _xmlLoteItens.forEach(it => {
+      if (it.selecionado && it.statusEnvio !== 'GRAVADO') it.loja = val;
+    });
+    renderizarTabelaXMLLote();
+  }
+
+  async function gravarLoteXMLSelecionados() {
+    const alvos = _xmlLoteItens.filter(x => x.selecionado && !x.erroLeitura && x.statusEnvio !== 'GRAVADO');
+    if (alvos.length === 0) {
+      alert('Nenhuma nota selecionada para gravar.');
+      return;
+    }
+    const semCat = alvos.filter(x => !x.ccusto || !x.ccusto.trim());
+    if (semCat.length > 0) {
+      alert(`Existem ${semCat.length} nota(s) selecionada(s) sem Categoria/Plano de Contas.\nPreencha na tabela ou use "Aplicar Categoria" em massa.`);
+      return;
+    }
+
+    const btn = document.getElementById('btn-gravar-xml-lote');
+    const prog = document.getElementById('modal-xml-lote-progresso');
+    if (btn) btn.disabled = true;
+
+    let okCount = 0;
+    let errCount = 0;
+    for (let i = 0; i < alvos.length; i++) {
+      const it = alvos[i];
+      if (prog) prog.innerText = `Gravando ${i + 1} de ${alvos.length} (${it.numero_doc})...`;
+      const payload = {
+        tipo_doc: it.tipo_doc,
+        numero_doc: it.numero_doc,
+        favorecido: it.favorecido,
+        cnpj: it.cnpj,
+        data_emissao: it.data_emissao,
+        data_entrada: new Date().toISOString().slice(0, 10),
+        vencimento: it.vencimento || it.data_emissao,
+        valor_bruto: it.valor_bruto,
+        historico: `${it.resumoTipo} ${it.numero_doc} - ${it.favorecido} (${it.loja})`,
+        descricao: it.descricao,
+        ccusto: it.ccusto,
+        solicitante: '',
+        contrato: '',
+        forma_pgto: it.forma_pgto || 'BOLETO',
+        dados_banco: it.dados_banco || '',
+        linha_dig: '',
+        cod_operacao: it.cod_operacao,
+        cnae: it.cnae || '',
+        item_lc116: it.item_lc116 || '',
+        impostos: it.impostos || [],
+        itens: it.itens || [],
+        parcelas: it.parcelas || [],
+        rateios: []
+      };
+
+      try {
+        const resp = await apiFetch(`${API_BASE}/gravar-documento`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!resp.ok) throw new Error('Falha HTTP');
+        it.statusEnvio = 'GRAVADO';
+        it.selecionado = false;
+        okCount++;
+        autoSalvarFornecedorLocal({
+          razao_social: it.favorecido,
+          nome_fantasia: it.favorecido,
+          cnpj_cpf: it.cnpj,
+          tipo: it.tipo_doc === 'NFSE' ? 'PRESTADOR' : 'FORNECEDOR',
+          categoria: it.ccusto,
+          ccusto: it.loja,
+          forma_pgto: it.forma_pgto,
+          cod_operacao: it.cod_operacao,
+          cnae: it.cnae,
+          item_lc116: it.item_lc116
+        });
+      } catch (err) {
+        console.error('Erro lote XML:', err);
+        it.statusEnvio = 'ERRO';
+        errCount++;
+      }
+      renderizarTabelaXMLLote();
+    }
+
+    if (btn) btn.disabled = false;
+    if (prog) prog.innerText = `Concluído: ${okCount} gravada(s), ${errCount} erro(s).`;
+    await carregarDadosIniciais();
+    alert(`Importação em lote concluída!\n• Gravadas com sucesso: ${okCount}\n• Erros: ${errCount}`);
+    if (errCount === 0) {
+      fecharModalXMLLote();
+      trocarAba('aba-financeiro');
+    }
   }
 
   function importarConteudoXMLNF(xmlText, nomeArquivo = 'nota.xml') {
