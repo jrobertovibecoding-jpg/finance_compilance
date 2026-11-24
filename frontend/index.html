@@ -7543,9 +7543,13 @@
       const vCofins = _xmlParseValor(_xmlPrimeiroTexto(valores, ['ValorCofins', 'vRetCOFINS', 'ValorCOFINS']));
       const vCsll = _xmlParseValor(_xmlPrimeiroTexto(valores, ['ValorCsll', 'vRetCSLL', 'ValorCSLL']));
 
-      const cnaeXml = _xmlPrimeiroTexto(infNfse, ['CodigoCnae', 'CNAE', 'cnae']);
-      const itemLcXml = _xmlPrimeiroTexto(infNfse, ['ItemListaServico', 'CodigoTributacaoMunicipio']);
-      const cTribNac = _xmlPrimeiroTexto(infNfse, ['cTribNac']);
+      const cnaeTags = ['CodigoCnae', 'CNAE', 'cnae', 'cCNAE', 'CodigoAtividade', 'codCNAE', 'codigo_cnae', 'Atividade'];
+      const cnaeXml = _xmlPrimeiroTexto(infNfse, cnaeTags, excluirTomador)
+        || _xmlPrimeiroTexto(doc, cnaeTags, excluirTomador);
+      const itemLcXml = _xmlPrimeiroTexto(infNfse, ['ItemListaServico', 'CodigoTributacaoMunicipio'], excluirTomador)
+        || _xmlPrimeiroTexto(doc, ['ItemListaServico', 'CodigoTributacaoMunicipio'], excluirTomador);
+      const cTribNac = _xmlPrimeiroTexto(infNfse, ['cTribNac'], excluirTomador)
+        || _xmlPrimeiroTexto(doc, ['cTribNac'], excluirTomador);
       const discrim = _xmlPrimeiroTexto(infNfse, ['Discriminacao', 'xDescServ', 'DiscriminacaoServicos']).replace(/\s+/g, ' ').trim();
       const vencXml = _xmlExtrairDataISO(_xmlPrimeiroTexto(infNfse, ['DataVencimento', 'Vencimento', 'dVenc']));
 
@@ -7558,12 +7562,42 @@
       if (elVenc && vencXml) elVenc.value = vencXml;
       if (elBruto && vServ > 0) elBruto.value = vServ.toFixed(2);
       if (elDesc && discrim) elDesc.value = discrim.slice(0, 260);
-      if (elItemLc && itemLcXml) elItemLc.value = itemLcXml;
-      if (elCtn && cTribNac) elCtn.value = cTribNac;
-      if (elCnae && cnaeXml) {
-        elCnae.value = cnaeXml;
-        if (typeof autocompletarCNAELive === 'function') autocompletarCNAELive(elCnae);
+
+      // Resolve CNAE pela NF-e/NFS-e: 1) Tag CNAE do XML; 2) Item LC 116 / cTribNac; 3) Discriminação
+      let cnaeResolvidoXml = false;
+      if (elCnae) {
+        if (cnaeXml) {
+          elCnae.value = cnaeXml;
+          if (typeof autocompletarCNAELive === 'function') autocompletarCNAELive(elCnae);
+          cnaeResolvidoXml = true;
+        } else if (typeof TABELA_CNAES === 'object') {
+          const listaCnaes = Object.values(TABELA_CNAES);
+          const normLc = (s) => String(s || '').replace(/\D/g, '').padStart(4, '0');
+          const lcTarget = itemLcXml ? normLc(itemLcXml.split('.').slice(0, 2).join('')) : (cTribNac ? normLc(cTribNac.slice(0, 4)) : '');
+          let matchCnae = lcTarget ? listaCnaes.find(c => normLc(c.lc116) === lcTarget) : null;
+          if (!matchCnae && discrim && typeof normalizarTextoBusca === 'function') {
+            const discNorm = normalizarTextoBusca(discrim);
+            matchCnae = listaCnaes.find(c => {
+              const palavras = normalizarTextoBusca(`${c.desc} ${c.obs}`).split(/\s+/).filter(w => w.length >= 5);
+              return palavras.some(p => discNorm.includes(p));
+            });
+          }
+          if (matchCnae) {
+            elCnae.value = `${matchCnae.cnae} - ${matchCnae.desc}`;
+            if (typeof autocompletarCNAELive === 'function') autocompletarCNAELive(elCnae);
+            cnaeResolvidoXml = true;
+          } else {
+            // Não deixa CNAE padrão de TI preso quando o XML não informou CNAE
+            elCnae.value = '';
+            const badgeCnae = document.getElementById('badge-cnae-info');
+            if (badgeCnae) badgeCnae.style.display = 'none';
+          }
+        }
       }
+
+      // Garante que Item LC 116 e CTN do XML prevaleçam sobre o padrão
+      if (elItemLc) elItemLc.value = itemLcXml || (cnaeResolvidoXml ? elItemLc.value : '');
+      if (elCtn) elCtn.value = cTribNac || (cnaeResolvidoXml ? elCtn.value : '');
 
       const mapRet = [
         ['ret_iss', vIssRet],
@@ -7586,8 +7620,16 @@
       infoExtra = (temRetencao ? 'Retenções preenchidas automaticamente' : 'Sem retenções no XML') + (vencXml ? '' : ' • Confira o vencimento');
     }
 
-    // Dispara gatilhos padrão do formulário (busca fornecedor/PIX, cálculos, vencimentos fiscais, duplicidade e histórico)
+    // Dispara gatilhos padrão do formulário (preservando CNAE/LC116 vindos do XML quando presentes)
+    const cnaeAntesForn = elCnae ? elCnae.value : '';
+    const lcAntesForn = elItemLc ? elItemLc.value : '';
+    const ctnAntesForn = elCtn ? elCtn.value : '';
     if (elCnpj && typeof onInputCNPJFavorecidoLive === 'function') onInputCNPJFavorecidoLive(elCnpj);
+    if (elCnae && cnaeAntesForn && elCnae.value !== cnaeAntesForn) {
+      elCnae.value = cnaeAntesForn;
+    }
+    if (elItemLc && lcAntesForn) elItemLc.value = lcAntesForn;
+    if (elCtn && ctnAntesForn) elCtn.value = ctnAntesForn;
     if (typeof sugerirVencimentosFiscais === 'function') sugerirVencimentosFiscais();
     if (typeof recalcularValores === 'function') recalcularValores();
     if (typeof checarDuplicidadeLive === 'function') checarDuplicidadeLive();
