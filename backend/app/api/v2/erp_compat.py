@@ -832,7 +832,7 @@ def compat_gravar_documento(
                 cnae=doc.cnae[:40] if doc.cnae else None,
                 item_lc116=doc.item_lc116[:20] if doc.item_lc116 else None,
                 descricao=doc.descricao,
-                observacao=(f"[Parcela {idx}/{total_parc}] {doc.historico or ''}").strip(),
+                observacao=(f"[Parcela {idx}/{total_parc} • Total Doc: R$ {bruto:,.2f}] {doc.historico or ''}").strip(),
                 solicitante=doc.solicitante[:120] if doc.solicitante else None,
             )
             db.add(t_parc)
