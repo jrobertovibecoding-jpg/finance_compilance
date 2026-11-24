@@ -25,8 +25,8 @@
       --alterdata-border: #cbd5e1;
       --bg-window: #e2e8f0;
       --panel-bg: #ffffff;
-      --text-main: #1e293b;
-      --text-muted: #64748b;
+      --text-main: #090d16;
+      --text-muted: #334155;
       --grid-header: #f1f5f9;
       --grid-row-alt: #f8fafc;
       --btn-bg: #f8fafc;
@@ -192,7 +192,7 @@
       margin-right: 3px;
       cursor: pointer;
       font-weight: 600;
-      color: #334155;
+      color: #0f172a;
       display: flex;
       align-items: center;
       gap: 5px;
@@ -261,7 +261,7 @@
       font-weight: 600;
       border-radius: 3px;
       cursor: pointer;
-      color: #334155;
+      color: #0f172a;
       transition: all 0.15s ease;
       display: inline-flex;
       align-items: center;
@@ -333,7 +333,7 @@
     .form-field label {
       font-size: 10px;
       font-weight: 600;
-      color: #475569;
+      color: #1e293b;
     }
 
     .form-field input, .form-field select, .form-field textarea {
@@ -342,7 +342,13 @@
       border-radius: 2px;
       font-size: 11px;
       background: #ffffff;
+      color: #090d16;
       outline: none;
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: #475569;
+      opacity: 1;
     }
 
     .form-field input:focus, .form-field select:focus, .form-field textarea:focus {
@@ -352,7 +358,7 @@
 
     .form-field input[readonly] {
       background: #f1f5f9;
-      color: #334155;
+      color: #0f172a;
       font-weight: 600;
     }
 
@@ -366,7 +372,7 @@
 
     .alterdata-grid th {
       background: #e2e8f0;
-      color: #1e293b;
+      color: #090d16;
       font-weight: 700;
       padding: 6px 8px;
       border: 1px solid #cbd5e1;
@@ -378,6 +384,7 @@
       padding: 5px 8px;
       border: 1px solid #e2e8f0;
       font-size: 11.5px;
+      color: #090d16;
       vertical-align: middle;
     }
 
@@ -395,6 +402,7 @@
       border: 1px solid #cbd5e1;
       border-radius: 2px;
       font-size: 11px;
+      color: #090d16;
     }
 
     /* PAINEL DE DUPLICIDADE DETALHADO */
@@ -541,7 +549,7 @@
       border-radius: 6px;
       box-shadow: 0 15px 35px rgba(0,0,0,0.35);
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      color: #1e293b;
+      color: #090d16;
     }
 
     #modal-relatorio-autorizacao table.tabela-dados {
@@ -708,7 +716,7 @@
     }
     .bimer-chip {
       background: #e2e8f0;
-      color: #334155;
+      color: #0f172a;
       font-size: 10px;
       font-weight: 600;
       padding: 2px 7px;
@@ -741,7 +749,7 @@
       position: sticky;
       top: 0;
       background: #e2e8f0;
-      color: #1e293b;
+      color: #090d16;
       font-weight: 700;
       padding: 5px 8px;
       text-align: left;
@@ -751,7 +759,7 @@
     .bimer-busca-tabela td {
       padding: 5px 8px;
       border-bottom: 1px solid #f1f5f9;
-      color: #1e293b;
+      color: #090d16;
       vertical-align: middle;
       cursor: pointer;
     }
@@ -775,7 +783,7 @@
       justify-content: space-between;
       align-items: center;
       font-size: 10px;
-      color: #64748b;
+      color: #334155;
     }
 
     @media print {
@@ -889,8 +897,8 @@
 
       <!-- Seletor Compacto de Escala (Zoom) -->
       <div style="display: inline-flex; align-items: center; gap: 3px; height: 28px; background: #f1f5f9; padding: 0 7px; border-radius: 4px; border: 1px solid #cbd5e1; flex-shrink: 0;">
-        <svg class="bimer-svg bimer-svg-sm" style="color: #475569;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <select id="seletor-escala-zoom" onchange="alterarZoom(this.value)" style="border: none; background: transparent; font-size: 10.5px; font-weight: 700; color: #334155; outline: none; cursor: pointer;">
+        <svg class="bimer-svg bimer-svg-sm" style="color: #1e293b;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <select id="seletor-escala-zoom" onchange="alterarZoom(this.value)" style="border: none; background: transparent; font-size: 10.5px; font-weight: 700; color: #0f172a; outline: none; cursor: pointer;">
           <option value="80%">80%</option>
           <option value="85%">85%</option>
           <option value="90%">90%</option>
@@ -926,16 +934,16 @@
         <button type="button" id="subtab-lanc-geral" class="tool-btn" onclick="trocarAba('aba-geral')" style="background: #004b87; color: #ffffff; font-weight: 700; border: none; border-radius: 3px; padding: 4px 10px; font-size: 11px;">
           Nota Fiscal / Despesa Avulsa
         </button>
-        <button type="button" id="subtab-lanc-previsoes" class="tool-btn" onclick="trocarAba('aba-previsoes')" style="background: transparent; color: #475569; font-weight: 700; border: none; border-radius: 3px; padding: 4px 10px; font-size: 11px; display: inline-flex; align-items: center; gap: 5px;">
+        <button type="button" id="subtab-lanc-previsoes" class="tool-btn" onclick="trocarAba('aba-previsoes')" style="background: transparent; color: #1e293b; font-weight: 700; border: none; border-radius: 3px; padding: 4px 10px; font-size: 11px; display: inline-flex; align-items: center; gap: 5px;">
           <span>Despesas Fixas &amp; Recorrências</span>
-          <span id="badge-subtab-previsoes" style="background: #cbd5e1; color: #334155; padding: 0 6px; border-radius: 10px; font-size: 10px;">0</span>
+          <span id="badge-subtab-previsoes" style="background: #cbd5e1; color: #0f172a; padding: 0 6px; border-radius: 10px; font-size: 10px;">0</span>
         </button>
-        <button type="button" id="subtab-lanc-adiantamentos" class="tool-btn" onclick="trocarAba('aba-adiantamentos')" style="background: transparent; color: #475569; font-weight: 700; border: none; border-radius: 3px; padding: 4px 10px; font-size: 11px; display: inline-flex; align-items: center; gap: 5px;">
+        <button type="button" id="subtab-lanc-adiantamentos" class="tool-btn" onclick="trocarAba('aba-adiantamentos')" style="background: transparent; color: #1e293b; font-weight: 700; border: none; border-radius: 3px; padding: 4px 10px; font-size: 11px; display: inline-flex; align-items: center; gap: 5px;">
           <span>Adiantamentos &amp; Prestação de Contas</span>
-          <span id="badge-subtab-adiantamentos" style="background: #cbd5e1; color: #334155; padding: 0 6px; border-radius: 10px; font-size: 10px;">0</span>
+          <span id="badge-subtab-adiantamentos" style="background: #cbd5e1; color: #0f172a; padding: 0 6px; border-radius: 10px; font-size: 10px;">0</span>
         </button>
       </div>
-      <span id="subtab-lanc-dica" style="font-size: 10.5px; color: #64748b; font-weight: 600;">
+      <span id="subtab-lanc-dica" style="font-size: 10.5px; color: #334155; font-weight: 600;">
         Lançamento direto de NFS-e, NF-e, Boletos, Recibos e Retenções
       </span>
     </div>
@@ -969,7 +977,7 @@
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <span style="background: #1d4ed8; color: #ffffff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.3px;">XML</span>
           <span style="font-size: 11.5px; font-weight: 700; color: #1e3a8a;">Lançar Nota Fiscal por XML (NF-e Produto ou NFS-e Serviço)</span>
-          <span style="font-size: 10.5px; color: #475569;">Arraste o arquivo .xml aqui ou clique ao lado para preencher todos os campos automaticamente.</span>
+          <span style="font-size: 10.5px; color: #1e293b;">Arraste o arquivo .xml aqui ou clique ao lado para preencher todos os campos automaticamente.</span>
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
           <input type="file" id="input-xml-nf" accept=".xml,text/xml,application/xml" style="display: none;" onchange="processarArquivoXMLNF(event)">
@@ -1168,7 +1176,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
           <legend style="display: flex; align-items: center; gap: 8px; margin-bottom: 0;">
             <span><svg class="bimer-svg" viewBox="0 0 24 24"><line x1="3" y1="21" x2="21" y2="21"></line><line x1="3" y1="10" x2="21" y2="10"></line><polyline points="5 10 5 21"></polyline><polyline points="19 10 19 21"></polyline><polygon points="12 2 2 7 22 7 12 2"></polygon></svg> Retenções Tributárias na Fonte (ISS, IRRF, PIS, COFINS, CSLL)</span>
-            <span id="badge-retencoes-status" style="font-size: 10px; font-weight: 600; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 10px;">Sem retenções</span>
+            <span id="badge-retencoes-status" style="font-size: 10px; font-weight: 600; background: #e2e8f0; color: #1e293b; padding: 2px 8px; border-radius: 10px;">Sem retenções</span>
           </legend>
           <div style="display: flex; gap: 6px; align-items: center;">
             <button type="button" class="tool-btn" id="btn-toggle-retencoes" onclick="alternarVisibilidadeRetencoes()" style="padding: 2px 8px; font-size: 11px;">
@@ -1270,22 +1278,22 @@
             </div>
             <div id="corpo-painel-iva-2026" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; font-size: 11px; margin-top: 6px;">
               <div style="background: #ffffff; padding: 6px 10px; border-radius: 4px; border: 1px solid #bbf7d0;">
-                <div style="color: #475569; font-size: 10px; font-weight: 600;">CBS (Federal • Alíquota Teste 0,90%):</div>
+                <div style="color: #1e293b; font-size: 10px; font-weight: 600;">CBS (Federal • Alíquota Teste 0,90%):</div>
                 <strong id="nt-valor-cbs" style="font-size: 12.5px; color: #047857;">R$ 0,00</strong>
-                <span style="font-size: 9.5px; color: #64748b; display: block;">Compensável c/ PIS/COFINS ou dispensada em 2026</span>
+                <span style="font-size: 9.5px; color: #334155; display: block;">Compensável c/ PIS/COFINS ou dispensada em 2026</span>
               </div>
               <div style="background: #ffffff; padding: 6px 10px; border-radius: 4px; border: 1px solid #bbf7d0;">
-                <div style="color: #475569; font-size: 10px; font-weight: 600;">IBS (Estados/Municípios • 0,10%):</div>
+                <div style="color: #1e293b; font-size: 10px; font-weight: 600;">IBS (Estados/Municípios • 0,10%):</div>
                 <strong id="nt-valor-ibs" style="font-size: 12.5px; color: #047857;">R$ 0,00</strong>
-                <span style="font-size: 9.5px; color: #64748b; display: block;">Compensável c/ ISS/ICMS • Destaque informativo</span>
+                <span style="font-size: 9.5px; color: #334155; display: block;">Compensável c/ ISS/ICMS • Destaque informativo</span>
               </div>
               <div style="background: #ffffff; padding: 6px 10px; border-radius: 4px; border: 1px solid #bbf7d0;">
-                <div style="color: #475569; font-size: 10px; font-weight: 600;">Total IVA Dual Estimado (1,00%):</div>
+                <div style="color: #1e293b; font-size: 10px; font-weight: 600;">Total IVA Dual Estimado (1,00%):</div>
                 <strong id="nt-valor-iva-dual" style="font-size: 12.5px; color: #166534;">R$ 0,00</strong>
-                <span style="font-size: 9.5px; color: #64748b; display: block;">Sem aumento no valor líquido a pagar</span>
+                <span style="font-size: 9.5px; color: #334155; display: block;">Sem aumento no valor líquido a pagar</span>
               </div>
               <div style="background: #ffffff; padding: 6px 10px; border-radius: 4px; border: 1px solid #bbf7d0;">
-                <div style="color: #475569; font-size: 10px; font-weight: 600;">Cód. Tributação Nacional (CTN):</div>
+                <div style="color: #1e293b; font-size: 10px; font-weight: 600;">Cód. Tributação Nacional (CTN):</div>
                 <input type="text" id="ctn_nacional" placeholder="Ex: 14.05.01 (Portal Nacional)" style="width: 100%; font-size: 11px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 3px; font-weight: 700; color: #004b87; margin-top: 3px;" autocomplete="off">
               </div>
             </div>
@@ -1316,9 +1324,9 @@
             <div style="font-size: 9.5px; color: #1e3a8a;" id="agenda-qtd-semana">0 contas</div>
           </div>
           <div id="agenda-card-mes" onclick="filtrarAgendaVencimento('mes', this)" style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 3px; cursor: pointer; transition: all 0.1s;" title="Clique para filtrar/alternar restante do mês">
-            <div style="font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase;"><svg class="bimer-svg bimer-svg-xs" style="stroke:#475569;" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Restante do Mês</div>
-            <div style="font-size: 13px; font-weight: 800; color: #1e293b;" id="agenda-tot-mes">R$ 0,00</div>
-            <div style="font-size: 9.5px; color: #64748b;" id="agenda-qtd-mes">0 contas</div>
+            <div style="font-size: 10px; font-weight: 700; color: #1e293b; text-transform: uppercase;"><svg class="bimer-svg bimer-svg-xs" style="stroke:#475569;" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Restante do Mês</div>
+            <div style="font-size: 13px; font-weight: 800; color: #090d16;" id="agenda-tot-mes">R$ 0,00</div>
+            <div style="font-size: 9.5px; color: #334155;" id="agenda-qtd-mes">0 contas</div>
           </div>
         </div>
 
@@ -1330,21 +1338,21 @@
               <span><svg class="bimer-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Em Aberto</span>
               <span id="badge-count-abertos" style="background: rgba(255,255,255,0.25); color: #fff; padding: 1px 6px; border-radius: 10px; font-size: 10px;">0</span>
             </button>
-            <button class="tool-btn" id="subtab-btn-baixados" onclick="setSubabaStatus('conciliado', this)" style="background: transparent; color: #475569; font-weight: 700; border: none; border-radius: 3px; padding: 5px 12px; font-size: 11.5px; display: flex; align-items: center; gap: 6px;">
+            <button class="tool-btn" id="subtab-btn-baixados" onclick="setSubabaStatus('conciliado', this)" style="background: transparent; color: #1e293b; font-weight: 700; border: none; border-radius: 3px; padding: 5px 12px; font-size: 11.5px; display: flex; align-items: center; gap: 6px;">
               <span><svg class="bimer-svg bimer-svg-green" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Baixados & Conciliados</span>
-              <span id="badge-count-baixados" style="background: #cbd5e1; color: #334155; padding: 1px 6px; border-radius: 10px; font-size: 10px;">0</span>
+              <span id="badge-count-baixados" style="background: #cbd5e1; color: #0f172a; padding: 1px 6px; border-radius: 10px; font-size: 10px;">0</span>
             </button>
-            <button class="tool-btn" id="subtab-btn-todos" onclick="setSubabaStatus('todos', this)" style="background: transparent; color: #475569; font-weight: 700; border: none; border-radius: 3px; padding: 5px 12px; font-size: 11.5px; display: flex; align-items: center; gap: 6px;">
+            <button class="tool-btn" id="subtab-btn-todos" onclick="setSubabaStatus('todos', this)" style="background: transparent; color: #1e293b; font-weight: 700; border: none; border-radius: 3px; padding: 5px 12px; font-size: 11.5px; display: flex; align-items: center; gap: 6px;">
               <span><svg class="bimer-svg" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg> Todos</span>
-              <span id="badge-count-todos" style="background: #cbd5e1; color: #334155; padding: 1px 6px; border-radius: 10px; font-size: 10px;">0</span>
+              <span id="badge-count-todos" style="background: #cbd5e1; color: #0f172a; padding: 1px 6px; border-radius: 10px; font-size: 10px;">0</span>
             </button>
           </div>
 
           <!-- 2. CAMPO DE BUSCA INSTANTÂNEA -->
           <div style="flex: 1; min-width: 260px; max-width: 480px; position: relative; display: flex; align-items: center;">
-            <span style="position: absolute; left: 8px; color: #64748b; pointer-events: none; display: flex; align-items: center;"><svg class="bimer-svg bimer-svg-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></span>
+            <span style="position: absolute; left: 8px; color: #334155; pointer-events: none; display: flex; align-items: center;"><svg class="bimer-svg bimer-svg-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></span>
             <input type="text" id="campo-busca-titulos" placeholder="Buscar por favorecido, CNPJ/CPF, documento ou ID..." oninput="filtrarTitulosPorTexto(this.value)" style="width: 100%; padding: 5px 26px 5px 28px; font-size: 11.5px; border: 1px solid #94a3b8; border-radius: 3px; outline: none; background: #ffffff;">
-            <button onclick="limparBuscaTitulos()" id="btn-limpar-busca-titulos" style="position: absolute; right: 6px; background: none; border: none; font-size: 11px; color: #94a3b8; cursor: pointer; display: none;" title="Limpar busca"><svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            <button onclick="limparBuscaTitulos()" id="btn-limpar-busca-titulos" style="position: absolute; right: 6px; background: none; border: none; font-size: 11px; color: #475569; cursor: pointer; display: none;" title="Limpar busca"><svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
           </div>
 
           <!-- 3. ACOES EXECUTIVAS INTEGRADAS (AUTORIZACAO, ITAU SISPAG, WHATSAPP) -->
@@ -1364,19 +1372,19 @@
         <!-- FILTROS COMPACTOS POR SEGMENTO & ORDENAÇÃO / CLASSIFICAÇÃO -->
         <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
           <div style="display: flex; gap: 5px; flex-wrap: wrap; align-items: center;" id="botoes-filtro-titulos">
-            <span style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-right: 2px;">Filtrar Tipo:</span>
+            <span style="font-size: 10.5px; font-weight: 700; color: #334155; text-transform: uppercase; margin-right: 2px;">Filtrar Tipo:</span>
             <button class="tool-btn" onclick="filtrarTipoTitulos('todos', this)" style="background: var(--alterdata-blue); color: white; font-size: 11px; padding: 4px 10px; font-weight: 600;">Todos os Títulos</button>
             <button class="tool-btn" onclick="filtrarTipoTitulos('folha_feriados', this)" style="font-size: 11px; padding: 4px 10px; font-weight: 600;"><svg class="bimer-svg" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Folha, Domingos & Feriados</button>
             <button class="tool-btn" onclick="filtrarTipoTitulos('imposto', this)" style="font-size: 11px; padding: 4px 10px; font-weight: 600;"><svg class="bimer-svg" viewBox="0 0 24 24"><line x1="3" y1="21" x2="21" y2="21"></line><line x1="3" y1="10" x2="21" y2="10"></line><polyline points="5 10 5 21"></polyline><polyline points="19 10 19 21"></polyline><polygon points="12 2 2 7 22 7 12 2"></polygon></svg> Tributos Retidos</button>
           </div>
           <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-            <select id="filtro-meio-pgto-titulos" onchange="renderizarGridTitulos()" style="font-size: 11px; padding: 3px 6px; border: 1px solid #cbd5e1; border-radius: 3px; background: white; font-weight: 600; color: #1e293b;" title="Filtrar por forma de pagamento">
+            <select id="filtro-meio-pgto-titulos" onchange="renderizarGridTitulos()" style="font-size: 11px; padding: 3px 6px; border: 1px solid #cbd5e1; border-radius: 3px; background: white; font-weight: 600; color: #090d16;" title="Filtrar por forma de pagamento">
               <option value="TODOS">Meio Pgto: Todos</option>
               <option value="PIX">Somente PIX</option>
               <option value="BOLETO">Somente Boleto</option>
               <option value="OUTROS">TED / Débito / Outros</option>
             </select>
-            <div style="display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; color: #475569; font-weight: 600;">
+            <div style="display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; color: #1e293b; font-weight: 600;">
               <span>Venc:</span>
               <input type="date" id="filtro-venc-ini-titulos" onchange="renderizarGridTitulos()" style="font-size: 10.5px; padding: 2px 5px; border: 1px solid #cbd5e1; border-radius: 3px;" title="Vencimento Inicial">
               <span>a</span>
@@ -1384,8 +1392,8 @@
             </div>
             <button type="button" class="tool-btn" onclick="limparTodosFiltrosTitulos()" style="font-size: 10.5px; padding: 3px 8px;" title="Redefinir todos os filtros">Limpar Filtros</button>
             <div style="display: flex; align-items: center; gap: 4px;">
-              <span style="font-size: 10.5px; font-weight: 700; color: #475569;">Classificar:</span>
-              <select id="select-classificar-titulos" onchange="alterarOrdenacaoTitulos(this.value)" style="font-size: 11px; padding: 3px 6px; border: 1px solid #cbd5e1; border-radius: 3px; background: white; font-weight: 600; color: #1e293b;">
+              <span style="font-size: 10.5px; font-weight: 700; color: #1e293b;">Classificar:</span>
+              <select id="select-classificar-titulos" onchange="alterarOrdenacaoTitulos(this.value)" style="font-size: 11px; padding: 3px 6px; border: 1px solid #cbd5e1; border-radius: 3px; background: white; font-weight: 600; color: #090d16;">
                 <option value="vencimento_asc">Vencimento (Mais antigos primeiro)</option>
                 <option value="vencimento_desc">Vencimento (Mais futuros primeiro)</option>
                 <option value="valor_desc">Valor R$ (Maior para menor)</option>
@@ -1527,7 +1535,7 @@
           <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 8px 10px; margin-bottom: 10px;">
             <!-- Linha 1: Atalhos Rápidos Padronizados -->
             <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 6px;">
-              <span style="font-size: 10.5px; font-weight: 700; color: #475569; margin-right: 4px;">Período Rápido:</span>
+              <span style="font-size: 10.5px; font-weight: 700; color: #1e293b; margin-right: 4px;">Período Rápido:</span>
               <button type="button" class="btn-filtro-rapido active" onclick="aplicarFiltroRapidoPrevisao('TODOS', this)">Todos</button>
               <button type="button" class="btn-filtro-rapido" onclick="aplicarFiltroRapidoPrevisao('HOJE', this)">Hoje</button>
               <button type="button" class="btn-filtro-rapido" onclick="aplicarFiltroRapidoPrevisao('7DIAS', this)">7 Dias</button>
@@ -1539,21 +1547,21 @@
             <!-- Linha 2: Intervalo de Datas Personalizadas + Mês Ref + Situação -->
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 11px;">
               <div style="display: flex; align-items: center; gap: 3px;">
-                <label style="margin: 0; font-weight: 600; color: #475569;">De:</label>
+                <label style="margin: 0; font-weight: 600; color: #1e293b;">De:</label>
                 <input type="date" id="filtro_prev_inicio" onchange="aplicarFiltroPersonalizadoPrevisao()" style="padding: 2px 5px; font-size: 10.5px; border: 1px solid #cbd5e1; border-radius: 2px;">
               </div>
               <div style="display: flex; align-items: center; gap: 3px;">
-                <label style="margin: 0; font-weight: 600; color: #475569;">Até:</label>
+                <label style="margin: 0; font-weight: 600; color: #1e293b;">Até:</label>
                 <input type="date" id="filtro_prev_fim" onchange="aplicarFiltroPersonalizadoPrevisao()" style="padding: 2px 5px; font-size: 10.5px; border: 1px solid #cbd5e1; border-radius: 2px;">
               </div>
               <div style="display: flex; align-items: center; gap: 3px;">
-                <label style="margin: 0; font-weight: 600; color: #475569;">Mês Ref:</label>
+                <label style="margin: 0; font-weight: 600; color: #1e293b;">Mês Ref:</label>
                 <select id="filtro_mes_previsao" onchange="aplicarFiltroSelectMes()" style="padding: 2px 5px; font-size: 10.5px; border: 1px solid #cbd5e1; border-radius: 2px;">
                   <option value="TODOS">Todos os Meses</option>
                 </select>
               </div>
               <div style="display: flex; align-items: center; gap: 3px;">
-                <label style="margin: 0; font-weight: 600; color: #475569;">Situação:</label>
+                <label style="margin: 0; font-weight: 600; color: #1e293b;">Situação:</label>
                 <select id="filtro_status_previsao" onchange="renderizarGridPrevisoes()" style="padding: 2px 5px; font-size: 10.5px; border: 1px solid #cbd5e1; border-radius: 2px;">
                   <option value="TODAS">Todas</option>
                   <option value="PREVISAO">Em Aberto (Pendentes)</option>
@@ -1578,7 +1586,7 @@
             </div>
             <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px; border-radius: 3px;">
               <div style="font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Média Mensal Comprometida</div>
-              <div style="font-size: 14px; font-weight: 800; color: #475569;" id="prev-media-mensal">R$ 0,00</div>
+              <div style="font-size: 14px; font-weight: 800; color: #1e293b;" id="prev-media-mensal">R$ 0,00</div>
             </div>
           </div>
 
@@ -1788,7 +1796,7 @@
 
           <!-- Ações de Encerramento do Adiantamento -->
           <div id="painel-encerramento" style="margin-top: 14px; border-top: 1px dashed #cbd5e1; padding-top: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-            <div id="texto-acao-fechamento" style="font-size: 11.5px; font-weight: 600; color: #334155;"></div>
+            <div id="texto-acao-fechamento" style="font-size: 11.5px; font-weight: 600; color: #0f172a;"></div>
             <div id="botoes-acao-fechamento" style="display: flex; gap: 8px;"></div>
           </div>
 
@@ -1809,7 +1817,7 @@
           
           <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
             <div>
-              <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">Conta Corrente / Banco:</label>
+              <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Conta Corrente / Banco:</label>
               <select id="conc-conta-banco" style="padding: 5px 8px; font-size: 11px; font-weight: 700; border: 1px solid #cbd5e1; border-radius: 4px; color: #004b87; background: #f8fafc;">
                 <option value="ITAU_MATRIZ">Banco Itaú - C/C Matriz (Ag 0041 / C/C 45910-2)</option>
                 <option value="SANTANDER_FOLHA">Banco Santander - C/C Fornecedores & Folha (Ag 3310 / C/C 10294-8)</option>
@@ -1818,10 +1826,10 @@
             </div>
 
             <div>
-              <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">Período do Extrato:</label>
+              <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Período do Extrato:</label>
               <div style="display: flex; align-items: center; gap: 4px;">
                 <input type="date" id="conc-data-ini" value="2026-09-01" style="padding: 4px 6px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 3px;">
-                <span style="font-size: 10px; color: #64748b;">até</span>
+                <span style="font-size: 10px; color: #334155;">até</span>
                 <input type="date" id="conc-data-fim" value="2026-09-30" style="padding: 4px 6px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 3px;">
               </div>
             </div>
@@ -1850,9 +1858,9 @@
       <!-- DASHBOARD STATUS DA CONCILIAÇÃO (CARDS) -->
       <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px;">
         <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #64748b; padding: 10px 14px; border-radius: 4px;">
-          <div style="font-size: 9.5px; text-transform: uppercase; font-weight: 800; color: #64748b;">1. Saldo Inicial no Banco</div>
-          <div style="font-size: 16px; font-weight: 800; color: #334155;" id="conc-card-saldo-inicial">R$ 3.425,97</div>
-          <div style="font-size: 9.5px; color: #64748b; margin-top: 2px;">Posição extrato 01/09</div>
+          <div style="font-size: 9.5px; text-transform: uppercase; font-weight: 800; color: #334155;">1. Saldo Inicial no Banco</div>
+          <div style="font-size: 16px; font-weight: 800; color: #0f172a;" id="conc-card-saldo-inicial">R$ 3.425,97</div>
+          <div style="font-size: 9.5px; color: #334155; margin-top: 2px;">Posição extrato 01/09</div>
         </div>
         <div style="background: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #ef4444; padding: 10px 14px; border-radius: 4px;">
           <div style="font-size: 9.5px; text-transform: uppercase; font-weight: 800; color: #991b1b;">2. Total Débitos Extrato</div>
@@ -1881,7 +1889,7 @@
               <span><svg class="bimer-svg" viewBox="0 0 24 24"><line x1="3" y1="21" x2="21" y2="21"></line><line x1="3" y1="10" x2="21" y2="10"></line><polyline points="5 10 5 21"></polyline><polyline points="19 10 19 21"></polyline><polygon points="12 2 2 7 22 7 12 2"></polygon></svg></span>
               <span>Extrato Bancário Real (Banco Itaú / OFX)</span>
             </div>
-            <span style="font-size: 10px; color: #94a3b8;" id="conc-extrato-contador">0 lançamentos</span>
+            <span style="font-size: 10px; color: #475569;" id="conc-extrato-contador">0 lançamentos</span>
           </div>
 
           <div style="max-height: 480px; overflow-y: auto;">
@@ -1898,7 +1906,7 @@
               </thead>
               <tbody id="conc-extrato-body">
                 <tr>
-                  <td colspan="6" style="text-align: center; padding: 30px; color: #64748b;">
+                  <td colspan="6" style="text-align: center; padding: 30px; color: #334155;">
                     Nenhum extrato importado. Clique em <strong>"<svg class="bimer-svg" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Importar Extrato (.OFX)"</strong> ou <strong>"Carregar Extrato Real"</strong> acima.
                   </td>
                 </tr>
@@ -1923,12 +1931,12 @@
               <label style="font-size: 10px; font-weight: 700; color: #1e3a8a; white-space: nowrap;">Data:</label>
               <input type="date" id="conc-filtro-data-sistema" onchange="renderizarTelasConciliacao()" style="padding: 3px 5px; font-size: 10.5px; border: 1px solid #94a3b8; border-radius: 3px; background: #ffffff;">
             </div>
-            <select id="conc-filtro-tipo-data" onchange="renderizarTelasConciliacao()" style="padding: 3px 5px; font-size: 10.5px; border: 1px solid #94a3b8; border-radius: 3px; background: #ffffff; font-weight: 600; color: #334155;" title="Escolha se a data filtra Vencimento, Lançamento ou ambos">
+            <select id="conc-filtro-tipo-data" onchange="renderizarTelasConciliacao()" style="padding: 3px 5px; font-size: 10.5px; border: 1px solid #94a3b8; border-radius: 3px; background: #ffffff; font-weight: 600; color: #0f172a;" title="Escolha se a data filtra Vencimento, Lançamento ou ambos">
               <option value="VENC_OU_LANC">Vencimento ou Lançado no Dia</option>
               <option value="VENCIMENTO">Somente Vencimento</option>
               <option value="LANCAMENTO">Somente Lançado no Dia</option>
             </select>
-            <select id="conc-filtro-status-sistema" onchange="renderizarTelasConciliacao()" style="padding: 3px 5px; font-size: 10.5px; border: 1px solid #94a3b8; border-radius: 3px; background: #ffffff; font-weight: 600; color: #334155;">
+            <select id="conc-filtro-status-sistema" onchange="renderizarTelasConciliacao()" style="padding: 3px 5px; font-size: 10.5px; border: 1px solid #94a3b8; border-radius: 3px; background: #ffffff; font-weight: 600; color: #0f172a;">
               <option value="TODOS">Todos</option>
               <option value="ABERTO">Em Aberto</option>
               <option value="CONCILIADO">Conciliados</option>
@@ -1983,7 +1991,7 @@
         <!-- BARRA DE BUSCA -->
         <div style="padding: 10px 18px; border-bottom: 1px solid #e2e8f0; display: flex; gap: 10px; align-items: center;">
           <input type="text" id="modal-vinc-busca" placeholder="Buscar por fornecedor, NF ou descrição..." oninput="filtrarTitulosModal()" style="flex: 1; padding: 6px 10px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px;">
-          <span style="font-size: 10px; color: #64748b; white-space: nowrap;" id="modal-vinc-contador">0 títulos pendentes</span>
+          <span style="font-size: 10px; color: #334155; white-space: nowrap;" id="modal-vinc-contador">0 títulos pendentes</span>
         </div>
         <!-- LISTA DE TÍTULOS COM CHECKBOX -->
         <div style="flex: 1; overflow-y: auto; max-height: 340px; padding: 0;">
@@ -2007,7 +2015,7 @@
             <div>
               <div style="font-size: 9.5px; text-transform: uppercase; font-weight: 800; color: #1e40af;">Soma dos Selecionados</div>
               <div style="font-size: 16px; font-weight: 800; color: #004b87; font-family: monospace;" id="modal-vinc-soma">R$ 0,00</div>
-              <div style="font-size: 9.5px; color: #64748b;" id="modal-vinc-qtd-sel">0 títulos selecionados</div>
+              <div style="font-size: 9.5px; color: #334155;" id="modal-vinc-qtd-sel">0 títulos selecionados</div>
             </div>
             <div>
               <div style="font-size: 9.5px; text-transform: uppercase; font-weight: 800; color: #991b1b;">Valor do Extrato</div>
@@ -2064,17 +2072,17 @@
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
             <div>
-              <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">Período do Relatório:</label>
+              <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Período do Relatório:</label>
               <div style="display: flex; align-items: center; gap: 4px;">
                 <input type="date" id="rel-data-ini" value="2026-09-01" onchange="renderizarRelatorioAtual()" style="padding: 4px 6px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 3px;">
-                <span style="font-size: 10px; color: #64748b;">até</span>
+                <span style="font-size: 10px; color: #334155;">até</span>
                 <input type="date" id="rel-data-fim" value="2026-09-30" onchange="renderizarRelatorioAtual()" style="padding: 4px 6px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 3px;">
               </div>
             </div>
 
             <div id="rel-filtro-status-box">
-              <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">Situação dos Títulos:</label>
-              <select id="rel-filtro-status" onchange="renderizarRelatorioAtual()" style="padding: 4px 8px; font-size: 11px; font-weight: 600; border: 1px solid #cbd5e1; border-radius: 3px; color: #334155;">
+              <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Situação dos Títulos:</label>
+              <select id="rel-filtro-status" onchange="renderizarRelatorioAtual()" style="padding: 4px 8px; font-size: 11px; font-weight: 600; border: 1px solid #cbd5e1; border-radius: 3px; color: #0f172a;">
                 <option value="TODOS">Todos os Títulos</option>
                 <option value="ABERTO">Somente em Aberto / Pendentes</option>
                 <option value="CONCILIADO">Somente Baixados / Conciliados</option>
@@ -2082,8 +2090,8 @@
             </div>
 
             <div id="rel-filtro-ccusto-box">
-              <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">Centro de Custo / Loja:</label>
-              <select id="rel-filtro-ccusto" onchange="renderizarRelatorioAtual()" style="padding: 4px 8px; font-size: 11px; font-weight: 600; border: 1px solid #cbd5e1; border-radius: 3px; color: #334155;">
+              <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Centro de Custo / Loja:</label>
+              <select id="rel-filtro-ccusto" onchange="renderizarRelatorioAtual()" style="padding: 4px 8px; font-size: 11px; font-weight: 600; border: 1px solid #cbd5e1; border-radius: 3px; color: #0f172a;">
                 <option value="TODOS">Todos os Centros de Custo & Lojas</option>
                 <option value="Operacional / Produção">Operacional / Produção (Tecidos, Malharia, Confecção)</option>
                 <option value="Lojas / Ocupação">Lojas / Ocupação (Horto, SDB, Vilas, Paseo, Barra)</option>
@@ -2133,14 +2141,14 @@
     <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #004b87; padding-bottom: 12px; margin-bottom: 16px;">
       <div>
         <h2 style="color: #004b87; font-size: 18px; font-weight: 800; margin-bottom: 2px;">ESPELHO DE LANÇAMENTO & CONFERÊNCIA DE DESPESA</h2>
-        <p style="font-size: 11px; color: #64748b;">Módulo Contas a Pagar - Rastreabilidade Fiscal e Tributária</p>
+        <p style="font-size: 11px; color: #334155;">Módulo Contas a Pagar - Rastreabilidade Fiscal e Tributária</p>
       </div>
       <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
         <div style="display: flex; gap: 6px; align-items: center;">
           <span style="background: #e2e8f0; padding: 4px 10px; border-radius: 3px; font-weight: 700; font-size: 12px;" id="fr-doc-num">DOC-2026</span>
           <span id="fr-status-badge" style="padding: 4px 10px; border-radius: 4px; font-weight: 800; font-size: 12px;">-</span>
         </div>
-        <div style="font-size: 10px; color: #64748b; margin-top: 2px;" id="fr-emissao-data">Data: 08/09/2026</div>
+        <div style="font-size: 10px; color: #334155; margin-top: 2px;" id="fr-emissao-data">Data: 08/09/2026</div>
         <div style="font-size: 10.5px; font-weight: 700;" id="fr-status-subtexto"></div>
       </div>
     </div>
@@ -2217,7 +2225,7 @@
       </div>
       <div style="border-top: 1px solid #475569; padding-top: 6px;">
         <strong>Contas a Pagar / Baixa</strong><br>
-        <div id="fr-carimbo-baixa" style="margin-top: 4px; font-size: 10px; color: #64748b;">Data: ___/___/______</div>
+        <div id="fr-carimbo-baixa" style="margin-top: 4px; font-size: 10px; color: #334155;">Data: ___/___/______</div>
       </div>
     </div>
 
@@ -2236,18 +2244,18 @@
     <div class="no-print" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
       <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
         <div style="display: flex; align-items: center; gap: 6px;">
-          <label style="font-size: 11.5px; font-weight: 700; color: #1e293b;">Data do Movimento:</label>
+          <label style="font-size: 11.5px; font-weight: 700; color: #090d16;">Data do Movimento:</label>
           <input type="date" id="frd-data-movimento" onchange="renderizarFolhaRostoDiaria()" style="padding: 5px 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 700;">
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
-          <label style="font-size: 11.5px; font-weight: 700; color: #475569;">Filtro de Status:</label>
+          <label style="font-size: 11.5px; font-weight: 700; color: #1e293b;">Filtro de Status:</label>
           <select id="frd-filtro-status" onchange="renderizarFolhaRostoDiaria()" style="padding: 5px 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 600;">
             <option value="todos">Todos os Títulos do Dia</option>
             <option value="pagos">Somente Pagos & Conciliados</option>
             <option value="abertos">Somente em Aberto</option>
           </select>
         </div>
-        <label style="display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: #475569; cursor: pointer;">
+        <label style="display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: #1e293b; cursor: pointer;">
           <input type="checkbox" id="frd-check-todos-mes" onchange="renderizarFolhaRostoDiaria()">
           <span>Expandir para todo o mês vigente</span>
         </label>
@@ -2282,9 +2290,9 @@
       <!-- PAINEL DE INDICADORES CONSOLIDADOS DO DIA -->
       <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">
         <div style="padding: 10px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; border-left: 4px solid #004b87;">
-          <div style="font-size: 10px; text-transform: uppercase; font-weight: 800; color: #475569; margin-bottom: 2px;">1. Total Movimento Bruto</div>
+          <div style="font-size: 10px; text-transform: uppercase; font-weight: 800; color: #1e293b; margin-bottom: 2px;">1. Total Movimento Bruto</div>
           <div style="font-size: 16px; font-weight: 800; color: #0f172a;" id="frd-card-bruto">R$ 0,00</div>
-          <div style="font-size: 9.5px; color: #64748b; margin-top: 2px;" id="frd-qtd-documentos">0 documento(s)</div>
+          <div style="font-size: 9.5px; color: #334155; margin-top: 2px;" id="frd-qtd-documentos">0 documento(s)</div>
         </div>
         <div style="padding: 10px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f0fdf4; border-left: 4px solid #16a34a;">
           <div style="font-size: 10px; text-transform: uppercase; font-weight: 800; color: #166534; margin-bottom: 2px;">2. Quitado / Conciliado no Banco</div>
@@ -2337,29 +2345,29 @@
       <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 14px; margin-bottom: 20px; font-size: 11px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
           <div><strong style="color: #004b87; text-transform: uppercase;">Subtotais por Meio de Pagamento:</strong> <span id="frd-resumo-meios-pgto">-</span></div>
-          <div style="font-weight: 700; color: #334155;">Total Líquido do Movimento: <span id="frd-resumo-total-liq" style="color: #004b87; font-size: 13px;">R$ 0,00</span></div>
+          <div style="font-weight: 700; color: #0f172a;">Total Líquido do Movimento: <span id="frd-resumo-total-liq" style="color: #004b87; font-size: 13px;">R$ 0,00</span></div>
         </div>
-        <div style="color: #475569; font-style: italic; border-top: 1px dashed #cbd5e1; padding-top: 6px;" id="frd-extenso-total">
+        <div style="color: #1e293b; font-style: italic; border-top: 1px dashed #cbd5e1; padding-top: 6px;" id="frd-extenso-total">
           Valor por Extenso: (Zero reais)
         </div>
       </div>
 
       <!-- QUADRO DE ASSINATURAS E CONFERÊNCIA OFICIAL (PADRÃO BIMER / JR SOLUTIONS) -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; text-align: center; font-size: 10.5px; color: #334155;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; text-align: center; font-size: 10.5px; color: #0f172a;">
         <div style="border-top: 1.5px solid #475569; padding-top: 8px;">
           <strong>ELABORADO / TESOURARIA</strong><br>
-          <span style="color: #64748b;">Contas a Pagar & Conciliação</span><br>
-          <span style="font-size: 9.5px; color: #94a3b8;">Data: ___/___/______ · Visto: ___________</span>
+          <span style="color: #334155;">Contas a Pagar & Conciliação</span><br>
+          <span style="font-size: 9.5px; color: #475569;">Data: ___/___/______ · Visto: ___________</span>
         </div>
         <div style="border-top: 1.5px solid #475569; padding-top: 8px;">
           <strong>CONFERÊNCIA FISCAL</strong><br>
-          <span style="color: #64748b;">Controladoria & Retenções Tributárias</span><br>
-          <span style="font-size: 9.5px; color: #94a3b8;">Data: ___/___/______ · Visto: ___________</span>
+          <span style="color: #334155;">Controladoria & Retenções Tributárias</span><br>
+          <span style="font-size: 9.5px; color: #475569;">Data: ___/___/______ · Visto: ___________</span>
         </div>
         <div style="border-top: 1.5px solid #475569; padding-top: 8px;">
           <strong>AUTORIZAÇÃO & APROVAÇÃO</strong><br>
-          <span style="color: #64748b;">Diretoria Financeira / Roberto</span><br>
-          <span style="font-size: 9.5px; color: #94a3b8;">Data: ___/___/______ · Assinatura: ___________</span>
+          <span style="color: #334155;">Diretoria Financeira / Roberto</span><br>
+          <span style="font-size: 9.5px; color: #475569;">Data: ___/___/______ · Assinatura: ___________</span>
         </div>
       </div>
 
@@ -2418,7 +2426,7 @@
         </div>
         <div>
           <h2 style="color: #004b87; font-size: 16px; font-weight: 800; margin-bottom: 2px;">FECHAMENTO DE ADIANTAMENTO & PRESTAÇÃO DE CONTAS</h2>
-          <p style="font-size: 11px; color: #64748b; margin: 0;">Plataforma de Gestão Financeira • Auditoria & Rastreabilidade de Recursos</p>
+          <p style="font-size: 11px; color: #334155; margin: 0;">Plataforma de Gestão Financeira • Auditoria & Rastreabilidade de Recursos</p>
         </div>
       </div>
       <div style="text-align: right;">
@@ -2426,7 +2434,7 @@
           <span style="background: #004b87; color: white; padding: 4px 10px; border-radius: 3px; font-weight: 800; font-family: monospace; font-size: 13px;" id="pc-id-badge">ADT-2026-0001</span>
           <span style="background: #e0e7ff; color: #3730a3; padding: 4px 10px; border-radius: 3px; font-weight: 700; font-size: 11px;" id="pc-status-badge">EM ABERTO</span>
         </div>
-        <div style="font-size: 10px; color: #64748b; margin-top: 4px;" id="pc-data-emissao">Data de Emissão: 08/09/2026</div>
+        <div style="font-size: 10px; color: #334155; margin-top: 4px;" id="pc-data-emissao">Data de Emissão: 08/09/2026</div>
       </div>
     </div>
 
@@ -2483,22 +2491,22 @@
         <span id="pc-resultado-label">(=) SALDO FINAL APURADO:</span>
         <span id="pc-val-saldo-final" style="font-size: 16px;">R$ 0,00</span>
       </div>
-      <div id="pc-parecer-resultado" style="font-size: 11px; margin-top: 6px; color: #475569; font-style: italic;"></div>
+      <div id="pc-parecer-resultado" style="font-size: 11px; margin-top: 6px; color: #1e293b; font-style: italic;"></div>
     </div>
 
     <!-- TERMO FORMAL DE QUITAÇÃO & ASSINATURAS -->
-    <div style="font-size: 10.5px; color: #475569; line-height: 1.5; margin-bottom: 25px; padding: 8px; background: #f1f5f9; border-left: 3px solid #004b87; border-radius: 2px;">
+    <div style="font-size: 10.5px; color: #1e293b; line-height: 1.5; margin-bottom: 25px; padding: 8px; background: #f1f5f9; border-left: 3px solid #004b87; border-radius: 2px;">
       Declaramos para os devidos fins de prestação de contas que os comprovantes acima foram devidamente conferidos, atestados e conciliados perante as políticas financeiras e orçamentárias da <strong>JR Solutions</strong>.
     </div>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 30px; text-align: center; font-size: 11px;">
       <div style="border-top: 1px solid #475569; padding-top: 6px;">
         <strong id="pc-sign-colaborador">Colaborador Solicitante</strong><br>
-        <span style="font-size: 10px; color: #64748b;">Prestador de Contas / Responsável pelo Adiantamento</span>
+        <span style="font-size: 10px; color: #334155;">Prestador de Contas / Responsável pelo Adiantamento</span>
       </div>
       <div style="border-top: 1px solid #475569; padding-top: 6px;">
         <strong>Roberto - Controladoria & Gestão Financeira</strong><br>
-        <span style="font-size: 10px; color: #64748b;">JR Solutions • Aprovação e Quitação Oficial</span>
+        <span style="font-size: 10px; color: #334155;">JR Solutions • Aprovação e Quitação Oficial</span>
       </div>
     </div>
 
@@ -2517,18 +2525,18 @@
     <div class="no-print" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
       <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
         <div style="display: flex; align-items: center; gap: 6px;">
-          <label style="font-size: 11px; font-weight: 700; color: #1e293b;">Data do Lote:</label>
+          <label style="font-size: 11px; font-weight: 700; color: #090d16;">Data do Lote:</label>
           <input type="date" id="aut-data-lote" onchange="renderizarRelatorioAutorizacao()" style="padding: 4px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 600;">
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
-          <label style="font-size: 11px; font-weight: 700; color: #475569;">Saldo Inicial (R$):</label>
+          <label style="font-size: 11px; font-weight: 700; color: #1e293b;">Saldo Inicial (R$):</label>
           <input type="number" step="0.01" id="aut-saldo-inicial" value="3425.97" oninput="recalcularFluxoAutorizacao()" style="width: 100px; padding: 4px 6px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 700;">
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
           <label style="font-size: 11px; font-weight: 700; color: #065f46;">Entradas Lojas (R$):</label>
           <input type="number" step="0.01" id="aut-entradas-lojas" value="120424.31" oninput="recalcularFluxoAutorizacao()" style="width: 115px; padding: 4px 6px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 700; color: #065f46;">
         </div>
-        <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; color: #475569; cursor: pointer;">
+        <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; color: #1e293b; cursor: pointer;">
           <input type="checkbox" id="aut-check-todos" onchange="renderizarRelatorioAutorizacao()">
           <span>Incluir todos em aberto</span>
         </label>
@@ -2552,7 +2560,7 @@
           <div style="background: linear-gradient(135deg, #004b87 0%, #0284c7 100%); color: white; font-weight: 800; font-size: 19px; padding: 8px 12px; border-radius: 6px; letter-spacing: 0.5px;">JR</div>
           <div>
             <div style="font-size: 18px; font-weight: 800; color: #0f172a; line-height: 1.2;">JR Solutions · Gestão Financeira</div>
-            <div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px;">Relatório Executivo de Autorização de Pagamentos</div>
+            <div style="font-size: 11px; color: #334155; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px;">Relatório Executivo de Autorização de Pagamentos</div>
           </div>
         </div>
         <div style="text-align: right; font-size: 11.5px; line-height: 1.5;">
@@ -2565,9 +2573,9 @@
       <!-- DASHBOARD DE FLUXO DE CAIXA CONSOLIDADO -->
       <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
         <div style="padding: 12px 14px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; border-left: 4px solid #64748b;">
-          <div style="font-size: 9.5px; text-transform: uppercase; font-weight: 800; color: #64748b; margin-bottom: 3px;">1. Saldo Inicial em Caixa</div>
-          <div style="font-size: 17px; font-weight: 800; color: #334155;" id="aut-card-saldo-inicial">R$ 3.425,97</div>
-          <div style="font-size: 9.5px; color: #64748b; margin-top: 3px;">Posição bancária abertura</div>
+          <div style="font-size: 9.5px; text-transform: uppercase; font-weight: 800; color: #334155; margin-bottom: 3px;">1. Saldo Inicial em Caixa</div>
+          <div style="font-size: 17px; font-weight: 800; color: #0f172a;" id="aut-card-saldo-inicial">R$ 3.425,97</div>
+          <div style="font-size: 9.5px; color: #334155; margin-top: 3px;">Posição bancária abertura</div>
         </div>
         <div style="padding: 12px 14px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f0fdf4; border-left: 4px solid #10b981;">
           <div style="font-size: 9.5px; text-transform: uppercase; font-weight: 800; color: #065f46; margin-bottom: 3px;">2. Transferências Lojas (Entradas)</div>
@@ -2607,7 +2615,7 @@
       <div style="border: 1.5px solid #cbd5e1; background: #fafbfc; border-radius: 6px; padding: 16px 20px; page-break-inside: avoid;">
         <div style="font-size: 11.5px; font-weight: 800; text-transform: uppercase; color: #004b87; margin-bottom: 10px; display: flex; justify-content: space-between;">
           <span>Despacho & Decisão da Diretoria</span>
-          <span style="font-size: 10.5px; font-weight: 600; color: #64748b;" id="aut-data-analise">Data da Análise: ____/____/2026</span>
+          <span style="font-size: 10.5px; font-weight: 600; color: #334155;" id="aut-data-analise">Data da Análise: ____/____/2026</span>
         </div>
 
         <div style="display: flex; gap: 24px; margin-bottom: 12px; font-size: 11.5px; font-weight: 700; flex-wrap: wrap;">
@@ -2625,23 +2633,23 @@
           </label>
         </div>
 
-        <div style="font-size: 11px; margin-bottom: 18px; color: #334155; background: #ffffff; border: 1px solid #e2e8f0; padding: 7px 10px; border-radius: 4px;">
+        <div style="font-size: 11px; margin-bottom: 18px; color: #0f172a; background: #ffffff; border: 1px solid #e2e8f0; padding: 7px 10px; border-radius: 4px;">
           <strong>Observações da Diretoria:</strong>
-          <input type="text" id="aut-obs-diretoria-input" value="Pagamentos liberados conforme projeção de saldo superavitário das lojas." style="width: 100%; border: none; outline: none; font-size: 11px; color: #1e293b; background: transparent; margin-top: 2px;">
+          <input type="text" id="aut-obs-diretoria-input" value="Pagamentos liberados conforme projeção de saldo superavitário das lojas." style="width: 100%; border: none; outline: none; font-size: 11px; color: #090d16; background: transparent; margin-top: 2px;">
         </div>
 
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 22px; text-align: center;">
           <div style="border-top: 1.5px dashed #64748b; padding-top: 6px; font-size: 10.5px; line-height: 1.4;">
             <strong style="color: #0f172a;">Camila Schreiber</strong><br>
-            <span style="color: #64748b; font-size: 9.5px;">Diretoria Geral · Autorização Oficial de Pagamento</span>
+            <span style="color: #334155; font-size: 9.5px;">Diretoria Geral · Autorização Oficial de Pagamento</span>
           </div>
           <div style="border-top: 1.5px dashed #64748b; padding-top: 6px; font-size: 10.5px; line-height: 1.4;">
             <strong style="color: #0f172a;">Controladoria & Finanças</strong><br>
-            <span style="color: #64748b; font-size: 9.5px;">Conferência de Saldo & Disponibilidade</span>
+            <span style="color: #334155; font-size: 9.5px;">Conferência de Saldo & Disponibilidade</span>
           </div>
           <div style="border-top: 1.5px dashed #64748b; padding-top: 6px; font-size: 10.5px; line-height: 1.4;">
             <strong style="color: #0f172a;">Contas a Pagar / Coordenador Financeiro</strong><br>
-            <span style="color: #64748b; font-size: 9.5px;">Validação e Conferência de Documentos</span>
+            <span style="color: #334155; font-size: 9.5px;">Validação e Conferência de Documentos</span>
           </div>
         </div>
       </div>
@@ -2669,7 +2677,7 @@
         <div style="background: rgba(16, 185, 129, 0.18); color: #065f46; border: 1px solid rgba(16, 185, 129, 0.45); font-weight: 900; font-size: 13px; padding: 6px 10px; border-radius: 4px; letter-spacing: 0.8px;">JR FINCLOUD</div>
         <div>
           <div style="font-size: 12.5px; font-weight: 700; color: #065f46;">Plataforma Multi-Tenant de Compliance Financeiro</div>
-          <div style="font-size: 10px; color: #64748b;">PostgreSQL 17 + RLS • Supabase + Railway + Vercel</div>
+          <div style="font-size: 10px; color: #334155;">PostgreSQL 17 + RLS • Supabase + Railway + Vercel</div>
         </div>
       </div>
 
@@ -2684,17 +2692,17 @@
 
       <form id="form-login-bimer" onsubmit="executarLogin(event)">
         <div style="margin-bottom: 10px;">
-          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #334155; margin-bottom: 3px;">E-mail Corporativo:</label>
+          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #0f172a; margin-bottom: 3px;">E-mail Corporativo:</label>
           <input type="email" id="login_email" required placeholder="seu@email.com.br" autocomplete="username" style="width: 100%; padding: 7px 9px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; background: #ffffff;">
         </div>
 
         <div style="margin-bottom: 14px;">
-          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #334155; margin-bottom: 3px;">Senha de Acesso:</label>
+          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #0f172a; margin-bottom: 3px;">Senha de Acesso:</label>
           <input type="password" id="login_senha" required placeholder="Digite sua senha" autocomplete="current-password" style="width: 100%; padding: 7px 9px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; background: #ffffff;">
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-          <label style="display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: #475569; cursor: pointer;">
+          <label style="display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: #1e293b; cursor: pointer;">
             <input type="checkbox" id="login_lembrar" checked>
             <span>Manter conectado neste navegador</span>
           </label>
@@ -2707,16 +2715,16 @@
 
       <form id="form-register-bimer" onsubmit="executarCadastroTenant(event)" style="display: none;">
         <div style="margin-bottom: 8px;">
-          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #334155; margin-bottom: 2px;">Nome da Empresa / Grupo *</label>
+          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">Nome da Empresa / Grupo *</label>
           <input type="text" id="reg_nome_empresa" required placeholder="Ex: Rede Varejo Brasil Ltda" style="width: 100%; padding: 6px 8px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;">
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
           <div>
-            <label style="display: block; font-size: 10.5px; font-weight: 700; color: #334155; margin-bottom: 2px;">CNPJ *</label>
+            <label style="display: block; font-size: 10.5px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">CNPJ *</label>
             <input type="text" id="reg_cnpj" required placeholder="00.000.000/0001-00" style="width: 100%; padding: 6px 8px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;">
           </div>
           <div>
-            <label style="display: block; font-size: 10.5px; font-weight: 700; color: #334155; margin-bottom: 2px;">Regime Tributário</label>
+            <label style="display: block; font-size: 10.5px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">Regime Tributário</label>
             <select id="reg_regime" style="width: 100%; padding: 6px 8px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;">
               <option value="LUCRO_PRESUMIDO">Lucro Presumido</option>
               <option value="LUCRO_REAL">Lucro Real</option>
@@ -2730,15 +2738,15 @@
           <span>Sou Escritório BPO / Contabilidade (Multi-Cliente)</span>
         </label>
         <div style="margin-bottom: 8px;">
-          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #334155; margin-bottom: 2px;">Nome do Gestor (Owner) *</label>
+          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">Nome do Gestor (Owner) *</label>
           <input type="text" id="reg_admin_nome" required placeholder="Seu nome completo" style="width: 100%; padding: 6px 8px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;">
         </div>
         <div style="margin-bottom: 8px;">
-          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #334155; margin-bottom: 2px;">E-mail Corporativo *</label>
+          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">E-mail Corporativo *</label>
           <input type="email" id="reg_admin_email" required placeholder="gestor@empresa.com.br" style="width: 100%; padding: 6px 8px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;">
         </div>
         <div style="margin-bottom: 12px;">
-          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #334155; margin-bottom: 2px;">Senha Inicial (mínimo 8 caracteres) *</label>
+          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">Senha Inicial (mínimo 8 caracteres) *</label>
           <input type="password" id="reg_admin_senha" required minlength="8" placeholder="Senha forte" style="width: 100%; padding: 6px 8px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff;">
         </div>
         <button type="submit" id="btn-submit-register" class="tool-btn primary" style="width: 100%; justify-content: center; padding: 8px 12px; font-size: 12px; font-weight: 700; cursor: pointer;">
@@ -2747,7 +2755,7 @@
       </form>
     </div>
 
-    <div style="background: #e2e8f0; border-top: 1px solid #cbd5e1; padding: 7px 12px; text-align: center; font-size: 10px; color: #64748b;">
+    <div style="background: #e2e8f0; border-top: 1px solid #cbd5e1; padding: 7px 12px; text-align: center; font-size: 10px; color: #334155;">
       JR FinCloud • JR Solutions • Isolamento Multi-Tenant com RLS no Postgres
     </div>
   </div>
@@ -2864,7 +2872,7 @@
         </div>
 
         <div class="form-field">
-          <label style="font-size: 10.5px; font-weight: 600; color: #475569;">Linha Digitável / Código de Barras (opcional)</label>
+          <label style="font-size: 10.5px; font-weight: 600; color: #1e293b;">Linha Digitável / Código de Barras (opcional)</label>
           <input type="text" id="edit-linha-dig" placeholder="Código de 47 ou 48 dígitos" style="font-family: monospace; font-size: 11px; width: 100%;">
         </div>
       </fieldset>
@@ -2872,7 +2880,7 @@
 
     <!-- Barra de Rodapé / Ações -->
     <div style="background: #e2e8f0; border-top: 1px solid #cbd5e1; padding: 8px 14px; display: flex; justify-content: space-between; align-items: center;">
-      <span style="font-size: 10.5px; color: #64748b;">Pressione <strong>ESC</strong> para cancelar</span>
+      <span style="font-size: 10.5px; color: #334155;">Pressione <strong>ESC</strong> para cancelar</span>
       <div style="display: flex; gap: 8px;">
         <button type="button" class="tool-btn" onclick="fecharModalEdicaoTitulo()">Cancelar</button>
         <button type="button" class="tool-btn primary" onclick="salvarEdicaoTitulo()" style="background: #004b87; color: white; font-weight: 700;"><svg class="bimer-svg" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Salvar Alterações</button>
@@ -2892,15 +2900,15 @@
       <div id="senha-msg-alerta" style="display: none; padding: 6px 8px; border-radius: 4px; font-size: 11px; margin-bottom: 10px;"></div>
       <form id="form-alterar-senha" onsubmit="executarAlteracaoSenha(event)">
         <div style="margin-bottom: 8px;">
-          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #334155; margin-bottom: 2px;">Senha Atual:</label>
+          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">Senha Atual:</label>
           <input type="password" id="senha_atual" required style="width: 100%; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 3px;">
         </div>
         <div style="margin-bottom: 8px;">
-          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #334155; margin-bottom: 2px;">Nova Senha:</label>
+          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">Nova Senha:</label>
           <input type="password" id="nova_senha" required minlength="6" placeholder="Mínimo 6 caracteres" style="width: 100%; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 3px;">
         </div>
         <div style="margin-bottom: 14px;">
-          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #334155; margin-bottom: 2px;">Confirmar Nova Senha:</label>
+          <label style="display: block; font-size: 10.5px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">Confirmar Nova Senha:</label>
           <input type="password" id="confirma_nova_senha" required minlength="6" style="width: 100%; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 3px;">
         </div>
         <div style="display: flex; justify-content: flex-end; gap: 8px;">
@@ -2938,7 +2946,7 @@
       <button type="button" onclick="fecharModalClienteBPO()" style="background: none; border: none; color: #ffffff; cursor: pointer; font-weight: 700;">✕</button>
     </div>
     <form onsubmit="criarClienteBPO(event)" style="padding: 14px 16px; background: #f8fafc;">
-      <p style="font-size: 10px; color: #475569; margin-bottom: 10px;">Cria um Workspace isolado vinculado ao seu tenant BPO atual (para alternar instantaneamente na barra superior).</p>
+      <p style="font-size: 10px; color: #1e293b; margin-bottom: 10px;">Cria um Workspace isolado vinculado ao seu tenant BPO atual (para alternar instantaneamente na barra superior).</p>
       <div style="margin-bottom: 8px;">
         <label style="display: block; font-size: 10.5px; font-weight: 700; margin-bottom: 2px;">Nome Fantasia do Cliente *</label>
         <input type="text" id="bpo_cli_nome" required placeholder="Ex: Loja Alpha Shopping" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 3px;">
@@ -3001,7 +3009,7 @@
           <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px;">
             <label style="display: block; font-weight: 700; font-size: 10.5px; color: #065f46; margin-bottom: 4px;">Selecione o Título para Rateio de Rubricas / Lojas:</label>
             <select id="saas-rateio-titulo-select" onchange="carregarRateiosTituloSelecionado()" style="width: 100%; padding: 6px; border: 1px solid #94a3b8; border-radius: 3px; background: #fff;"></select>
-            <div id="saas-rateio-resumo" style="margin-top: 6px; font-size: 10.5px; color: #334155;"></div>
+            <div id="saas-rateio-resumo" style="margin-top: 6px; font-size: 10.5px; color: #0f172a;"></div>
           </div>
           <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px;">
             <div style="font-weight: 700; font-size: 10.5px; color: #1e40af; margin-bottom: 4px;">Cadastro Rápido (Loja / Conta Bancária)</div>
@@ -5377,7 +5385,7 @@
         tr.innerHTML = `
           <td style="font-weight: 700; color: #004b87;">${item.codigo}</td>
           <td style="font-weight: 600;">${item.nome}</td>
-          <td style="font-size: 10px; color: #475569;">${item.macro} &gt; ${item.grupo}</td>
+          <td style="font-size: 10px; color: #1e293b;">${item.macro} &gt; ${item.grupo}</td>
           <td><span style="background: #e0f2fe; color: #0369a1; padding: 1px 6px; border-radius: 3px; font-weight: 600; font-size: 10px;">${item.responsavel}</span></td>
         `;
         tbody.appendChild(tr);
@@ -5409,7 +5417,7 @@
         tr.onclick = () => selecionarItemBuscaRapida(item);
         const tagRetencao = item.retFederal
           ? '<span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 1px 5px; border-radius: 3px; font-size: 9.5px; font-weight: 700;">IRRF + PCC</span>'
-          : '<span style="background: #f1f5f9; color: #64748b; padding: 1px 5px; border-radius: 3px; font-size: 9.5px;">Sem Ret. Federal</span>';
+          : '<span style="background: #f1f5f9; color: #334155; padding: 1px 5px; border-radius: 3px; font-size: 9.5px;">Sem Ret. Federal</span>';
         const tagIss = item.issRetido
           ? '<span style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; padding: 1px 5px; border-radius: 3px; font-size: 9.5px; font-weight: 700; margin-left: 3px;">ISS Retido</span>'
           : '';
@@ -5418,7 +5426,7 @@
           <td style="font-weight: 700; color: #1e3a8a; font-family: monospace;">${item.cnae}</td>
           <td style="font-weight: 600;">${item.desc}</td>
           <td style="font-weight: 700; color: #047857; text-align: center;">${item.lc116}</td>
-          <td>${tagRetencao}${tagIss} <span style="font-size: 10px; color: #475569; margin-left: 4px;">${item.obs}</span></td>
+          <td>${tagRetencao}${tagIss} <span style="font-size: 10px; color: #1e293b; margin-left: 4px;">${item.obs}</span></td>
         `;
         tbody.appendChild(tr);
       });
@@ -5445,7 +5453,7 @@
         tr.innerHTML = `
           <td style="font-weight: 700; color: #0369a1; font-family: monospace;">${item.cfop}</td>
           <td style="font-weight: 600;">${item.desc}</td>
-          <td style="font-size: 10px; color: #475569;">${item.tipo}</td>
+          <td style="font-size: 10px; color: #1e293b;">${item.tipo}</td>
           <td><span style="background: #e0f2fe; color: #0369a1; padding: 1px 6px; border-radius: 3px; font-weight: 600; font-size: 10px;">${item.nat}</span></td>
         `;
         tbody.appendChild(tr);
@@ -5478,13 +5486,13 @@
         tr.onclick = () => selecionarItemBuscaRapida(item);
         tr.innerHTML = `
           <td style="font-weight: 700; color: #004b87; font-family: monospace;">#${item.id}</td>
-          <td style="font-weight: 700; color: #1e293b;">
+          <td style="font-weight: 700; color: #090d16;">
             ${item.razao_social}
-            ${item.nome_fantasia && item.nome_fantasia !== item.razao_social ? `<div style="font-size: 10px; color: #64748b; font-weight: normal;">${item.nome_fantasia}</div>` : ''}
+            ${item.nome_fantasia && item.nome_fantasia !== item.razao_social ? `<div style="font-size: 10px; color: #334155; font-weight: normal;">${item.nome_fantasia}</div>` : ''}
           </td>
           <td style="font-family: monospace; font-weight: 600; color: #0f766e;">${item.cnpj_cpf || '---'}</td>
-          <td style="font-size: 10.5px; color: #334155;">${item.categoria || '<span style="color: #94a3b8;">12101 - Tecidos</span>'}</td>
-          <td><span style="background: #f1f5f9; color: #475569; padding: 1px 6px; border-radius: 3px; font-weight: 600; font-size: 10px;">${item.forma_pgto || 'Boleto'}</span></td>
+          <td style="font-size: 10.5px; color: #0f172a;">${item.categoria || '<span style="color: #475569;">12101 - Tecidos</span>'}</td>
+          <td><span style="background: #f1f5f9; color: #1e293b; padding: 1px 6px; border-radius: 3px; font-weight: 600; font-size: 10px;">${item.forma_pgto || 'Boleto'}</span></td>
         `;
         tbody.appendChild(tr);
       });
@@ -5496,7 +5504,7 @@
       const colunasTotal = buscaRapidaTipoAtual === 'fornecedor' ? 5 : 4;
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td colspan="${colunasTotal}" style="text-align: center; padding: 18px; color: #94a3b8; font-style: italic;">
+        <td colspan="${colunasTotal}" style="text-align: center; padding: 18px; color: #475569; font-style: italic;">
           Nenhum registro encontrado para "${termoRaw}". Tente outro código, CNPJ ou nome.
         </td>
       `;
@@ -8429,14 +8437,14 @@
         <!-- 3. Favorecido / CNPJ -->
         <td>
           <strong style="color: #0f172a; font-size: 11.5px; display: block; line-height: 1.25;">${escapeHtml(item.favorecido || '-')}</strong>
-          <span style="font-family: monospace; font-size: 10px; color: #64748b;">${escapeHtml(formatarCnpjCpf(item.cnpj))}</span>
+          <span style="font-family: monospace; font-size: 10px; color: #334155;">${escapeHtml(formatarCnpjCpf(item.cnpj))}</span>
         </td>
 
         <!-- 4. Descrição & Pgto (compacto) -->
         <td>
           <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
             <span style="font-size: 9.5px; font-weight: 800; background: ${badgeFormaBg}; color: ${badgeFormaCor}; padding: 1px 6px; border-radius: 3px; white-space: nowrap;">${escapeHtml(formaUp)}</span>
-            <span style="font-weight: 600; color: #1e293b; font-size: 11.5px;">${escapeHtml(limparHistoricoRedundante(item.descricao || item.historico))}</span>
+            <span style="font-weight: 600; color: #090d16; font-size: 11.5px;">${escapeHtml(limparHistoricoRedundante(item.descricao || item.historico))}</span>
           </div>
         </td>
 
@@ -8449,7 +8457,7 @@
         <!-- 6. Valor (R$) com sublinha Bruto vs Retenção -->
         <td style="text-align: right; white-space: nowrap;">
           <strong style="color: ${isForn ? 'var(--alterdata-blue)' : 'var(--tax-purple)'}; font-size: 12.5px;">${formatarMoeda(vLiq)}</strong>
-          ${temRetencaoNota ? `<div style="font-size: 9.5px; color: #64748b; margin-top: 1px;">Bruto: ${formatarMoeda(vBruto)} <span style="color: #7e22ce;">(-${formatarMoeda(vRetNota)})</span></div>` : ''}
+          ${temRetencaoNota ? `<div style="font-size: 9.5px; color: #334155; margin-top: 1px;">Bruto: ${formatarMoeda(vBruto)} <span style="color: #7e22ce;">(-${formatarMoeda(vRetNota)})</span></div>` : ''}
         </td>
 
         <!-- 7. Situação -->
@@ -8477,13 +8485,13 @@
       const resumoRetStr = totRetNotas > 0 ? ` • Bruto: ${formatarMoeda(totBrutoNotas)} • Retenções: -${formatarMoeda(totRetNotas)}` : '';
       tfoot.innerHTML = `
         <tr style="background: #f1f5f9; font-weight: 800; border-top: 2px solid var(--alterdata-blue);">
-          <td colspan="5" style="text-align: right; color: #1e293b; font-size: 11px;">
+          <td colspan="5" style="text-align: right; color: #090d16; font-size: 11px;">
             SUBTOTAL DO FILTRO (${lista.length} ${lista.length === 1 ? 'título' : 'títulos'}${resumoRetStr}):
           </td>
           <td style="text-align: right; color: var(--alterdata-blue); font-size: 12.5px; white-space: nowrap;">
             ${formatarMoeda(totValorCol)}
           </td>
-          <td colspan="2" style="text-align: center; font-size: 10px; color: #475569;">
+          <td colspan="2" style="text-align: center; font-size: 10px; color: #1e293b;">
             Total Exibido
           </td>
         </tr>
@@ -8541,7 +8549,7 @@
         <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px; margin-bottom: 10px;">
           <div style="font-size: 10px; font-weight: 800; color: #004b87; text-transform: uppercase; margin-bottom: 4px;">Descrição / Histórico &amp; Fiscal</div>
           <div style="font-weight: 600; color: #0f172a; margin-bottom: 6px;">${escapeHtml(limparHistoricoRedundante(item.descricao || item.historico || '-'))}</div>
-          <div style="font-size: 10.5px; color: #475569;">
+          <div style="font-size: 10.5px; color: #1e293b;">
             <strong>CFOP:</strong> ${escapeHtml(item.cod_operacao || '-')}
             ${item.cnae ? ` • <strong>CNAE:</strong> ${escapeHtml(item.cnae)}` : ''}
             ${item.item_lc116 ? ` • <strong>LC 116:</strong> ${escapeHtml(item.item_lc116)}` : ''}
@@ -8793,7 +8801,7 @@
         sitDetalhe.innerHTML = `<span style="background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 3px; font-weight: 800; font-size: 11px; border: 1px solid #fde68a;">EM ABERTO</span> &nbsp; Título a pagar com vencimento previsto para <strong>${dtVencFmt}</strong> (Aguardando autorização / liquidação)`;
       }
       if (carimboBaixa) {
-        carimboBaixa.innerHTML = `Data da Baixa: ___/___/______<br><span style="color: #94a3b8; font-size: 10px;">Aguardando Quitação</span>`;
+        carimboBaixa.innerHTML = `Data da Baixa: ___/___/______<br><span style="color: #475569; font-size: 10px;">Aguardando Quitação</span>`;
       }
     }
 
@@ -8983,7 +8991,7 @@
     if (lista.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="10" style="text-align: center; padding: 25px; color: #64748b; font-size: 12px;">
+          <td colspan="10" style="text-align: center; padding: 25px; color: #334155; font-size: 12px;">
             Nenhum lançamento localizado para os filtros selecionados.
           </td>
         </tr>
@@ -9022,12 +9030,12 @@
           <td style="padding: 5px 6px; border: 1px solid #cbd5e1; font-family: monospace; font-weight: 700; font-size: 10px; color: #3730a3;">${item.numero_id || item.id || `LCT-${idx+1}`}</td>
           <td style="padding: 5px 6px; border: 1px solid #cbd5e1;">
             <strong>${item.numero_doc || '-'}</strong>
-            <div style="font-size: 9px; color: #64748b;">${item.tipo_doc || item.tipo || 'DOC'}</div>
+            <div style="font-size: 9px; color: #334155;">${item.tipo_doc || item.tipo || 'DOC'}</div>
             <div style="font-size: 8.5px; color: #0369a1; font-weight: 700;">CFOP: ${item.cod_operacao ? item.cod_operacao.split(' - ')[0] : '1.933'}</div>
           </td>
-          <td style="padding: 5px 6px; border: 1px solid #cbd5e1;"><strong>${item.favorecido || '-'}</strong><div style="font-size: 9.5px; font-family: monospace; color: #475569;">${formatarCnpjCpf(item.cnpj)}</div></td>
-          <td style="padding: 5px 6px; border: 1px solid #cbd5e1; font-size: 10.5px; color: #1e293b;">${limparHistoricoRedundante(item.descricao || item.historico || '-')}</td>
-          <td style="padding: 5px 6px; border: 1px solid #cbd5e1; font-size: 10px;"><div>${item.ccusto || 'Geral'}</div><div style="color: #64748b;">${item.solicitante || '-'}</div></td>
+          <td style="padding: 5px 6px; border: 1px solid #cbd5e1;"><strong>${item.favorecido || '-'}</strong><div style="font-size: 9.5px; font-family: monospace; color: #1e293b;">${formatarCnpjCpf(item.cnpj)}</div></td>
+          <td style="padding: 5px 6px; border: 1px solid #cbd5e1; font-size: 10.5px; color: #090d16;">${limparHistoricoRedundante(item.descricao || item.historico || '-')}</td>
+          <td style="padding: 5px 6px; border: 1px solid #cbd5e1; font-size: 10px;"><div>${item.ccusto || 'Geral'}</div><div style="color: #334155;">${item.solicitante || '-'}</div></td>
           <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: center; font-weight: 600; font-size: 10px;">${forma}</td>
           <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: right; font-weight: 600;">${formatarMoeda(vBruto)}</td>
           <td style="padding: 5px 6px; border: 1px solid #cbd5e1; text-align: right; color: #7e22ce; font-weight: 600;">${vRet > 0 ? '- ' + formatarMoeda(vRet) : '-'}</td>
@@ -9376,20 +9384,20 @@
             </td>
             <td style="padding: 8px 10px; border: 1px solid #cbd5e1; vertical-align: top;">
               <div style="font-weight: 800; color: #0f172a; font-size: 11.5px; line-height: 1.35; margin-bottom: 3px;">${favFmt}</div>
-              <div style="display: inline-flex; align-items: center; gap: 3px; font-family: monospace; font-size: 9.5px; color: #475569; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">
-                <span style="font-weight: 700; color: #64748b;">CNPJ:</span> ${cnpjFmt}
+              <div style="display: inline-flex; align-items: center; gap: 3px; font-family: monospace; font-size: 9.5px; color: #1e293b; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">
+                <span style="font-weight: 700; color: #334155;">CNPJ:</span> ${cnpjFmt}
               </div>
             </td>
-            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; vertical-align: top; color: #1e293b; font-size: 11px; line-height: 1.45; word-break: break-word;">
+            <td style="padding: 8px 10px; border: 1px solid #cbd5e1; vertical-align: top; color: #090d16; font-size: 11px; line-height: 1.45; word-break: break-word;">
               <div style="font-weight: 600; color: #0f172a;">${descFmt}</div>
               ${cfopBadge}
             </td>
             <td style="padding: 8px 10px; border: 1px solid #cbd5e1; vertical-align: top;">
               <div style="font-weight: 700; color: #004b87; font-size: 11px; line-height: 1.3;">${catOficial.rotulo}</div>
-              <div style="font-size: 9.5px; color: #64748b; margin-top: 2px;">${catOficial.grupo || catOficial.macro}</div>
+              <div style="font-size: 9.5px; color: #334155; margin-top: 2px;">${catOficial.grupo || catOficial.macro}</div>
             </td>
             <td style="padding: 8px 8px; border: 1px solid #cbd5e1; vertical-align: top;">
-              <span style="display: inline-block; background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700;">
+              <span style="display: inline-block; background: #f8fafc; color: #0f172a; border: 1px solid #cbd5e1; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700;">
                 ${catOficial.responsavel || respFmt}
               </span>
             </td>
@@ -9414,7 +9422,7 @@
           </div>
           <table class="tabela-dados" style="width: 100%; border-collapse: collapse; border: 1.5px solid #cbd5e1; border-top: none; font-size: 11px; margin-bottom: 8px; table-layout: fixed;">
             <thead>
-              <tr style="background: #f1f5f9; color: #1e293b;">
+              <tr style="background: #f1f5f9; color: #090d16;">
                 <th style="padding: 8px 6px; font-weight: 700; font-size: 10.5px; border: 1px solid #cbd5e1; text-align: center; width: 85px;">Doc / ID</th>
                 <th style="padding: 8px 10px; font-weight: 700; font-size: 10.5px; border: 1px solid #cbd5e1; text-align: left; width: 220px;">Favorecido / Fornecedor</th>
                 <th style="padding: 8px 10px; font-weight: 700; font-size: 10.5px; border: 1px solid #cbd5e1; text-align: left;">Descrição / Objeto do Pagamento</th>
@@ -9440,7 +9448,7 @@
 
     const container = document.getElementById('aut-tabelas-container');
     if (container) {
-      container.innerHTML = htmlTabelas || '<div style="text-align: center; padding: 25px; color: #64748b;">Nenhum título encontrado para o filtro selecionado.</div>';
+      container.innerHTML = htmlTabelas || '<div style="text-align: center; padding: 25px; color: #334155;">Nenhum título encontrado para o filtro selecionado.</div>';
     }
 
     totalSaidasAtualAutorizacao = totalGeral;
@@ -10097,7 +10105,7 @@
   function renderizarTitulosModal(lista) {
     const tbody = document.getElementById('modal-vinc-tbody');
     if (!lista || lista.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: #94a3b8;">Nenhum título pendente encontrado.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: #475569;">Nenhum título pendente encontrado.</td></tr>';
       return;
     }
     let html = '';
@@ -10105,11 +10113,11 @@
       html += `
         <tr style="cursor: pointer;" onclick="toggleCheckTituloModal(this, '${t.id}')">
           <td style="text-align: center;"><input type="checkbox" class="modal-vinc-check" data-id="${t.id}" data-valor="${Number(t.valor)}" onchange="atualizarTotalizadorModal()" onclick="event.stopPropagation()"></td>
-          <td style="font-family: monospace; font-size: 10px; color: #64748b;">${t.db_id || t.id}</td>
+          <td style="font-family: monospace; font-size: 10px; color: #334155;">${t.db_id || t.id}</td>
           <td><strong style="color: #0f172a;">${t.favorecido || t.fornecedor || '-'}</strong></td>
           <td style="white-space: nowrap;">${formatarData(t.vencimento)}</td>
           <td style="text-align: right; font-weight: 700; font-family: monospace;">${formatarMoeda(Number(t.valor))}</td>
-          <td style="font-size: 10px; color: #64748b;">${t.numero_doc || t.numero_nf || '-'}</td>
+          <td style="font-size: 10px; color: #334155;">${t.numero_doc || t.numero_nf || '-'}</td>
         </tr>
       `;
     });
@@ -10275,7 +10283,7 @@
     if (extratoBancario.length === 0) {
       tbodyExt.innerHTML = `
         <tr>
-          <td colspan="6" style="text-align: center; padding: 30px; color: #64748b;">
+          <td colspan="6" style="text-align: center; padding: 30px; color: #334155;">
             Nenhum extrato importado. Clique em <strong>"<svg class="bimer-svg" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Importar Extrato (.OFX)"</strong> ou <strong>"Carregar Extrato Real"</strong> acima.
           </td>
         </tr>
@@ -10317,7 +10325,7 @@
           <tr style="${item.conciliado ? 'background: #f0fdf4;' : ''}">
             <td style="white-space: nowrap; font-weight: 600;">${formatarData(item.data)}</td>
             <td><strong style="color: #0f172a;">${escapeHtml(item.memo)}</strong>${sugHtml}</td>
-            <td style="font-family: monospace; font-size: 10px; color: #64748b;">${escapeHtml(item.fitid || '-')}</td>
+            <td style="font-family: monospace; font-size: 10px; color: #334155;">${escapeHtml(item.fitid || '-')}</td>
             <td style="text-align: right; font-weight: 700; color: #dc2626; white-space: nowrap;">- ${formatarMoeda(item.valor)}</td>
             <td style="text-align: center;">${statusBadge}</td>
             <td style="text-align: center;">${acaoBtn}</td>
@@ -10357,7 +10365,7 @@
     if (titulosSistema.length === 0) {
       tbodySis.innerHTML = `
         <tr>
-          <td colspan="6" style="text-align: center; padding: 30px; color: #64748b;">
+          <td colspan="6" style="text-align: center; padding: 30px; color: #334155;">
             ${(titulos || []).length === 0 ? 'Nenhum título cadastrado no Contas a Pagar.' : 'Nenhum título encontrado para os filtros de data/busca selecionados.'}
           </td>
         </tr>
@@ -10373,15 +10381,15 @@
         htmlSis += `
           <tr style="${isConc ? 'background: #f0fdf4;' : ''}">
             <td style="white-space: nowrap; font-weight: 600;">${formatarData(item.vencimento)}</td>
-            <td><strong style="color: #0284c7;">${escapeHtml(item.numero_doc || '-')}</strong><div style="font-size: 9.5px; font-family: monospace; color: #64748b;">${escapeHtml(item.numero_id || '-')}</div></td>
+            <td><strong style="color: #0284c7;">${escapeHtml(item.numero_doc || '-')}</strong><div style="font-size: 9.5px; font-family: monospace; color: #334155;">${escapeHtml(item.numero_id || '-')}</div></td>
             <td>
               <div style="font-weight: 600; color: #0f172a;">${escapeHtml(item.favorecido || '-')}</div>
-              <div style="font-size: 10px; color: #64748b;">${escapeHtml(limparHistoricoRedundante(item.descricao || item.historico))}</div>
+              <div style="font-size: 10px; color: #334155;">${escapeHtml(limparHistoricoRedundante(item.descricao || item.historico))}</div>
             </td>
             <td style="text-align: right; font-weight: 700; color: #0f172a; white-space: nowrap;">${formatarMoeda(item.valor)}</td>
             <td style="text-align: center;">${sitBadge}</td>
             <td style="text-align: center;">
-              ${isConc ? `<span style="color: #15803d; font-size: 11px; font-weight: 800;"><svg class="bimer-svg bimer-svg-green bimer-svg-xs" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> Ok</span>` : `<span style="color: #94a3b8; font-size: 10px;">-</span>`}
+              ${isConc ? `<span style="color: #15803d; font-size: 11px; font-weight: 800;"><svg class="bimer-svg bimer-svg-green bimer-svg-xs" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> Ok</span>` : `<span style="color: #475569; font-size: 10px;">-</span>`}
             </td>
           </tr>
         `;
@@ -10492,15 +10500,15 @@
         <div>
           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 3px;">
             <span style="background: rgba(16, 185, 129, 0.16); color: #065f46; border: 1px solid rgba(16, 185, 129, 0.45); font-weight: 900; font-size: 11px; padding: 2px 7px; border-radius: 3px;">JR SOLUTIONS</span>
-            <span style="font-size: 10px; color: #64748b; font-weight: 700;">SISTEMA DE GESTÃO FINANCEIRA & CONTROLADORIA</span>
+            <span style="font-size: 10px; color: #334155; font-weight: 700;">SISTEMA DE GESTÃO FINANCEIRA & CONTROLADORIA</span>
           </div>
           <h2 style="color: #004b87; font-size: 16px; font-weight: 800; margin: 0; text-transform: uppercase;">${titulo}</h2>
-          <p style="font-size: 11px; color: #475569; margin-top: 2px;">${subtitulo} • Período: <strong>${formatarData(dataIni)}</strong> a <strong>${formatarData(dataFim)}</strong></p>
+          <p style="font-size: 11px; color: #1e293b; margin-top: 2px;">${subtitulo} • Período: <strong>${formatarData(dataIni)}</strong> a <strong>${formatarData(dataFim)}</strong></p>
         </div>
-        <div style="text-align: right; font-size: 10px; color: #64748b;">
+        <div style="text-align: right; font-size: 10px; color: #334155;">
           <div>Emissão: <strong>${hojeFmt}</strong></div>
           <div>Responsável: <strong style="color: #004b87;">Roberto · Controladoria</strong></div>
-          <div style="margin-top: 4px;"><span style="background: #e2e8f0; color: #334155; padding: 2px 6px; border-radius: 3px; font-weight: 700;">PADRÃO ALTERDATA BIMER</span></div>
+          <div style="margin-top: 4px;"><span style="background: #e2e8f0; color: #0f172a; padding: 2px 6px; border-radius: 3px; font-weight: 700;">PADRÃO ALTERDATA BIMER</span></div>
         </div>
       </div>
     `;
@@ -10570,7 +10578,7 @@
     `;
 
     if (filtrados.length === 0) {
-      html += `<div style="text-align: center; padding: 40px; color: #64748b; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 4px;">Nenhum título encontrado para os filtros selecionados.</div>`;
+      html += `<div style="text-align: center; padding: 40px; color: #334155; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 4px;">Nenhum título encontrado para os filtros selecionados.</div>`;
       return html;
     }
 
@@ -10622,19 +10630,19 @@
           <tr style="${idx % 2 === 1 ? 'background: #f8fafc;' : 'background: #ffffff;'}">
             <td style="padding: 5px 6px;">
               <strong style="color: #004b87;">${item.numero_doc || '-'}</strong>
-              <div style="font-size: 9px; font-family: monospace; color: #64748b;">${item.numero_id || '-'}</div>
+              <div style="font-size: 9px; font-family: monospace; color: #334155;">${item.numero_id || '-'}</div>
               <div style="font-size: 8.5px; color: #0284c7; font-weight: 700;">CFOP: ${item.cod_operacao ? item.cod_operacao.split(' - ')[0] : '1.933'}</div>
             </td>
             <td style="padding: 5px 6px;">
               <strong style="color: #0f172a;">${item.favorecido || '-'}</strong>
-              <div style="font-size: 9.5px; color: #64748b;">CNPJ/CPF: ${formatarCnpjCpf(item.cnpj)}</div>
+              <div style="font-size: 9.5px; color: #334155;">CNPJ/CPF: ${formatarCnpjCpf(item.cnpj)}</div>
             </td>
-            <td style="padding: 5px 6px; font-size: 10px; color: #334155;">
+            <td style="padding: 5px 6px; font-size: 10px; color: #0f172a;">
               ${limparHistoricoRedundante(item.descricao || item.historico || '-')}
             </td>
-            <td style="padding: 5px 6px; font-size: 10px; color: #475569;">${item.ccusto || 'Geral'}</td>
+            <td style="padding: 5px 6px; font-size: 10px; color: #1e293b;">${item.ccusto || 'Geral'}</td>
             <td style="padding: 5px 6px; font-size: 10px;">${item.forma_pgto || 'BOLETO'}</td>
-            <td style="padding: 5px 6px; text-align: right; color: #475569;">${formatarMoeda(vB)}</td>
+            <td style="padding: 5px 6px; text-align: right; color: #1e293b;">${formatarMoeda(vB)}</td>
             <td style="padding: 5px 6px; text-align: right; color: #dc2626;">${vR > 0 ? '- ' + formatarMoeda(vR) : '-'}</td>
             <td style="padding: 5px 6px; text-align: right; font-weight: 700; color: #0f172a;">
               ${formatarMoeda(vL)}
@@ -10655,7 +10663,7 @@
             <td style="padding: 8px 6px; text-align: right;">${formatarMoeda(totBruto)}</td>
             <td style="padding: 8px 6px; text-align: right; color: #fca5a5;">- ${formatarMoeda(totRet)}</td>
             <td style="padding: 8px 6px; text-align: right; color: #86efac; font-size: 12px;">${formatarMoeda(totLiq)}</td>
-            <td style="padding: 8px 6px; text-align: center; color: #94a3b8; font-size: 10px;">${filtrados.length} itens</td>
+            <td style="padding: 8px 6px; text-align: center; color: #475569; font-size: 10px;">${filtrados.length} itens</td>
           </tr>
         </tfoot>
       </table>
@@ -10732,7 +10740,7 @@
     `;
 
     if (listaImpostos.length === 0) {
-      html += `<div style="text-align: center; padding: 40px; color: #64748b; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 4px;">Nenhuma retenção tributária apurada para os filtros selecionados.</div>`;
+      html += `<div style="text-align: center; padding: 40px; color: #334155; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 4px;">Nenhuma retenção tributária apurada para os filtros selecionados.</div>`;
       return html;
     }
 
@@ -10766,10 +10774,10 @@
           <td style="padding: 5px 6px; font-weight: 600; color: #004b87;">${imp.doc || '-'}</td>
           <td style="padding: 5px 6px;">
             <strong style="color: #0f172a;">${imp.prestador || '-'}</strong>
-            <div style="font-size: 9.5px; color: #64748b;">CNPJ: ${formatarCnpjCpf(imp.cnpj)}</div>
+            <div style="font-size: 9.5px; color: #334155;">CNPJ: ${formatarCnpjCpf(imp.cnpj)}</div>
           </td>
-          <td style="padding: 5px 6px; font-size: 10px; color: #475569;">${imp.orgao}</td>
-          <td style="padding: 5px 6px; text-align: right; color: #475569;">${formatarMoeda(imp.base)}</td>
+          <td style="padding: 5px 6px; font-size: 10px; color: #1e293b;">${imp.orgao}</td>
+          <td style="padding: 5px 6px; text-align: right; color: #1e293b;">${formatarMoeda(imp.base)}</td>
           <td style="padding: 5px 6px; text-align: center; font-weight: 600;">${imp.aliq}</td>
           <td style="padding: 5px 6px; text-align: right; font-weight: 700; color: #b91c1c;">${formatarMoeda(imp.valor)}</td>
           <td style="padding: 5px 6px; text-align: center; white-space: nowrap;">${formatarData(imp.venc)}</td>
@@ -10784,12 +10792,12 @@
           <tr style="background: #0f172a; color: white; font-weight: 800; font-size: 11px;">
             <td colspan="6" style="padding: 8px 10px; text-transform: uppercase;">TOTAL GERAL DE TRIBUTOS RETIDOS NA FONTE</td>
             <td style="padding: 8px 6px; text-align: right; color: #fca5a5; font-size: 12px;">${formatarMoeda(totGeralRet)}</td>
-            <td colspan="2" style="padding: 8px 6px; text-align: center; color: #94a3b8; font-size: 10px;">${listaImpostos.length} guias</td>
+            <td colspan="2" style="padding: 8px 6px; text-align: center; color: #475569; font-size: 10px;">${listaImpostos.length} guias</td>
           </tr>
         </tfoot>
       </table>
 
-      <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 14px; font-size: 10px; color: #475569; line-height: 1.5;">
+      <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 14px; font-size: 10px; color: #1e293b; line-height: 1.5;">
         <strong>Nota de Auditoria Contábil & Fiscal (JR Solutions):</strong><br>
         Os valores retidos acima devem ser transmitidos à Receita Federal através da <strong>EFD-Reinf (Série R-4000)</strong> e consolidados na <strong>DCTFWeb</strong> mensal. As retenções municipais de ISSQN alimentam a <strong>DMS / NFS-e Salvador</strong> para emissão da guia DAM unificada.
       </div>
@@ -10851,7 +10859,7 @@
     `;
 
     if (listaGrupos.length === 0) {
-      html += `<div style="text-align: center; padding: 40px; color: #64748b; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 4px;">Nenhum centro de custo encontrado para os filtros selecionados.</div>`;
+      html += `<div style="text-align: center; padding: 40px; color: #334155; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 4px;">Nenhum centro de custo encontrado para os filtros selecionados.</div>`;
       return html;
     }
 
@@ -10899,7 +10907,7 @@
             <td style="padding: 8px 6px; text-align: center;">${filtrados.length}</td>
             <td style="padding: 8px 6px; text-align: right; color: #86efac; font-size: 12px;">${formatarMoeda(totalGeral)}</td>
             <td style="padding: 8px 6px; text-align: center;">100.0%</td>
-            <td style="padding: 8px 6px; text-align: left; font-size: 9.5px; color: #94a3b8;">100% alocado</td>
+            <td style="padding: 8px 6px; text-align: left; font-size: 9.5px; color: #475569;">100% alocado</td>
           </tr>
         </tfoot>
       </table>
@@ -10918,7 +10926,7 @@
           </div>
           <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
             <thead>
-              <tr style="background: #e2e8f0; color: #475569;">
+              <tr style="background: #e2e8f0; color: #1e293b;">
                 <th style="padding: 4px 6px; text-align: left; width: 75px;">Vencimento</th>
                 <th style="padding: 4px 6px; text-align: left; width: 85px;">Doc</th>
                 <th style="padding: 4px 6px; text-align: left;">Favorecido</th>
@@ -10936,7 +10944,7 @@
             <td style="padding: 4px 6px;">${formatarData(t.vencimento)}</td>
             <td style="padding: 4px 6px; font-weight: 600; color: #004b87;">${t.numero_doc || '-'}</td>
             <td style="padding: 4px 6px; font-weight: 600;">${t.favorecido || '-'}</td>
-            <td style="padding: 4px 6px; color: #475569;">${limparHistoricoRedundante(t.descricao || t.historico || '-')}</td>
+            <td style="padding: 4px 6px; color: #1e293b;">${limparHistoricoRedundante(t.descricao || t.historico || '-')}</td>
             <td style="padding: 4px 6px; text-align: right; font-weight: 700;">${formatarMoeda(t.valor)}</td>
             <td style="padding: 4px 6px; text-align: center;">${isConc ? 'Conciliado' : 'Aberto'}</td>
           </tr>
@@ -11024,7 +11032,7 @@
     `;
 
     if (listaComparativo.length === 0) {
-      html += `<div style="text-align: center; padding: 40px; color: #64748b; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 4px;">Nenhuma previsão de despesa fixa cadastrada. Cadastre previsões na Aba 4 (Despesas Fixas).</div>`;
+      html += `<div style="text-align: center; padding: 40px; color: #334155; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 4px;">Nenhuma previsão de despesa fixa cadastrada. Cadastre previsões na Aba 4 (Despesas Fixas).</div>`;
       return html;
     }
 
@@ -11073,7 +11081,7 @@
             <td style="padding: 8px 6px; text-align: right; color: ${diferencaGeral > 0 ? '#fca5a5' : '#86efac'};">
               ${diferencaGeral > 0 ? '+ ' + formatarMoeda(diferencaGeral) : '- ' + formatarMoeda(Math.abs(diferencaGeral))}
             </td>
-            <td colspan="2" style="padding: 8px 6px; text-align: center; color: #94a3b8; font-size: 10px;">
+            <td colspan="2" style="padding: 8px 6px; text-align: center; color: #475569; font-size: 10px;">
               ${totPrevisto > 0 ? ((totRealizado / totPrevisto) * 100).toFixed(1) : 0}% Realizado
             </td>
           </tr>
@@ -11402,7 +11410,7 @@
         <td>
           <div style="font-weight: 700; color: #0f172a;">${p.nome || p.descricao || p.favorecido || 'Despesa Recorrente'}</div>
           <div style="color: var(--text-muted); font-size: 10.5px;">${p.favorecido || ''}${p.cnpj ? ' • CNPJ: ' + p.cnpj : ''}</div>
-          ${p.obs ? `<div style="color: #64748b; font-size: 10px; font-style: italic;">${p.obs}</div>` : ''}
+          ${p.obs ? `<div style="color: #334155; font-size: 10px; font-style: italic;">${p.obs}</div>` : ''}
         </td>
         <td><span style="font-size: 10px; background: #f1f5f9; padding: 2px 5px; border-radius: 2px;">${p.ccusto}</span></td>
         <td>
@@ -12236,7 +12244,7 @@
     tbody.innerHTML = '';
 
     if (!ativo.gastos || ativo.gastos.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 12px; color:#64748b;">Nenhum gasto comprovado até o momento.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 12px; color:#334155;">Nenhum gasto comprovado até o momento.</td></tr>';
     } else {
       ativo.gastos.forEach(g => {
         const row = document.createElement('tr');
@@ -12879,7 +12887,7 @@
     const resp = await apiFetch(`${getApiV2Base()}/audit-logs?limit=25`, { cache: 'no-store' });
     const d = await resp.json().catch(() => ({}));
     if (!resp.ok) {
-      out.innerHTML = `<span style="color:#64748b;">${escapeHtml(d.detail || 'Auditoria disponível apenas para Owner, Diretor ou Contador.')}</span>`;
+      out.innerHTML = `<span style="color:#334155;">${escapeHtml(d.detail || 'Auditoria disponível apenas para Owner, Diretor ou Contador.')}</span>`;
       return;
     }
     out.innerHTML = `
@@ -12887,7 +12895,7 @@
       ${(d.logs || []).map(l => `
         <div style="padding:4px 0; border-bottom:1px solid #f1f5f9; font-size:10px;">
           <strong>${escapeHtml(l.acao)}</strong> • ${escapeHtml(l.entidade)}<br>
-          <span style="color:#64748b;">${escapeHtml(l.usuario_email || 'sistema')} • ${escapeHtml(l.criado_em)}</span>
+          <span style="color:#334155;">${escapeHtml(l.usuario_email || 'sistema')} • ${escapeHtml(l.criado_em)}</span>
         </div>
       `).join('') || '<div>Nenhum evento registrado.</div>'}
     `;
@@ -12909,7 +12917,7 @@
     <div class="bimer-busca-input-box">
       <svg class="bimer-svg" style="color: #004b87;" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
       <input type="text" id="bimer-busca-input" placeholder="Digite para filtrar..." oninput="filtrarBuscaRapidaLive(this.value)" autocomplete="off">
-      <button type="button" id="bimer-busca-limpar-btn" onclick="limparInputBuscaRapida()" style="border: none; background: #e2e8f0; border-radius: 50%; width: 18px; height: 18px; cursor: pointer; font-size: 10px; font-weight: bold; color: #475569; display: none;"><svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+      <button type="button" id="bimer-busca-limpar-btn" onclick="limparInputBuscaRapida()" style="border: none; background: #e2e8f0; border-radius: 50%; width: 18px; height: 18px; cursor: pointer; font-size: 10px; font-weight: bold; color: #1e293b; display: none;"><svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
     </div>
     <div id="bimer-busca-chips-container" class="bimer-busca-chips"></div>
   </div>
