@@ -2252,10 +2252,13 @@
           <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
             <div>
               <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Período do Relatório:</label>
-              <div style="display: flex; align-items: center; gap: 4px;">
-                <input type="date" id="rel-data-ini" value="2026-09-01" onchange="renderizarRelatorioAtual()" style="padding: 4px 6px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 3px;">
+              <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                <input type="date" id="rel-data-ini" onchange="renderizarRelatorioAtual()" style="padding: 4px 6px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 3px;">
                 <span style="font-size: 10px; color: #334155;">até</span>
-                <input type="date" id="rel-data-fim" value="2026-09-30" onchange="renderizarRelatorioAtual()" style="padding: 4px 6px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 3px;">
+                <input type="date" id="rel-data-fim" onchange="renderizarRelatorioAtual()" style="padding: 4px 6px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 3px;">
+                <button type="button" class="tool-btn" onclick="definirPeriodoRelatorio('mes')" style="padding: 3px 7px; font-size: 10px;">Mês Atual</button>
+                <button type="button" class="tool-btn" onclick="definirPeriodoRelatorio('30d')" style="padding: 3px 7px; font-size: 10px;">Próx. 30d</button>
+                <button type="button" class="tool-btn" onclick="definirPeriodoRelatorio('ano')" style="padding: 3px 7px; font-size: 10px;">Ano Todo</button>
               </div>
             </div>
 
@@ -11978,9 +11981,36 @@
     }
   }
 
+  function definirPeriodoRelatorio(modo = 'mes', reRender = true) {
+    const elIni = document.getElementById('rel-data-ini');
+    const elFim = document.getElementById('rel-data-fim');
+    if (!elIni || !elFim) return;
+    const hoje = new Date();
+    const y = hoje.getFullYear();
+    const m = hoje.getMonth();
+    const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (modo === '30d') {
+      const fim = new Date(hoje);
+      fim.setDate(fim.getDate() + 30);
+      elIni.value = fmt(hoje);
+      elFim.value = fmt(fim);
+    } else if (modo === 'ano') {
+      elIni.value = `${y}-01-01`;
+      elFim.value = `${y}-12-31`;
+    } else {
+      elIni.value = fmt(new Date(y, m, 1));
+      elFim.value = fmt(new Date(y, m + 1, 0));
+    }
+    if (reRender && typeof renderizarRelatorioAtual === 'function') renderizarRelatorioAtual();
+  }
+  definirPeriodoRelatorio('mes', false);
+
   function obterFiltrosRelatorio() {
-    const dataIni = document.getElementById('rel-data-ini')?.value || '2026-09-01';
-    const dataFim = document.getElementById('rel-data-fim')?.value || '2026-09-30';
+    const elIni = document.getElementById('rel-data-ini');
+    const elFim = document.getElementById('rel-data-fim');
+    if (elIni && !elIni.value) definirPeriodoRelatorio('mes', false);
+    const dataIni = elIni?.value || new Date().toISOString().slice(0, 8) + '01';
+    const dataFim = elFim?.value || new Date().toISOString().slice(0, 10);
     const status = document.getElementById('rel-filtro-status')?.value || 'TODOS';
     const ccusto = document.getElementById('rel-filtro-ccusto')?.value || 'TODOS';
     return { dataIni, dataFim, status, ccusto };
@@ -12024,7 +12054,10 @@
     }).sort((a, b) => (a.vencimento || '').localeCompare(b.vencimento || ''));
 
     const gruposPorDia = {};
-    let totBruto = 0, totLiq = 0, totVencido = 0, totHoje = 0, totAVencer = 0;
+    let totBruto = 0, totLiq = 0, totVencido = 0, totHoje = 0, totAVencer = 0, totProx7d = 0;
+    const dt7 = new Date();
+    dt7.setDate(dt7.getDate() + 7);
+    const prox7Str = dt7.toISOString().split('T')[0];
 
     filtrados.forEach(t => {
       const dia = t.vencimento || 'Sem Vencimento';
@@ -12038,8 +12071,11 @@
 
       const isConc = t.situacao === 'CONCILIADO' || t.status === 'CONCILIADO';
       if (!isConc && dia < hojeStr) totVencido += vLiq;
-      else if (dia === hojeStr) totHoje += vLiq;
-      else if (dia > hojeStr) totAVencer += vLiq;
+      else if (!isConc && dia === hojeStr) totHoje += vLiq;
+      else if (!isConc && dia > hojeStr) {
+        totAVencer += vLiq;
+        if (dia <= prox7Str) totProx7d += vLiq;
+      }
     });
 
     const totRet = Math.max(0, totBruto - totLiq);
@@ -12059,9 +12095,9 @@
           <div style="font-size: 9.5px; color: #a16207;">Programação do dia</div>
         </div>
         <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid #004b87; padding: 8px 12px; border-radius: 4px;">
-          <div style="font-size: 9.5px; font-weight: 800; color: #1e40af; text-transform: uppercase;">3. A Vencer no Mês</div>
+          <div style="font-size: 9.5px; font-weight: 800; color: #1e40af; text-transform: uppercase;">3. A Vencer no Período</div>
           <div style="font-size: 15px; font-weight: 800; color: #004b87;">${formatarMoeda(totAVencer)}</div>
-          <div style="font-size: 9.5px; color: #1d4ed8;">Projeção de saídas</div>
+          <div style="font-size: 9.5px; color: #1d4ed8;">Próx. 7 dias: <strong>${formatarMoeda(totProx7d)}</strong></div>
         </div>
         <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #10b981; padding: 8px 12px; border-radius: 4px;">
           <div style="font-size: 9.5px; font-weight: 800; color: #065f46; text-transform: uppercase;">4. Total Geral Líquido</div>
@@ -12312,22 +12348,47 @@
     });
 
     const grupos = {};
-    let totalGeral = 0;
+    const macrosMap = {};
+    let totalGeral = 0, totalAberto = 0, totalPago = 0;
+
+    const _buscarMacroCategoria = (ccNome) => {
+      if (typeof TABELA_GRUPOS_CATEGORIAS !== 'undefined' && Array.isArray(TABELA_GRUPOS_CATEGORIAS)) {
+        const prefix = String(ccNome || '').split('-')[0].trim();
+        const found = TABELA_GRUPOS_CATEGORIAS.find(c => c.rotulo === ccNome || String(c.codigo) === prefix);
+        if (found) return { macro: found.macro || 'Outros', grupo: found.grupo || '-' };
+      }
+      return { macro: 'Outros / Geral', grupo: '-' };
+    };
 
     filtrados.forEach(t => {
       const cc = t.ccusto || 'Geral / Não Classificado';
+      const meta = _buscarMacroCategoria(cc);
       if (!grupos[cc]) {
-        grupos[cc] = { nome: cc, titulos: [], total: 0 };
+        grupos[cc] = { nome: cc, macro: meta.macro, grupo: meta.grupo, titulos: [], total: 0, aberto: 0, pago: 0 };
+      }
+      if (!macrosMap[meta.macro]) {
+        macrosMap[meta.macro] = { macro: meta.macro, total: 0, qtd: 0 };
       }
       const v = Number(t.valor || 0);
+      const isConc = t.situacao === 'CONCILIADO' || t.status === 'CONCILIADO';
       grupos[cc].titulos.push(t);
       grupos[cc].total += v;
+      if (isConc) {
+        grupos[cc].pago += v;
+        totalPago += v;
+      } else {
+        grupos[cc].aberto += v;
+        totalAberto += v;
+      }
+      macrosMap[meta.macro].total += v;
+      macrosMap[meta.macro].qtd += 1;
       totalGeral += v;
     });
 
     const listaGrupos = Object.values(grupos).sort((a, b) => b.total - a.total);
+    const listaMacros = Object.values(macrosMap).sort((a, b) => b.total - a.total);
 
-    let html = gerarCabecalhoRelatorio('Relatório Realizado por Centro de Custo & Lojas', 'Demonstrativo DRE Gerencial de Consumo Orçamentário por Unidade de Negócio e Setor');
+    let html = gerarCabecalhoRelatorio('DRE Gerencial por Categoria Financeira & Macro Conta', 'Análise Pareto 80/20, Estrutura de Custos (Fixos x Variáveis x Impostos) e Posição Pago vs. Aberto');
 
     const maiorCc = listaGrupos[0] ? listaGrupos[0].nome : 'Nenhum';
     const maiorValor = listaGrupos[0] ? listaGrupos[0].total : 0;
@@ -12357,37 +12418,57 @@
       return html;
     }
 
+    const cardsMacroHtml = listaMacros.map(m => {
+      const pM = totalGeral > 0 ? ((m.total / totalGeral) * 100).toFixed(1) : '0.0';
+      return `<div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;padding:6px 10px;min-width:150px;flex:1;">
+        <div style="font-size:9px;font-weight:800;color:#475569;text-transform:uppercase;">${escapeHtml(m.macro)}</div>
+        <div style="font-size:13px;font-weight:800;color:#0f172a;">${formatarMoeda(m.total)}</div>
+        <div style="font-size:9.5px;color:#0369a1;font-weight:700;">${pM}% • ${m.qtd} lanç.</div>
+      </div>`;
+    }).join('');
+
     html += `
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">${cardsMacroHtml}</div>
       <div style="font-weight: 800; font-size: 11px; color: #004b87; text-transform: uppercase; margin-bottom: 6px;">
-        Síntese de Absorção Orçamentária por Centro de Custo / Loja
+        Ranking por Categoria Financeira (Curva Pareto 80/20)
       </div>
       <table class="alterdata-grid" style="width: 100%; border-collapse: collapse; font-size: 10.5px; margin-bottom: 20px;">
         <thead>
           <tr style="background: #0f172a; color: white;">
-            <th style="padding: 6px; text-align: left;">Centro de Custo / Unidade de Negócio</th>
-            <th style="padding: 6px; text-align: center; width: 80px;">Qtd Títulos</th>
-            <th style="padding: 6px; text-align: right; width: 110px;">Total Realizado (R$)</th>
-            <th style="padding: 6px; text-align: center; width: 75px;">% Partic.</th>
-            <th style="padding: 6px; text-align: left; width: 180px;">Gráfico de Participação</th>
+            <th style="padding: 6px; text-align: left;">Categoria Financeira / Plano de Contas</th>
+            <th style="padding: 6px; text-align: left;">Macro / Grupo</th>
+            <th style="padding: 6px; text-align: center; width: 55px;">Qtd</th>
+            <th style="padding: 6px; text-align: right; width: 95px;">Em Aberto</th>
+            <th style="padding: 6px; text-align: right; width: 95px;">Pago</th>
+            <th style="padding: 6px; text-align: right; width: 105px;">Total (R$)</th>
+            <th style="padding: 6px; text-align: center; width: 65px;">% Part.</th>
+            <th style="padding: 6px; text-align: center; width: 75px;">Pareto</th>
           </tr>
         </thead>
         <tbody>
     `;
 
+    let acumPerc = 0;
     listaGrupos.forEach((g, idx) => {
       const perc = totalGeral > 0 ? ((g.total / totalGeral) * 100) : 0;
-      const percFmt = perc.toFixed(1);
+      acumPerc += perc;
+      const classeABC = acumPerc <= 80 ? 'A' : (acumPerc <= 95 ? 'B' : 'C');
+      const badgeABC = classeABC === 'A'
+        ? 'background:#fee2e2;color:#991b1b;'
+        : (classeABC === 'B' ? 'background:#fef3c7;color:#92400e;' : 'background:#e2e8f0;color:#334155;');
 
       html += `
         <tr style="${idx % 2 === 1 ? 'background: #f8fafc;' : 'background: #ffffff;'}">
-          <td style="padding: 6px 8px;"><strong style="color: #004b87;">${g.nome}</strong></td>
+          <td style="padding: 6px 8px;"><strong style="color: #004b87;">${escapeHtml(g.nome)}</strong></td>
+          <td style="padding: 6px 8px; font-size: 9.5px; color: #475569;">${escapeHtml(g.macro)}<br><span style="color:#64748b;">${escapeHtml(g.grupo)}</span></td>
           <td style="padding: 6px 8px; text-align: center; font-weight: 600;">${g.titulos.length}</td>
+          <td style="padding: 6px 8px; text-align: right; color: #b45309; font-weight: 600;">${formatarMoeda(g.aberto)}</td>
+          <td style="padding: 6px 8px; text-align: right; color: #059669; font-weight: 600;">${formatarMoeda(g.pago)}</td>
           <td style="padding: 6px 8px; text-align: right; font-weight: 800; color: #0f172a;">${formatarMoeda(g.total)}</td>
-          <td style="padding: 6px 8px; text-align: center; font-weight: 700; color: #4338ca;">${percFmt}%</td>
-          <td style="padding: 6px 8px;">
-            <div style="background: #e2e8f0; border-radius: 4px; overflow: hidden; height: 12px; width: 100%;">
-              <div style="background: linear-gradient(to right, #3b82f6, #004b87); height: 100%; width: ${percFmt}%;"></div>
-            </div>
+          <td style="padding: 6px 8px; text-align: center; font-weight: 700; color: #4338ca;">${perc.toFixed(1)}%</td>
+          <td style="padding: 6px 8px; text-align: center;">
+            <span style="padding:1px 6px;border-radius:3px;font-weight:800;font-size:9.5px;${badgeABC}">${classeABC}</span>
+            <div style="font-size:9px;color:#64748b;margin-top:1px;">${Math.min(100, acumPerc).toFixed(0)}% acum.</div>
           </td>
         </tr>
       `;
@@ -12397,11 +12478,13 @@
         </tbody>
         <tfoot>
           <tr style="background: #0f172a; color: white; font-weight: 800; font-size: 11px;">
-            <td style="padding: 8px 10px; text-transform: uppercase;">TOTAL GERAL CONSOLIDADO</td>
+            <td colspan="2" style="padding: 8px 10px; text-transform: uppercase;">TOTAL GERAL CONSOLIDADO</td>
             <td style="padding: 8px 6px; text-align: center;">${filtrados.length}</td>
-            <td style="padding: 8px 6px; text-align: right; color: #86efac; font-size: 12px;">${formatarMoeda(totalGeral)}</td>
+            <td style="padding: 8px 6px; text-align: right; color: #fde68a;">${formatarMoeda(totalAberto)}</td>
+            <td style="padding: 8px 6px; text-align: right; color: #86efac;">${formatarMoeda(totalPago)}</td>
+            <td style="padding: 8px 6px; text-align: right; color: #ffffff; font-size: 12px;">${formatarMoeda(totalGeral)}</td>
             <td style="padding: 8px 6px; text-align: center;">100.0%</td>
-            <td style="padding: 8px 6px; text-align: left; font-size: 9.5px; color: #475569;">100% alocado</td>
+            <td style="padding: 8px 6px; text-align: center; font-size: 9.5px;">80/20</td>
           </tr>
         </tfoot>
       </table>
