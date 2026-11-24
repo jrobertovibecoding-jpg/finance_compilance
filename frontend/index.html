@@ -7090,15 +7090,27 @@
   }
 
   // ── IMPORTADOR INTELIGENTE DE XML (NF-e PRODUTO & NFS-e SERVIÇO) ──────────
-  function _xmlPrimeiroTexto(root, tagNames) {
+  function _xmlEstaDentroDe(el, tagsProibidas) {
+    let cur = el ? el.parentNode : null;
+    while (cur && cur.nodeType === 1) {
+      const local = (cur.localName || cur.nodeName || '').split(':').pop().toLowerCase();
+      if (tagsProibidas.includes(local)) return true;
+      cur = cur.parentNode;
+    }
+    return false;
+  }
+
+  function _xmlPrimeiroTexto(root, tagNames, excluirPais = []) {
     if (!root) return '';
     const nomes = Array.isArray(tagNames) ? tagNames : [tagNames];
+    const proibidas = (excluirPais || []).map(t => t.toLowerCase());
     const all = root.getElementsByTagName('*');
     for (const nome of nomes) {
       const alvo = nome.toLowerCase();
       for (let i = 0; i < all.length; i++) {
         const local = (all[i].localName || all[i].nodeName || '').split(':').pop().toLowerCase();
         if (local === alvo) {
+          if (proibidas.length && _xmlEstaDentroDe(all[i], proibidas)) continue;
           const txt = (all[i].textContent || '').trim();
           if (txt) return txt;
         }
@@ -7235,7 +7247,12 @@
     const elDesc = document.getElementById('descricao_detalhada');
     const elPedido = document.getElementById('num_contrato_pedido');
 
-    // Zera retenções anteriores antes de preencher
+    // Limpa campos principais e retenções antes de preencher o novo XML
+    if (elNum) elNum.value = '';
+    if (elCnpj) elCnpj.value = '';
+    if (elRazao) elRazao.value = '';
+    if (elBruto) elBruto.value = '';
+    if (elDesc) elDesc.value = '';
     ['ret_iss', 'ret_irrf', 'ret_pis', 'ret_cofins', 'ret_csll'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
@@ -7313,18 +7330,31 @@
       }
 
       const infNfse = _xmlPrimeiroElemento(doc, ['InfNfse', 'infNFSe', 'nf', 'Nfse', 'NFSe']) || doc.documentElement;
-      const prestador = _xmlPrimeiroElemento(infNfse, ['PrestadorServico', 'Prestador', 'prest', 'emit']) || _xmlPrimeiroElemento(doc, ['PrestadorServico', 'Prestador', 'prest', 'emit']) || infNfse;
-      const valores = _xmlPrimeiroElemento(infNfse, ['Valores', 'ValoresNfse', 'valores', 'vServPrest']) || _xmlPrimeiroElemento(doc, ['Valores', 'ValoresNfse', 'valores', 'vServPrest']) || infNfse;
+      const excluirTomador = ['tomador', 'tomadorservico', 'toma', 'dest', 'intermediario', 'interm'];
+      const prestador = _xmlPrimeiroElemento(infNfse, ['PrestadorServico', 'emit', 'prestador', 'Prestador', 'prest'])
+        || _xmlPrimeiroElemento(doc, ['PrestadorServico', 'emit', 'prestador', 'Prestador', 'prest'])
+        || infNfse;
+      const valores = _xmlPrimeiroElemento(infNfse, ['ValoresNfse', 'Valores', 'valores', 'vServPrest'])
+        || _xmlPrimeiroElemento(doc, ['ValoresNfse', 'Valores', 'valores', 'vServPrest'])
+        || infNfse;
 
-      const nNFSe = _xmlPrimeiroTexto(infNfse, ['nNFSe', 'numero_nfse', 'NumeroNfse', 'NumeroNFe', 'NumeroNota', 'Numero', 'nDF']);
-      const serie = _xmlPrimeiroTexto(infNfse, ['Serie', 'SerieRPS', 'SeriePrestacao', 'serie_nfse']);
-      const dtEmissao = _xmlExtrairDataISO(_xmlPrimeiroTexto(infNfse, ['DataEmissao', 'dhEmi', 'DataEmissaoNFe', 'dhProc', 'data_nfse', 'DataFatoGerador']));
-      const cnpjPrest = _xmlPrimeiroTexto(prestador, ['Cnpj', 'CNPJ', 'Cpf', 'CPF', 'cpfcnpj']);
-      const razaoPrest = _xmlPrimeiroTexto(prestador, ['RazaoSocial', 'xNome', 'NomeFantasia', 'RazaoSocialPrestador', 'razao_social']);
+      const nNFSe = _xmlPrimeiroTexto(infNfse, ['nNFSe', 'numero_nfse', 'NumeroNfse', 'NumeroNFe', 'NumeroNota', 'Numero', 'nDF'], ['identificacaorps', 'rps'])
+        || _xmlPrimeiroTexto(doc, ['nNFSe', 'numero_nfse', 'NumeroNfse', 'NumeroNFe', 'NumeroNota', 'Numero', 'nDF'], ['identificacaorps', 'rps']);
+      const serie = _xmlPrimeiroTexto(infNfse, ['Serie', 'SerieRPS', 'SeriePrestacao', 'serie_nfse', 'serie']);
+      const dtEmissao = _xmlExtrairDataISO(_xmlPrimeiroTexto(infNfse, ['DataEmissao', 'dhEmi', 'DataEmissaoNFe', 'dhProc', 'data_nfse', 'DataFatoGerador', 'dCompet']));
+      const cnpjPrest = _xmlPrimeiroTexto(prestador, ['Cnpj', 'CNPJ', 'Cpf', 'CPF', 'cpfcnpj'], excluirTomador)
+        || _xmlPrimeiroTexto(infNfse, ['Cnpj', 'CNPJ', 'Cpf', 'CPF', 'cpfcnpj'], excluirTomador)
+        || _xmlPrimeiroTexto(doc, ['Cnpj', 'CNPJ', 'Cpf', 'CPF', 'cpfcnpj'], excluirTomador);
+      const razaoPrest = _xmlPrimeiroTexto(prestador, ['RazaoSocialPrestador', 'RazaoSocial', 'xNome', 'nome_razao_social', 'razao_social', 'NomePrestador', 'NomeFantasia', 'xFant', 'nome'], excluirTomador)
+        || _xmlPrimeiroTexto(infNfse, ['RazaoSocialPrestador', 'RazaoSocial', 'xNome', 'nome_razao_social', 'razao_social', 'NomePrestador', 'NomeFantasia', 'xFant'], excluirTomador)
+        || _xmlPrimeiroTexto(doc, ['RazaoSocialPrestador', 'RazaoSocial', 'xNome', 'nome_razao_social', 'razao_social', 'NomePrestador', 'NomeFantasia', 'xFant'], excluirTomador);
       const codVerif = _xmlPrimeiroTexto(infNfse, ['CodigoVerificacao', 'cVerif', 'CodigoAutenticidade', 'cod_verificador_autenticidade']);
       chaveOuCod = codVerif || (infNfse.getAttribute && infNfse.getAttribute('Id') ? infNfse.getAttribute('Id').replace(/^NFS/i, '') : '');
 
-      const vServ = _xmlParseValor(_xmlPrimeiroTexto(valores, ['ValorServicos', 'vServ', 'vServPrest', 'ValorTotalServicos', 'vLiq', 'ValorLiquidoNfse', 'ValorLiquido', 'valor_total', 'valor']));
+      const vServ = _xmlParseValor(
+        _xmlPrimeiroTexto(valores, ['ValorServicos', 'vServ', 'vServPrest', 'ValorTotalServicos', 'vLiq', 'ValorLiquidoNfse', 'ValorLiquido', 'valor_total', 'valor'])
+        || _xmlPrimeiroTexto(infNfse, ['ValorServicos', 'vServ', 'vServPrest', 'ValorTotalServicos', 'vLiq', 'ValorLiquidoNfse', 'ValorLiquido', 'valor_total'])
+      );
       const issRetidoFlag = _xmlPrimeiroTexto(valores, ['IssRetido', 'tpRetISSQN']);
       let vIssRet = _xmlParseValor(_xmlPrimeiroTexto(valores, ['ValorIssRetido', 'vISSQNRet']));
       if (!vIssRet && (issRetidoFlag === '1' || issRetidoFlag === '2' || issRetidoFlag === '3' || issRetidoFlag.toLowerCase() === 'true')) {
