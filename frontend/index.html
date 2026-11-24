@@ -2052,7 +2052,7 @@
     </div>
 
     <!-- MODAL POP-UP: RATEIO DE LANÇAMENTO (FILIAIS / CATEGORIAS / RUBRICAS) -->
-    <div id="modal-rateio-lancamento" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.62); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+    <div id="modal-rateio-lancamento" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.62); z-index: 10010; align-items: center; justify-content: center; padding: 16px;">
       <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; width: 100%; max-width: 960px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 20px 45px rgba(15,23,42,0.3); overflow: hidden;">
         <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
           <div>
@@ -2105,7 +2105,7 @@
 
     <!-- MODAL POP-UP: IMPORTAÇÃO EM LOTE DE XML (NF-e PRODUTO & NFS-e SERVIÇO) -->
     <div id="modal-xml-lote" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.65); z-index: 10000; align-items: center; justify-content: center; padding: 14px;">
-      <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; width: 100%; max-width: 1180px; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 22px 50px rgba(15,23,42,0.35); overflow: hidden;">
+      <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; width: 100%; max-width: 1340px; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 22px 50px rgba(15,23,42,0.35); overflow: hidden;">
         <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
           <div>
             <div style="font-size: 14px; font-weight: 800; color: #0f172a;">📦 Importação em Lote de XML (NF-e Produto &amp; NFS-e Serviço)</div>
@@ -2115,10 +2115,10 @@
         </div>
 
         <div style="padding: 9px 16px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-            <span style="font-size: 11px; font-weight: 700; color: #334155;">Aplicar em massa nas selecionadas:</span>
-            <input type="text" id="lote-xml-cat-massa" list="lista-categorias-oficiais" placeholder="Categoria / Plano de Contas..." style="width: 240px; font-size: 11px; padding: 4px 7px; border: 1px solid #cbd5e1; border-radius: 4px;">
-            <button type="button" class="tool-btn" onclick="aplicarCategoriaMassaXMLLote()" style="font-size: 11px; padding: 4px 9px;">Aplicar Categoria</button>
+          <div style="display: flex; gap: 7px; align-items: center; flex-wrap: wrap;">
+            <span style="font-size: 11px; font-weight: 700; color: #334155;">Em massa:</span>
+            <input type="text" id="lote-xml-cat-massa" list="lista-categorias-oficiais" placeholder="Categoria / Plano de Contas..." style="width: 215px; font-size: 11px; padding: 4px 7px; border: 1px solid #cbd5e1; border-radius: 4px;">
+            <button type="button" class="tool-btn" onclick="aplicarCategoriaMassaXMLLote()" style="font-size: 11px; padding: 4px 8px;">Aplicar Categoria</button>
             <select id="lote-xml-loja-massa" style="font-size: 11px; padding: 4px 7px; border: 1px solid #cbd5e1; border-radius: 4px;">
               <option value="Matriz / Geral">Matriz / Geral</option>
               <option value="Loja Barra">Loja Barra</option>
@@ -2128,7 +2128,14 @@
               <option value="Loja Horto">Loja Horto</option>
               <option value="Atelier / Produção">Atelier / Produção</option>
             </select>
-            <button type="button" class="tool-btn" onclick="aplicarLojaMassaXMLLote()" style="font-size: 11px; padding: 4px 9px;">Aplicar Loja</button>
+            <button type="button" class="tool-btn" onclick="aplicarLojaMassaXMLLote()" style="font-size: 11px; padding: 4px 8px;">Aplicar Loja</button>
+            <select id="lote-xml-pgto-massa" style="font-size: 11px; padding: 4px 7px; border: 1px solid #cbd5e1; border-radius: 4px;">
+              <option value="BOLETO">Boleto</option>
+              <option value="PIX">PIX</option>
+              <option value="TED_DOC">TED / DOC</option>
+              <option value="DEBITO">Débito Auto.</option>
+            </select>
+            <button type="button" class="tool-btn" onclick="aplicarPgtoMassaXMLLote()" style="font-size: 11px; padding: 4px 8px;">Aplicar Pgto</button>
           </div>
           <div id="modal-xml-lote-progresso" style="font-size: 11.5px; font-weight: 700; color: #0369a1;"></div>
         </div>
@@ -2137,14 +2144,14 @@
           <table class="tabela-dados" style="width: 100%; border-collapse: collapse; font-size: 11px;">
             <thead>
               <tr>
-                <th style="width: 30px; text-align: center;"><input type="checkbox" id="lote-xml-check-all" onchange="alternarTodosXMLLote(this.checked)" checked></th>
-                <th style="text-align: left; width: 110px;">Tipo / Nº</th>
-                <th style="text-align: left; min-width: 190px;">Favorecido / CNPJ</th>
-                <th style="text-align: left; min-width: 200px;">Categoria / Plano de Contas *</th>
-                <th style="text-align: left; width: 135px;">Loja / Filial</th>
-                <th style="text-align: center; width: 120px;">Vencimento *</th>
-                <th style="text-align: right; width: 115px;">Valor / Detalhe</th>
-                <th style="text-align: center; width: 110px;">Status</th>
+                <th style="width: 28px; text-align: center;"><input type="checkbox" id="lote-xml-check-all" onchange="alternarTodosXMLLote(this.checked)" checked></th>
+                <th style="text-align: left; width: 95px;">Tipo / Nº</th>
+                <th style="text-align: left; min-width: 170px;">Favorecido / CNPJ</th>
+                <th style="text-align: left; min-width: 210px;">Categoria * &amp; Loja / Filial</th>
+                <th style="text-align: left; min-width: 250px;">Pagamento, Cód. Barras &amp; Dados Bancários</th>
+                <th style="text-align: center; width: 118px;">Vencimento *</th>
+                <th style="text-align: right; width: 120px;">Valor &amp; Rateio</th>
+                <th style="text-align: center; width: 90px;">Status</th>
               </tr>
             </thead>
             <tbody id="modal-xml-lote-tbody"></tbody>
@@ -7540,6 +7547,8 @@
       loja: 'Matriz / Geral',
       forma_pgto: 'BOLETO',
       dados_banco: '',
+      linha_dig: '',
+      rateios: [],
       impostos: [],
       itens: [],
       parcelas: [],
@@ -7711,33 +7720,53 @@
       const lojasOpts = ['Matriz / Geral', 'Loja Barra', 'Loja SDB', 'Loja Paseo', 'Loja Vilas', 'Loja Horto', 'Atelier / Produção']
         .map(u => `<option value="${escapeHtml(u)}" ${it.loja === u ? 'selected' : ''}>${escapeHtml(u)}</option>`).join('');
 
+      const pgtosOpts = [
+        ['BOLETO', 'Boleto Bancário'],
+        ['PIX', 'PIX'],
+        ['TED_DOC', 'TED / DOC'],
+        ['DEBITO', 'Débito Auto.']
+      ].map(([v, lbl]) => `<option value="${v}" ${(it.forma_pgto || 'BOLETO') === v ? 'selected' : ''}>${lbl}</option>`).join('');
+
+      const qtdRat = (it.rateios || []).length;
+      const btnRateioStyle = qtdRat > 0
+        ? 'border-color:#1d4ed8;color:#1d4ed8;background:#dbeafe;font-weight:700;'
+        : 'border-color:#93c5fd;color:#1d4ed8;background:#eff6ff;';
+
       tr.innerHTML = `
-        <td style="text-align:center;padding:5px 4px;">
+        <td style="text-align:center;padding:6px 4px;vertical-align:top;">
           <input type="checkbox" ${it.selecionado ? 'checked' : ''} ${it.erroLeitura || it.statusEnvio === 'GRAVADO' ? 'disabled' : ''} onchange="_xmlLoteItens[${idx}].selecionado = this.checked; atualizarTotaisXMLLote();">
         </td>
-        <td style="padding:5px 4px;">
+        <td style="padding:6px 4px;vertical-align:top;">
           <div>${badgeTipo}</div>
           <div style="font-weight:700;margin-top:2px;">Nº ${escapeHtml(it.numero_doc || '-')}</div>
           <div style="font-size:9.5px;color:#64748b;">Em: ${escapeHtml((it.data_emissao || '').split('-').reverse().join('/'))}</div>
         </td>
-        <td style="padding:5px 4px;">
+        <td style="padding:6px 4px;vertical-align:top;">
           <div style="font-weight:700;color:#0f172a;">${escapeHtml(it.favorecido || '-')}</div>
           <div style="font-size:10px;color:#475569;font-family:monospace;">${escapeHtml(it.cnpj || '-')}</div>
         </td>
-        <td style="padding:5px 4px;">
-          <input type="text" list="lista-categorias-oficiais" value="${escapeHtml(it.ccusto || '')}" oninput="_xmlLoteItens[${idx}].ccusto = this.value" placeholder="Selecione a categoria..." style="width:100%;font-size:10.5px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:4px;">
-        </td>
-        <td style="padding:5px 4px;">
+        <td style="padding:6px 4px;vertical-align:top;">
+          <input type="text" list="lista-categorias-oficiais" value="${escapeHtml(it.ccusto || '')}" oninput="_xmlLoteItens[${idx}].ccusto = this.value" placeholder="Categoria / Plano de Contas..." style="width:100%;font-size:10.5px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:4px;margin-bottom:4px;">
           <select onchange="_xmlLoteItens[${idx}].loja = this.value" style="width:100%;font-size:10.5px;padding:3px;border:1px solid #cbd5e1;border-radius:4px;">${lojasOpts}</select>
         </td>
-        <td style="padding:5px 4px;">
+        <td style="padding:6px 4px;vertical-align:top;">
+          <div style="display:flex;gap:4px;margin-bottom:4px;">
+            <select onchange="_xmlLoteItens[${idx}].forma_pgto = this.value" style="width:108px;font-size:10.5px;padding:3px;border:1px solid #cbd5e1;border-radius:4px;">${pgtosOpts}</select>
+            <input type="text" value="${escapeHtml(it.dados_banco || '')}" oninput="_xmlLoteItens[${idx}].dados_banco = this.value" placeholder="Chave PIX ou Banco/Ag/Cc..." style="flex:1;min-width:110px;font-size:10.5px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:4px;">
+          </div>
+          <input type="text" value="${escapeHtml(it.linha_dig || '')}" oninput="_xmlLoteItens[${idx}].linha_dig = this.value" placeholder="Cód. Barras / Linha Digitável do Boleto..." style="width:100%;font-size:10.5px;font-family:monospace;padding:3px 6px;border:1px solid #cbd5e1;border-radius:4px;">
+        </td>
+        <td style="padding:6px 4px;vertical-align:top;">
           <input type="date" value="${escapeHtml(it.vencimento || '')}" onchange="_xmlLoteItens[${idx}].vencimento = this.value" style="width:100%;font-size:10.5px;padding:3px;border:1px solid #cbd5e1;border-radius:4px;">
         </td>
-        <td style="padding:5px 4px;text-align:right;">
+        <td style="padding:6px 4px;text-align:right;vertical-align:top;">
           <div style="font-weight:800;font-family:monospace;color:#0f172a;">${formatarMoeda(it.valor_bruto || 0)}</div>
-          <div style="font-size:9.5px;color:#64748b;">${escapeHtml(detalheExtra)}</div>
+          <div style="font-size:9.5px;color:#64748b;margin-bottom:4px;">${escapeHtml(detalheExtra)}</div>
+          <button type="button" class="tool-btn" onclick="abrirModalRateioParaLote(${idx})" style="padding:1px 6px;font-size:10px;${btnRateioStyle}">
+            ⚖️ Rateio${qtdRat > 0 ? ` (${qtdRat})` : ''}
+          </button>
         </td>
-        <td style="padding:5px 4px;text-align:center;">${statusHtml}</td>
+        <td style="padding:6px 4px;text-align:center;vertical-align:top;">${statusHtml}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -7780,6 +7809,14 @@
     renderizarTabelaXMLLote();
   }
 
+  function aplicarPgtoMassaXMLLote() {
+    const val = document.getElementById('lote-xml-pgto-massa')?.value || 'BOLETO';
+    _xmlLoteItens.forEach(it => {
+      if (it.selecionado && it.statusEnvio !== 'GRAVADO') it.forma_pgto = val;
+    });
+    renderizarTabelaXMLLote();
+  }
+
   async function gravarLoteXMLSelecionados() {
     const alvos = _xmlLoteItens.filter(x => x.selecionado && !x.erroLeitura && x.statusEnvio !== 'GRAVADO');
     if (alvos.length === 0) {
@@ -7817,14 +7854,14 @@
         contrato: '',
         forma_pgto: it.forma_pgto || 'BOLETO',
         dados_banco: it.dados_banco || '',
-        linha_dig: '',
+        linha_dig: it.linha_dig || '',
         cod_operacao: it.cod_operacao,
         cnae: it.cnae || '',
         item_lc116: it.item_lc116 || '',
         impostos: it.impostos || [],
         itens: it.itens || [],
         parcelas: it.parcelas || [],
-        rateios: []
+        rateios: it.rateios || []
       };
 
       try {
@@ -8577,11 +8614,42 @@
     }
   }
 
+  let _rateioAlvoLoteIdx = null;
+
   function _obterBrutoAtualRateio() {
+    if (_rateioAlvoLoteIdx !== null && _xmlLoteItens[_rateioAlvoLoteIdx]) {
+      return parseFloat(_xmlLoteItens[_rateioAlvoLoteIdx].valor_bruto) || 0;
+    }
     return parseFloat(document.getElementById('valor_bruto')?.value) || 0;
   }
 
+  function abrirModalRateioParaLote(idx) {
+    if (typeof inicializarDatalistCategorias === 'function') inicializarDatalistCategorias();
+    const item = _xmlLoteItens[idx];
+    if (!item || (parseFloat(item.valor_bruto) || 0) <= 0) {
+      alert('Valor bruto inválido para rateio.');
+      return;
+    }
+    _rateioAlvoLoteIdx = idx;
+    const bruto = parseFloat(item.valor_bruto) || 0;
+    const catPadrao = (item.ccusto || '').trim();
+    const lojaPadrao = item.loja || 'Matriz / Geral';
+    if (item.rateios && item.rateios.length > 0) {
+      _rateioRascunho = item.rateios.map(r => ({ ...r }));
+    } else {
+      _rateioRascunho = [
+        { loja: lojaPadrao, categoria: catPadrao, observacao: '', percentual: 100, valor: Number(bruto.toFixed(2)) }
+      ];
+    }
+    const sub = document.getElementById('modal-rateio-subtitulo');
+    if (sub) sub.innerText = `Lote XML • Doc: ${item.numero_doc || '-'} • ${item.favorecido || '-'}`;
+    renderizarTabelaRateio();
+    const modal = document.getElementById('modal-rateio-lancamento');
+    if (modal) modal.style.display = 'flex';
+  }
+
   function abrirModalRateio() {
+    _rateioAlvoLoteIdx = null;
     if (typeof inicializarDatalistCategorias === 'function') inicializarDatalistCategorias();
     const bruto = _obterBrutoAtualRateio();
     if (bruto <= 0) {
@@ -8751,9 +8819,15 @@
   }
 
   function limparRateioModal() {
-    window.rateioLancamentoAtual = [];
     _rateioRascunho = [];
-    atualizarBadgeRateioBtn();
+    if (_rateioAlvoLoteIdx !== null && _xmlLoteItens[_rateioAlvoLoteIdx]) {
+      _xmlLoteItens[_rateioAlvoLoteIdx].rateios = [];
+      _rateioAlvoLoteIdx = null;
+      renderizarTabelaXMLLote();
+    } else {
+      window.rateioLancamentoAtual = [];
+      atualizarBadgeRateioBtn();
+    }
     fecharModalRateio();
   }
 
@@ -8769,7 +8843,7 @@
       alert(`A soma do rateio (${formatarMoeda(soma)}) precisa fechar com o Valor Bruto (${formatarMoeda(bruto)}). Diferença: ${formatarMoeda(bruto - soma)}.`);
       return;
     }
-    window.rateioLancamentoAtual = validos.map(r => ({
+    const rateiosMapeados = validos.map(r => ({
       loja: r.loja || 'Matriz / Geral',
       categoria: (r.categoria || '').trim(),
       rubrica: (r.observacao || r.loja || r.categoria || 'RATEIO').trim(),
@@ -8777,7 +8851,14 @@
       percentual: Number(r.percentual || 0),
       valor: Number((parseFloat(r.valor) || 0).toFixed(2))
     }));
-    atualizarBadgeRateioBtn();
+    if (_rateioAlvoLoteIdx !== null && _xmlLoteItens[_rateioAlvoLoteIdx]) {
+      _xmlLoteItens[_rateioAlvoLoteIdx].rateios = rateiosMapeados;
+      _rateioAlvoLoteIdx = null;
+      renderizarTabelaXMLLote();
+    } else {
+      window.rateioLancamentoAtual = rateiosMapeados;
+      atualizarBadgeRateioBtn();
+    }
     fecharModalRateio();
   }
 
