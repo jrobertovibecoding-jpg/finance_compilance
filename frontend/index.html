@@ -1023,6 +1023,10 @@
               <option value="RECIBO">Recibo / RPA (Sem Documento Fiscal)</option>
               <option value="CONTRATO">Contrato / Locação / Aluguel Mensal</option>
               <option value="FATURA">Fatura de Concessionária (Luz, Água, Internet)</option>
+              <option value="DAM">DAM - Documento de Arrecadação Municipal (IPTU, ISS, Alvará)</option>
+              <option value="DARF">DARF - Documento de Arrecadação de Receitas Federais</option>
+              <option value="DAS">DAS - Documento de Arrecadação do Simples Nacional</option>
+              <option value="DARE">DARE - Documento de Arrecadação de Receitas Estaduais (ICMS, DIFAL, IPVA)</option>
               <option value="DESPESA_INTERNA">Adiantamento / Reembolso / Despesa Interna</option>
             </select>
           </div>
@@ -8508,6 +8512,15 @@
       lblNum.innerText = 'Nº da Fatura / Código de Débito *';
       sugerirCFOPPorDocumento('1303');
       verificarRecolhimentoRetencoes();
+    } else if (tipo === 'DAM' || tipo === 'DARF' || tipo === 'DAS' || tipo === 'DARE') {
+      lblNum.innerText = `Nº da Guia ${tipo} / Inscrição / Ref. *`;
+      if (selForma) {
+        if (tipo === 'DAM') selForma.value = 'Guia Municipal';
+        else if (tipo === 'DARF' || tipo === 'DAS') selForma.value = 'DARF Federal';
+        else selForma.value = 'Boleto Outros Bancos';
+      }
+      sugerirCFOPPorDocumento('1949');
+      alternarVisibilidadeRetencoes(false);
     } else {
       lblNum.innerText = tipo === 'NFSE' ? 'Número da NFS-e *' : 'Número da NF-e / Documento *';
       if (tipo === 'NFSE') {
