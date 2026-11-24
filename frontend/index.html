@@ -799,10 +799,29 @@
         top: 0;
         left: 0;
         width: 100% !important;
+        max-width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
         box-shadow: none !important;
         border: none !important;
+        font-size: 9px !important;
+      }
+      body.imprimindo-relatorio-bimer table.alterdata-grid {
+        width: 100% !important;
+        font-size: 8.5px !important;
+        table-layout: auto !important;
+      }
+      body.imprimindo-relatorio-bimer table.alterdata-grid th,
+      body.imprimindo-relatorio-bimer table.alterdata-grid td {
+        padding: 3px 4px !important;
+        line-height: 1.25 !important;
+      }
+      body.imprimindo-relatorio-bimer table.alterdata-grid thead {
+        display: table-header-group;
+      }
+      body.imprimindo-relatorio-bimer table.alterdata-grid tr {
+        page-break-inside: avoid;
+        break-inside: avoid;
       }
       #modal-folha-rosto, #modal-folha-rosto-diaria, #modal-fechamento-prestacao, #modal-relatorio-autorizacao {
         position: absolute;
@@ -12064,8 +12083,9 @@
       if (!gruposPorDia[dia]) gruposPorDia[dia] = [];
       gruposPorDia[dia].push(t);
 
+      const isImposto = t.tipo === 'IMPOSTO' || String(t.id || '').startsWith('IMP_');
       const vLiq = Number(t.valor || 0);
-      const vBruto = Number(t.valor_bruto || t.valor || 0);
+      const vBruto = isImposto ? vLiq : Number(t.valor_bruto || t.valor || 0);
       totLiq += vLiq;
       totBruto += vBruto;
 
@@ -12113,18 +12133,17 @@
     }
 
     html += `
-      <table class="alterdata-grid" style="width: 100%; border-collapse: collapse; font-size: 10.5px; margin-bottom: 16px;">
+      <table class="alterdata-grid" style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 16px;">
         <thead>
           <tr style="background: #0f172a; color: white;">
-            <th style="padding: 6px; text-align: left; width: 95px;">Doc / ID</th>
-            <th style="padding: 6px; text-align: left;">Favorecido / Fornecedor</th>
-            <th style="padding: 6px; text-align: left;">Histórico & Objeto</th>
-            <th style="padding: 6px; text-align: left; width: 140px;">Centro de Custo</th>
-            <th style="padding: 6px; text-align: left; width: 90px;">Forma / Banco</th>
-            <th style="padding: 6px; text-align: right; width: 85px;">Vlr. Bruto</th>
-            <th style="padding: 6px; text-align: right; width: 75px;">Retenções</th>
-            <th style="padding: 6px; text-align: right; width: 90px;">Vlr. Líquido</th>
-            <th style="padding: 6px; text-align: center; width: 85px;">Situação</th>
+            <th style="padding: 5px 6px; text-align: left; width: 78px;">Doc / ID</th>
+            <th style="padding: 5px 6px; text-align: left; width: 23%;">Favorecido / Categoria</th>
+            <th style="padding: 5px 6px; text-align: left;">Histórico &amp; Objeto</th>
+            <th style="padding: 5px 6px; text-align: center; width: 52px;">Pgto</th>
+            <th style="padding: 5px 6px; text-align: right; width: 82px; white-space: nowrap;">Vlr. Bruto</th>
+            <th style="padding: 5px 6px; text-align: right; width: 78px; white-space: nowrap;">Retenções</th>
+            <th style="padding: 5px 6px; text-align: right; width: 84px; white-space: nowrap;">Vlr. Líquido</th>
+            <th style="padding: 5px 6px; text-align: center; width: 72px; white-space: nowrap;">Situação</th>
           </tr>
         </thead>
         <tbody>
@@ -12133,53 +12152,58 @@
     Object.keys(gruposPorDia).forEach(dia => {
       const listaDia = gruposPorDia[dia];
       const subTotLiq = listaDia.reduce((acc, c) => acc + Number(c.valor || 0), 0);
-      const subTotBruto = listaDia.reduce((acc, c) => acc + Number(c.valor_bruto || c.valor || 0), 0);
+      const subTotBruto = listaDia.reduce((acc, c) => {
+        const isImp = c.tipo === 'IMPOSTO' || String(c.id || '').startsWith('IMP_');
+        return acc + (isImp ? Number(c.valor || 0) : Number(c.valor_bruto || c.valor || 0));
+      }, 0);
+      const subTotRet = Math.max(0, subTotBruto - subTotLiq);
 
       html += `
         <tr style="background: #e2e8f0; font-weight: 700; color: #004b87; border-top: 2px solid #cbd5e1;">
-          <td colspan="5" style="padding: 6px 8px;">
+          <td colspan="4" style="padding: 5px 6px;">
             VENCIMENTO: <strong>${formatarData(dia)}</strong> (${listaDia.length} ${listaDia.length === 1 ? 'título' : 'títulos'})
           </td>
-          <td style="padding: 6px 8px; text-align: right;">${formatarMoeda(subTotBruto)}</td>
-          <td style="padding: 6px 8px; text-align: right; color: #991b1b;">- ${formatarMoeda(subTotBruto - subTotLiq)}</td>
-          <td style="padding: 6px 8px; text-align: right; font-weight: 800; color: #004b87;">${formatarMoeda(subTotLiq)}</td>
-          <td style="padding: 6px 8px; text-align: center; font-size: 9.5px;">Subtotal Dia</td>
+          <td style="padding: 5px 6px; text-align: right; white-space: nowrap;">${formatarMoeda(subTotBruto)}</td>
+          <td style="padding: 5px 6px; text-align: right; color: #991b1b; white-space: nowrap;">${subTotRet > 0 ? `- ${formatarMoeda(subTotRet)}` : '-'}</td>
+          <td style="padding: 5px 6px; text-align: right; font-weight: 800; color: #004b87; white-space: nowrap;">${formatarMoeda(subTotLiq)}</td>
+          <td style="padding: 5px 6px; text-align: center; font-size: 9px; white-space: nowrap;">Subtotal Dia</td>
         </tr>
       `;
 
       listaDia.forEach((item, idx) => {
         const isConc = item.situacao === 'CONCILIADO' || item.status === 'CONCILIADO';
+        const isImp = item.tipo === 'IMPOSTO' || String(item.id || '').startsWith('IMP_');
         const vL = Number(item.valor || 0);
-        const vB = Number(item.valor_bruto || item.valor || 0);
+        const vB = isImp ? vL : Number(item.valor_bruto || item.valor || 0);
         const vR = Math.max(0, vB - vL);
         const sitBadge = isConc
-          ? `<span style="background: #dcfce7; color: #166534; padding: 2px 5px; border-radius: 3px; font-weight: 700; font-size: 9.5px; border: 1px solid #86efac;"><svg class="bimer-svg bimer-svg-green bimer-svg-xs" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg> Baixado</span>`
-          : `<span style="background: #fef3c7; color: #92400e; padding: 2px 5px; border-radius: 3px; font-weight: 700; font-size: 9.5px; border: 1px solid #fde68a;"><svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Em Aberto</span>`;
+          ? `<span style="display:inline-block;white-space:nowrap;background:#dcfce7;color:#166534;padding:2px 6px;border-radius:3px;font-weight:700;font-size:9px;border:1px solid #86efac;">✓ Baixado</span>`
+          : `<span style="display:inline-block;white-space:nowrap;background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:3px;font-weight:700;font-size:9px;border:1px solid #fde68a;">Em Aberto</span>`;
 
         html += `
           <tr style="${idx % 2 === 1 ? 'background: #f8fafc;' : 'background: #ffffff;'}">
-            <td style="padding: 5px 6px;">
-              <strong style="color: #004b87;">${item.numero_doc || '-'}</strong>
-              <div style="font-size: 9px; font-family: monospace; color: #334155;">${item.numero_id || '-'}</div>
-              <div style="font-size: 8.5px; color: #0284c7; font-weight: 700;">CFOP: ${item.cod_operacao ? item.cod_operacao.split(' - ')[0] : '1.933'}</div>
+            <td style="padding: 4px 6px; line-height: 1.25;">
+              <strong style="color: #004b87;">${escapeHtml(item.numero_doc || '-')}</strong>
+              <div style="font-size: 8.5px; font-family: monospace; color: #334155;">${escapeHtml(item.numero_id || '-')}</div>
+              <div style="font-size: 8px; color: #0284c7; font-weight: 700;">CFOP ${escapeHtml(item.cod_operacao ? item.cod_operacao.split(' - ')[0] : '1.933')}</div>
             </td>
-            <td style="padding: 5px 6px;">
-              <strong style="color: #0f172a;">${item.favorecido || '-'}</strong>
-              <div style="font-size: 9.5px; color: #334155;">CNPJ/CPF: ${formatarCnpjCpf(item.cnpj)}</div>
+            <td style="padding: 4px 6px; line-height: 1.25;">
+              <strong style="color: #0f172a;">${escapeHtml(item.favorecido || '-')}</strong>
+              <div style="font-size: 8.5px; color: #475569;">${escapeHtml(formatarCnpjCpf(item.cnpj))}</div>
+              <div style="font-size: 8.5px; color: #0369a1; font-weight: 600;">${escapeHtml(item.ccusto || 'Geral')}</div>
             </td>
-            <td style="padding: 5px 6px; font-size: 10px; color: #0f172a;">
+            <td style="padding: 4px 6px; font-size: 9.5px; color: #0f172a; line-height: 1.25;">
               ${limparHistoricoRedundante(item.descricao || item.historico || '-')}
             </td>
-            <td style="padding: 5px 6px; font-size: 10px; color: #1e293b;">${item.ccusto || 'Geral'}</td>
-            <td style="padding: 5px 6px; font-size: 10px;">${item.forma_pgto || 'BOLETO'}</td>
-            <td style="padding: 5px 6px; text-align: right; color: #1e293b;">${formatarMoeda(vB)}</td>
-            <td style="padding: 5px 6px; text-align: right; color: #dc2626;">${vR > 0 ? '- ' + formatarMoeda(vR) : '-'}</td>
-            <td style="padding: 5px 6px; text-align: right; font-weight: 700; color: #0f172a;">
+            <td style="padding: 4px 6px; text-align: center; font-size: 9px; font-weight: 600; color: #334155; white-space: nowrap;">${escapeHtml(item.forma_pgto || 'BOLETO')}</td>
+            <td style="padding: 4px 6px; text-align: right; color: #1e293b; white-space: nowrap; font-family: monospace;">${formatarMoeda(vB)}</td>
+            <td style="padding: 4px 6px; text-align: right; color: #dc2626; white-space: nowrap; font-family: monospace;">${vR > 0 ? '- ' + formatarMoeda(vR) : '-'}</td>
+            <td style="padding: 4px 6px; text-align: right; font-weight: 700; color: #0f172a; white-space: nowrap; font-family: monospace;">
               ${formatarMoeda(vL)}
               ${item.juros_multa > 0 ? `<div style="font-size: 8.5px; color: #dc2626; margin-top: 2px;">+ Juros: ${formatarMoeda(Number(item.juros_multa))}</div>` : ''}
               ${item.desconto > 0 ? `<div style="font-size: 8.5px; color: #059669; margin-top: 2px;">- Desc: ${formatarMoeda(Number(item.desconto))}</div>` : ''}
             </td>
-            <td style="padding: 5px 6px; text-align: center;">${sitBadge}</td>
+            <td style="padding: 4px 6px; text-align: center; white-space: nowrap;">${sitBadge}</td>
           </tr>
         `;
       });
@@ -12188,12 +12212,12 @@
     html += `
         </tbody>
         <tfoot>
-          <tr style="background: #0f172a; color: white; font-weight: 800; font-size: 11px;">
-            <td colspan="5" style="padding: 8px 10px; text-transform: uppercase;">TOTAL GERAL CONSOLIDADO DO PERÍODO</td>
-            <td style="padding: 8px 6px; text-align: right;">${formatarMoeda(totBruto)}</td>
-            <td style="padding: 8px 6px; text-align: right; color: #fca5a5;">- ${formatarMoeda(totRet)}</td>
-            <td style="padding: 8px 6px; text-align: right; color: #86efac; font-size: 12px;">${formatarMoeda(totLiq)}</td>
-            <td style="padding: 8px 6px; text-align: center; color: #475569; font-size: 10px;">${filtrados.length} itens</td>
+          <tr style="background: #0f172a; color: white; font-weight: 800; font-size: 10.5px;">
+            <td colspan="4" style="padding: 7px 8px; text-transform: uppercase;">TOTAL GERAL CONSOLIDADO DO PERÍODO</td>
+            <td style="padding: 7px 6px; text-align: right; white-space: nowrap;">${formatarMoeda(totBruto)}</td>
+            <td style="padding: 7px 6px; text-align: right; color: #fca5a5; white-space: nowrap;">${totRet > 0 ? '- ' + formatarMoeda(totRet) : '-'}</td>
+            <td style="padding: 7px 6px; text-align: right; color: #86efac; font-size: 11.5px; white-space: nowrap;">${formatarMoeda(totLiq)}</td>
+            <td style="padding: 7px 6px; text-align: center; color: #cbd5e1; font-size: 9.5px; white-space: nowrap;">${filtrados.length} itens</td>
           </tr>
         </tfoot>
       </table>
