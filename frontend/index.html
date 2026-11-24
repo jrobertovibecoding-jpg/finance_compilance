@@ -7643,7 +7643,7 @@
     }
     if (elItemLc && lcAntesForn) elItemLc.value = lcAntesForn;
     if (elCtn && ctnAntesForn) elCtn.value = ctnAntesForn;
-    if (ehNFSe) {
+    if (resumoTipo === 'NFS-e Serviço') {
       retAntesForn.forEach(([id, v]) => {
         const el = document.getElementById(id);
         if (el) el.value = v;
