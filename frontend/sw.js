@@ -1,5 +1,5 @@
 // Service Worker do JR FinCloud
-const CACHE_NAME = 'jr-fincloud-v6';
+const CACHE_NAME = 'jr-fincloud-v7';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -29,8 +29,9 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   if (event.request.url.includes('/api/')) return;
 
+  const isHtml = event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html');
   event.respondWith(
-    fetch(event.request)
+    fetch(isHtml ? new Request(event.request, { cache: 'no-store' }) : event.request)
       .then((response) => {
         if (response && response.status === 200 && response.type === 'basic') {
           const responseClone = response.clone();
