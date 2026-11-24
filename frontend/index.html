@@ -979,7 +979,8 @@
           <span style="font-size: 11.5px; font-weight: 700; color: #1e3a8a;">Lançar Nota Fiscal por XML (NF-e Produto ou NFS-e Serviço)</span>
           <span style="font-size: 10.5px; color: #1e293b;">Arraste o arquivo .xml aqui ou clique ao lado para preencher todos os campos automaticamente.</span>
         </div>
-        <div style="display: flex; align-items: center; gap: 6px;">
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <input type="text" id="input-chave-acesso-nfe" maxlength="54" oninput="processarChaveAcessoNFe(this.value)" placeholder="Ou cole a Chave de Acesso (44 dígitos)..." style="width: 265px; padding: 4px 8px; font-size: 11px; font-family: monospace; border: 1px solid #93c5fd; border-radius: 3px; background: #ffffff; color: #090d16;" title="Cole os 44 dígitos da Chave de Acesso da NF-e / NFC-e para preencher tipo, número, série e CNPJ automaticamente">
           <input type="file" id="input-xml-nf" accept=".xml,text/xml,application/xml" style="display: none;" onchange="processarArquivoXMLNF(event)">
           <button type="button" class="tool-btn" onclick="document.getElementById('input-xml-nf').click()" style="background: #1d4ed8; color: #ffffff; border-color: #1e40af; font-weight: 700; padding: 4px 11px; font-size: 11px;">
             <svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><polyline points="9 15 12 12 15 15"></polyline></svg>
@@ -7210,6 +7211,118 @@
     }
     const inp = document.getElementById('input-xml-nf');
     if (inp) inp.value = '';
+    const inpChave = document.getElementById('input-chave-acesso-nfe');
+    if (inpChave) inpChave.value = '';
+  }
+
+  function _validarDVChaveNFe(chave44) {
+    if (!/^\d{44}$/.test(chave44)) return false;
+    let soma = 0;
+    let peso = 2;
+    for (let i = 42; i >= 0; i--) {
+      soma += parseInt(chave44[i], 10) * peso;
+      peso = peso === 9 ? 2 : peso + 1;
+    }
+    const resto = soma % 11;
+    const dvCalc = (resto === 0 || resto === 1) ? 0 : (11 - resto);
+    return dvCalc === parseInt(chave44[43], 10);
+  }
+
+  async function processarChaveAcessoNFe(rawVal) {
+    const chave = String(rawVal || '').replace(/\D/g, '');
+    const badge = document.getElementById('badge-xml-importado');
+    if (!chave) {
+      if (badge) {
+        badge.style.display = 'none';
+        badge.innerHTML = '';
+      }
+      return;
+    }
+    if (chave.length < 44) {
+      if (badge) {
+        badge.style.display = 'flex';
+        badge.style.background = '#eff6ff';
+        badge.style.borderColor = '#93c5fd';
+        badge.style.color = '#1e3a8a';
+        badge.innerHTML = `<span>Digitando Chave de Acesso: <strong>${chave.length}/44 dígitos</strong>...</span>`;
+      }
+      return;
+    }
+    const chave44 = chave.slice(0, 44);
+    if (!_validarDVChaveNFe(chave44)) {
+      if (badge) {
+        badge.style.display = 'flex';
+        badge.style.background = '#fef2f2';
+        badge.style.borderColor = '#fca5a5';
+        badge.style.color = '#991b1b';
+        badge.innerHTML = `<span><strong>Chave de Acesso inválida:</strong> o dígito verificador dos 44 dígitos não confere. Verifique a digitação.</span><button type="button" onclick="limparBannerXMLNF()" style="background:none;border:none;color:#991b1b;font-weight:700;cursor:pointer;text-decoration:underline;">Limpar</button>`;
+      }
+      return;
+    }
+
+    const ufMap = {
+      '11':'RO','12':'AC','13':'AM','14':'RR','15':'PA','16':'AP','17':'TO',
+      '21':'MA','22':'PI','23':'CE','24':'RN','25':'PB','26':'PE','27':'AL','28':'SE','29':'BA',
+      '31':'MG','32':'ES','33':'RJ','35':'SP','41':'PR','42':'SC','43':'RS',
+      '50':'MS','51':'MT','52':'GO','53':'DF'
+    };
+    const uf = ufMap[chave44.slice(0, 2)] || chave44.slice(0, 2);
+    const ano = '20' + chave44.slice(2, 4);
+    const mes = chave44.slice(4, 6);
+    const cnpj = chave44.slice(6, 20);
+    const mod = chave44.slice(20, 22);
+    const serie = String(parseInt(chave44.slice(22, 25), 10) || 0);
+    const numero = String(parseInt(chave44.slice(25, 34), 10) || 0);
+    const cnpjFmt = cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+
+    const selTipo = document.getElementById('tipo_documento');
+    if (selTipo && (mod === '55' || mod === '65' || mod === '57')) {
+      selTipo.value = 'NFE';
+      if (typeof ajustarTipoDocumento === 'function') ajustarTipoDocumento();
+    }
+
+    const elNum = document.getElementById('numero_doc');
+    const elSerie = document.getElementById('serie_doc');
+    const elCnpj = document.getElementById('cnpj_favorecido');
+    const elRazao = document.getElementById('razao_favorecido');
+    const elEntrada = document.getElementById('data_entrada');
+
+    if (elNum) elNum.value = numero;
+    if (elSerie) elSerie.value = serie;
+    if (elEntrada && !elEntrada.value) elEntrada.value = new Date().toISOString().slice(0, 10);
+    if (elCnpj) {
+      elCnpj.value = cnpjFmt;
+      if (typeof onInputCNPJFavorecidoLive === 'function') onInputCNPJFavorecidoLive(elCnpj);
+    }
+
+    if (typeof checarDuplicidadeLive === 'function') checarDuplicidadeLive();
+    if (typeof atualizarHistoricoDinamico === 'function') atualizarHistoricoDinamico();
+
+    const modLabel = mod === '65' ? 'NFC-e (Mod. 65)' : (mod === '57' ? 'CT-e (Mod. 57)' : 'NF-e (Mod. 55)');
+    if (badge) {
+      badge.style.display = 'flex';
+      badge.style.background = '#ecfdf5';
+      badge.style.borderColor = '#86efac';
+      badge.style.color = '#065f46';
+      badge.innerHTML = `
+        <span><strong>Chave válida (${modLabel}):</strong> UF ${uf} • Emissão ${mes}/${ano} • Nº <strong>${numero}</strong> (Série ${serie}) • CNPJ ${cnpjFmt}. <em>Complete valor, vencimento e descrição.</em></span>
+        <button type="button" onclick="limparBannerXMLNF()" style="background:none;border:none;color:#065f46;font-weight:700;cursor:pointer;text-decoration:underline;">Limpar</button>
+      `;
+    }
+
+    // Se fornecedor ainda não estiver cadastrado localmente, tenta buscar Razão Social na BrasilAPI
+    if (elRazao && !elRazao.value.trim()) {
+      try {
+        const resp = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data?.razao_social && !elRazao.value.trim()) {
+            elRazao.value = data.razao_social;
+            if (typeof atualizarHistoricoDinamico === 'function') atualizarHistoricoDinamico();
+          }
+        }
+      } catch (_) {}
+    }
   }
 
   function processarArquivoXMLNF(event) {
@@ -7306,6 +7419,8 @@
 
       const rawId = infNFe.getAttribute('Id') || '';
       chaveOuCod = rawId.replace(/^NFe/i, '');
+      const inpChaveXml = document.getElementById('input-chave-acesso-nfe');
+      if (inpChaveXml && /^\d{44}$/.test(chaveOuCod)) inpChaveXml.value = chaveOuCod;
 
       // CFOP do primeiro item convertido para entrada
       const cfopSaida = dets.length ? _xmlPrimeiroTexto(dets[0], ['CFOP']) : '';
