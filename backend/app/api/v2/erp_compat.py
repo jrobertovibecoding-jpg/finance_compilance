@@ -95,6 +95,15 @@ class ParcelaCompatItem(BaseModel):
     valor: float
 
 
+class RateioCompatItem(BaseModel):
+    loja: Optional[str] = ""
+    categoria: Optional[str] = ""
+    rubrica: Optional[str] = ""
+    valor: float = 0.0
+    percentual: Optional[float] = 0.0
+    observacao: Optional[str] = ""
+
+
 class DocumentoCompatEntrada(BaseModel):
     tipo_doc: str = Field(..., description="NFSE, NFE, RECIBO, CONTRATO, FATURA, DESPESA_INTERNA")
     numero_doc: str
@@ -118,6 +127,7 @@ class DocumentoCompatEntrada(BaseModel):
     impostos: Optional[List[ImpostoCompatItem]] = []
     itens: Optional[List[ItemNFCompatItem]] = []
     parcelas: Optional[List[ParcelaCompatItem]] = []
+    rateios: Optional[List[RateioCompatItem]] = []
 
 
 class TituloCompatEdicao(BaseModel):
@@ -896,6 +906,36 @@ def compat_gravar_documento(
             )
         )
 
+    rateios_lista = [r for r in (doc.rateios or []) if to_dec(r.valor) > Decimal("0.00")]
+    if rateios_lista:
+        soma_rateio = sum((to_dec(r.valor) for r in rateios_lista), Decimal("0.00"))
+        if abs(soma_rateio - bruto) > Decimal("0.05"):
+            raise HTTPException(
+                status_code=422,
+                detail=f"A soma do rateio (R$ {soma_rateio}) deve bater com o valor bruto do documento (R$ {bruto}).",
+            )
+        for r_item in rateios_lista:
+            val_r = to_dec(r_item.valor)
+            loja_txt = (r_item.loja or "").strip()
+            cat_txt = (r_item.categoria or "").strip()
+            cc_r = _resolver_plano_e_ccusto(db, ctx.tenant_id, emp.id, loja_txt)[0] if loja_txt else ccusto_obj
+            pc_r = _resolver_plano_e_ccusto(db, ctx.tenant_id, emp.id, cat_txt)[1] if cat_txt else plano_obj
+            pct_r = ((val_r / bruto) * Decimal("100")).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            rubrica_txt = (r_item.rubrica or loja_txt or cat_txt or "RATEIO").strip()[:60]
+            obs_parts = [p for p in [cat_txt, (r_item.observacao or "").strip()] if p]
+            db.add(
+                TituloRateio(
+                    tenant_id=ctx.tenant_id,
+                    titulo_id=titulo.id,
+                    centro_custo_id=cc_r.id if cc_r else None,
+                    plano_conta_id=pc_r.id if pc_r else None,
+                    rubrica=rubrica_txt,
+                    valor=val_r,
+                    percentual=pct_r,
+                    observacao=" • ".join(obs_parts)[:255] or None,
+                )
+            )
+
     registrar_audit_v2(
         db,
         ctx.tenant_id,
@@ -909,6 +949,7 @@ def compat_gravar_documento(
             "qtd_impostos": len(impostos_lista),
             "qtd_itens": len(itens_lista),
             "qtd_parcelas": len(titulos_criados),
+            "qtd_rateios": len(rateios_lista),
         },
         ip=extrair_ip(request),
     )
@@ -921,6 +962,7 @@ def compat_gravar_documento(
         "impostos_gravados": len(impostos_lista),
         "itens_gravados": len(itens_lista),
         "parcelas_geradas": len(titulos_criados),
+        "rateios_gravados": len(rateios_lista),
     }
 
 
