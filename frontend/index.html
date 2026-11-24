@@ -1038,7 +1038,7 @@
             <label>Série / Subsérie</label>
             <input type="text" id="serie_doc" value="E - 1">
           </div>
-          <div class="form-field" style="position: relative;">
+          <div class="form-field" id="box-campo-cfop" style="position: relative;">
             <label>Código da Operação (CFOP) *</label>
             <div class="bimer-lookup-group">
               <input type="text" id="cod_operacao" value="1.933 - Aquisição de serviço tributado pelo ISSQN" oninput="autocompletarCFOPLive(this)" onkeydown="onKeyDownLookupInput(event, 'cfop')" ondblclick="abrirBuscaRapida('cfop')" placeholder="Digite o CFOP (ex: 1933, 1556, 1102)..." style="font-weight: 600;" autocomplete="off">
@@ -2749,17 +2749,17 @@
           <input type="date" id="aut-data-lote" onchange="renderizarRelatorioAutorizacao()" style="padding: 4px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 600;">
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
-          <label style="font-size: 11px; font-weight: 700; color: #1e293b;">Saldo Inicial (R$):</label>
-          <input type="number" step="0.01" id="aut-saldo-inicial" value="0.00" autocomplete="off" oninput="recalcularFluxoAutorizacao()" style="width: 100px; padding: 4px 6px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 700;">
+          <label style="font-size: 11px; font-weight: 700; color: #1e293b;">Saldo Matriz (98775-7):</label>
+          <input type="number" step="0.01" id="aut-saldo-inicial" value="0.00" autocomplete="off" oninput="recalcularFluxoAutorizacao()" style="width: 105px; padding: 4px 6px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 700;">
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
-          <label style="font-size: 11px; font-weight: 700; color: #065f46;">Entradas Lojas (R$):</label>
-          <input type="number" step="0.01" id="aut-entradas-lojas" value="0.00" autocomplete="off" oninput="recalcularFluxoAutorizacao()" style="width: 115px; padding: 4px 6px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 700; color: #065f46;">
+          <label style="font-size: 11px; font-weight: 700; color: #065f46;">Total Filiais (R$):</label>
+          <input type="number" step="0.01" id="aut-entradas-lojas" value="0.00" autocomplete="off" oninput="recalcularFluxoAutorizacao()" style="width: 110px; padding: 4px 6px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 700; color: #065f46;">
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
           <input type="file" id="aut-ofx-lojas-input" accept=".ofx" multiple style="display: none;" onchange="importarOFXLojasAutorizacao(event)">
-          <button type="button" class="tool-btn" onclick="document.getElementById('aut-ofx-lojas-input').click()" style="border-color: #0284c7; color: #0369a1; background: #e0f2fe; font-weight: 700; padding: 4px 9px; font-size: 11px;" title="Selecione 1 ou vários arquivos .OFX das contas Itaú das lojas para preencher Saldo e Entradas automaticamente">
-            Importar OFX Lojas (Saldo &amp; Entradas)
+          <button type="button" class="tool-btn" onclick="document.getElementById('aut-ofx-lojas-input').click()" style="border-color: #0284c7; color: #0369a1; background: #e0f2fe; font-weight: 700; padding: 4px 9px; font-size: 11px;" title="Selecione os arquivos .OFX da Matriz (98775-7) e/ou Filiais para preencher os saldos reais automaticamente">
+            Importar OFX (Matriz &amp; Filiais)
           </button>
           <span id="aut-ofx-lojas-resumo" style="display: none; font-size: 10px; font-weight: 700; color: #065f46; background: #dcfce7; padding: 2px 7px; border-radius: 4px;"></span>
         </div>
@@ -2798,26 +2798,31 @@
       </div>
 
       <!-- DASHBOARD DE FLUXO DE CAIXA CONSOLIDADO -->
-      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
-        <div style="padding: 12px 14px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; border-left: 4px solid #64748b;">
-          <div style="font-size: 9.5px; text-transform: uppercase; font-weight: 800; color: #334155; margin-bottom: 3px;">1. Saldo Inicial em Caixa</div>
-          <div style="font-size: 17px; font-weight: 800; color: #0f172a;" id="aut-card-saldo-inicial">R$ 3.425,97</div>
-          <div style="font-size: 9.5px; color: #334155; margin-top: 3px;">Posição bancária abertura</div>
+      <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px;">
+        <div style="padding: 10px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; border-left: 4px solid #64748b;">
+          <div style="font-size: 9px; text-transform: uppercase; font-weight: 800; color: #334155; margin-bottom: 3px;">1. Saldo Matriz (98775-7)</div>
+          <div style="font-size: 15.5px; font-weight: 800; color: #0f172a;" id="aut-card-saldo-inicial">R$ 0,00</div>
+          <div style="font-size: 9px; color: #475569; margin-top: 3px;">Conta principal Itaú</div>
         </div>
-        <div style="padding: 12px 14px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f0fdf4; border-left: 4px solid #10b981;">
-          <div style="font-size: 9.5px; text-transform: uppercase; font-weight: 800; color: #065f46; margin-bottom: 3px;">2. Transferências Lojas (Entradas)</div>
-          <div style="font-size: 17px; font-weight: 800; color: #059669;" id="aut-card-entradas">+ R$ 120.424,31</div>
-          <div style="font-size: 9.5px; color: #047857; margin-top: 3px;">Horto, SDB, Vilas, Paseo, Barra</div>
+        <div style="padding: 10px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f0fdf4; border-left: 4px solid #10b981;">
+          <div style="font-size: 9px; text-transform: uppercase; font-weight: 800; color: #065f46; margin-bottom: 3px;">2. + Total Filiais</div>
+          <div style="font-size: 15.5px; font-weight: 800; color: #059669;" id="aut-card-entradas">+ R$ 0,00</div>
+          <div style="font-size: 9px; color: #047857; margin-top: 3px;">Contas das Lojas (OFX)</div>
         </div>
-        <div style="padding: 12px 14px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fef2f2; border-left: 4px solid #ef4444;">
-          <div style="font-size: 9.5px; text-transform: uppercase; font-weight: 800; color: #991b1b; margin-bottom: 3px;">3. Total Pagamentos do Dia</div>
-          <div style="font-size: 17px; font-weight: 800; color: #dc2626;" id="aut-card-saidas">- R$ 88.877,89</div>
-          <div style="font-size: 9.5px; color: #b91c1c; margin-top: 3px;">Boletos + PIX + Tributos</div>
+        <div style="padding: 10px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f0f9ff; border-left: 4px solid #0284c7;">
+          <div style="font-size: 9px; text-transform: uppercase; font-weight: 800; color: #0369a1; margin-bottom: 3px;">3. = Soma Disponível</div>
+          <div style="font-size: 15.5px; font-weight: 800; color: #0284c7;" id="aut-card-soma-disponivel">R$ 0,00</div>
+          <div style="font-size: 9px; color: #0369a1; margin-top: 3px;">Matriz + Filiais</div>
         </div>
-        <div style="padding: 12px 14px; border-radius: 6px; border: 1px solid #cbd5e1; background: #eff6ff; border-left: 4px solid #004b87;">
-          <div style="font-size: 9.5px; text-transform: uppercase; font-weight: 800; color: #1e40af; margin-bottom: 3px;">4. Saldo Projetado (Superávit)</div>
-          <div style="font-size: 17px; font-weight: 800; color: #004b87;" id="aut-card-projetado">R$ 34.972,39</div>
-          <div style="font-size: 9.5px; color: #1d4ed8; margin-top: 3px;" id="aut-card-status-cx">Caixa positivo após baixas</div>
+        <div style="padding: 10px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fef2f2; border-left: 4px solid #ef4444;">
+          <div style="font-size: 9px; text-transform: uppercase; font-weight: 800; color: #991b1b; margin-bottom: 3px;">4. − Despesas / Lote</div>
+          <div style="font-size: 15.5px; font-weight: 800; color: #dc2626;" id="aut-card-saidas">- R$ 0,00</div>
+          <div style="font-size: 9px; color: #b91c1c; margin-top: 3px;">Boletos + PIX + Tributos</div>
+        </div>
+        <div style="padding: 10px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #eff6ff; border-left: 4px solid #004b87;">
+          <div style="font-size: 9px; text-transform: uppercase; font-weight: 800; color: #1e40af; margin-bottom: 3px;">5. = Saldo Final</div>
+          <div style="font-size: 15.5px; font-weight: 800; color: #004b87;" id="aut-card-projetado">R$ 0,00</div>
+          <div style="font-size: 9px; color: #1d4ed8; margin-top: 3px;" id="aut-card-status-cx">Soma − Despesas</div>
         </div>
       </div>
 
@@ -8536,6 +8541,14 @@
       linhaCnae.style.display = (tipo === 'NFSE') ? 'flex' : 'none';
     }
 
+    const ehDocFiscal = (tipo === 'NFSE' || tipo === 'NFE' || tipo === 'CTE');
+    const boxCfop = document.getElementById('box-campo-cfop');
+    if (boxCfop) boxCfop.style.display = ehDocFiscal ? '' : 'none';
+    if (!ehDocFiscal) {
+      const elCfop = document.getElementById('cod_operacao');
+      if (elCfop) elCfop.value = '';
+    }
+
     atualizarHistoricoDinamico();
     checarDuplicidadeLive();
   }
@@ -9361,7 +9374,7 @@
       forma_pgto,
       dados_banco,
       linha_dig,
-      cod_operacao: cod_operacao || '1.933 - Aquisição de serviço tributado pelo ISSQN',
+      cod_operacao: cod_operacao || (['NFSE', 'NFE', 'CTE'].includes(tipo_doc) ? '1.933 - Aquisição de serviço tributado pelo ISSQN' : ''),
       cnae: cnae || '',
       item_lc116: item_lc116 || '',
       impostos,
@@ -9437,7 +9450,7 @@
       favorecido,
       cnpj,
       numero_doc,
-      cod_operacao: cod_operacao || '1.933 - Aquisição de serviço tributado pelo ISSQN',
+      cod_operacao: cod_operacao || (['NFSE', 'NFE', 'CTE'].includes(tipo_doc) ? '1.933 - Aquisição de serviço tributado pelo ISSQN' : ''),
       cnae: cnae || '',
       item_lc116: item_lc116 || '',
       vencimento: vencimento_principal,
@@ -10641,8 +10654,10 @@
     const files = Array.from(event?.target?.files || []);
     if (files.length === 0) return;
 
-    let somaSaldos = 0;
-    let somaEntradas = 0;
+    let saldoMatriz = 0;
+    let encontrouMatriz = false;
+    let somaFiliais = 0;
+    let qtdFiliais = 0;
     const detalhes = [];
 
     for (const file of files) {
@@ -10656,54 +10671,58 @@
 
       const acctMatch = texto.match(/<ACCTID>([^<\r\n]+)/i);
       const conta = acctMatch ? acctMatch[1].trim() : file.name;
+      const contaDig = (conta + ' ' + file.name).replace(/\D/g, '');
+      const ehMatriz = contaDig.includes('987757');
 
       const balMatch = texto.match(/<LEDGERBAL>[\s\S]*?<BALAMT>([^<\r\n]+)/i) || texto.match(/<BALAMT>([^<\r\n]+)/i);
       const saldoConta = balMatch ? (parseFloat(balMatch[1].replace(',', '.')) || 0) : 0;
 
-      let entradasConta = 0;
-      const blocos = texto.split(/<STMTTRN>/i);
-      for (let i = 1; i < blocos.length; i++) {
-        const bloco = blocos[i].split(/<\/STMTTRN>/i)[0];
-        const valorMatch = bloco.match(/<TRNAMT>([^<\r\n]+)/i);
-        if (valorMatch) {
-          const val = parseFloat(valorMatch[1].replace(',', '.')) || 0;
-          if (val > 0) entradasConta += val;
-        }
+      if (ehMatriz) {
+        saldoMatriz += saldoConta;
+        encontrouMatriz = true;
+        detalhes.push(`• MATRIZ (${conta}): Saldo ${formatarMoeda(saldoConta)}`);
+      } else {
+        somaFiliais += saldoConta;
+        qtdFiliais += 1;
+        detalhes.push(`• FILIAL (${conta}): Saldo ${formatarMoeda(saldoConta)}`);
       }
-
-      somaSaldos += saldoConta;
-      somaEntradas += entradasConta;
-      detalhes.push(`• Conta ${conta}: Saldo ${formatarMoeda(saldoConta)} | Entradas ${formatarMoeda(entradasConta)}`);
     }
 
     const elSaldo = document.getElementById('aut-saldo-inicial');
     const elEnt = document.getElementById('aut-entradas-lojas');
-    if (elSaldo) elSaldo.value = somaSaldos.toFixed(2);
-    if (elEnt) elEnt.value = somaEntradas.toFixed(2);
+    if (elSaldo && encontrouMatriz) elSaldo.value = saldoMatriz.toFixed(2);
+    if (elEnt && qtdFiliais > 0) elEnt.value = somaFiliais.toFixed(2);
     recalcularFluxoAutorizacao();
+
+    const valMatrizAtual = parseFloat(elSaldo?.value) || 0;
+    const valFiliaisAtual = parseFloat(elEnt?.value) || 0;
+    const somaDisp = valMatrizAtual + valFiliaisAtual;
 
     const resumo = document.getElementById('aut-ofx-lojas-resumo');
     if (resumo) {
       resumo.style.display = 'inline-block';
-      resumo.innerText = `${files.length} OFX: Saldo ${formatarMoeda(somaSaldos)} | Entradas ${formatarMoeda(somaEntradas)}`;
+      resumo.innerText = `Matriz: ${formatarMoeda(valMatrizAtual)} + Filiais (${qtdFiliais}): ${formatarMoeda(valFiliaisAtual)} = ${formatarMoeda(somaDisp)}`;
     }
     if (event?.target) event.target.value = '';
-    alert(`OFX das Lojas importado (${files.length} conta(s)):\n\n${detalhes.join('\n')}\n\nTotal Saldo: ${formatarMoeda(somaSaldos)}\nTotal Entradas: ${formatarMoeda(somaEntradas)}`);
+    alert(`OFX importado (${files.length} conta(s)):\n\n${detalhes.join('\n')}\n\nSaldo Matriz (98775-7): ${formatarMoeda(valMatrizAtual)}\nTotal Filiais: ${formatarMoeda(valFiliaisAtual)}\nSoma Disponível: ${formatarMoeda(somaDisp)}`);
   }
 
   function recalcularFluxoAutorizacao() {
     const saldoInicial = parseFloat(document.getElementById('aut-saldo-inicial')?.value) || 0;
     const entradas = parseFloat(document.getElementById('aut-entradas-lojas')?.value) || 0;
-    const saldoProjetado = saldoInicial + entradas - totalSaidasAtualAutorizacao;
+    const somaDisponivel = saldoInicial + entradas;
+    const saldoProjetado = somaDisponivel - totalSaidasAtualAutorizacao;
 
     const elIni = document.getElementById('aut-card-saldo-inicial');
     const elEnt = document.getElementById('aut-card-entradas');
+    const elSoma = document.getElementById('aut-card-soma-disponivel');
     const elSai = document.getElementById('aut-card-saidas');
     const elProj = document.getElementById('aut-card-projetado');
     const elStatus = document.getElementById('aut-card-status-cx');
 
     if (elIni) elIni.innerText = formatarMoeda(saldoInicial);
     if (elEnt) elEnt.innerText = '+ ' + formatarMoeda(entradas);
+    if (elSoma) elSoma.innerText = formatarMoeda(somaDisponivel);
     if (elSai) elSai.innerText = '- ' + formatarMoeda(totalSaidasAtualAutorizacao);
     if (elProj) {
       elProj.innerText = formatarMoeda(saldoProjetado);
