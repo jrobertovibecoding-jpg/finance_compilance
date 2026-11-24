@@ -7561,7 +7561,7 @@
       out.valor_bruto = _xmlParseValor(_xmlPrimeiroTexto(icmsTot, ['vNF'])) || _xmlParseValor(_xmlPrimeiroTexto(icmsTot, ['vProd']));
 
       const cfopNota = _xmlPrimeiroTexto(dets[0], ['CFOP']);
-      const cfopEnt = _xmlMapearCFOPEntrada(cfopNota);
+      const cfopEnt = typeof _xmlConverterCFOPSaidaParaEntrada === 'function' ? _xmlConverterCFOPSaidaParaEntrada(cfopNota) : cfopNota;
       out.cod_operacao = cfopEnt || '1.102 - Compra para comercialização';
 
       const itensExtraidos = [];
