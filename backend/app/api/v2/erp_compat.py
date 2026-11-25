@@ -2576,44 +2576,125 @@ async def compat_importar_favorecidos_itau(
     db: Session = Depends(get_db),
 ):
     import csv
+    import zipfile
+    import xml.etree.ElementTree as ET
+    from html.parser import HTMLParser
 
     raw = await file.read()
     if not raw:
-        raise HTTPException(status_code=422, detail="Arquivo CSV vazio.")
+        raise HTTPException(status_code=422, detail="Arquivo vazio.")
 
-    texto = None
-    for enc in ("utf-8-sig", "utf-8", "latin-1", "cp1252"):
-        try:
-            texto = raw.decode(enc)
-            break
-        except UnicodeDecodeError:
-            continue
-    if texto is None:
-        texto = raw.decode("latin-1", errors="replace")
+    def _ler_linhas_tabular(raw_bytes: bytes) -> list[list[str]]:
+        # 1. XLSX (ZIP OOXML) usando apenas stdlib
+        if raw_bytes[:2] == b"PK":
+            try:
+                with zipfile.ZipFile(io.BytesIO(raw_bytes)) as zf:
+                    shared: list[str] = []
+                    if "xl/sharedStrings.xml" in zf.namelist():
+                        root_ss = ET.fromstring(zf.read("xl/sharedStrings.xml"))
+                        for si in root_ss.iter():
+                            if si.tag.endswith("}si") or si.tag == "si":
+                                txt = "".join(t.text or "" for t in si.iter() if t.tag.endswith("}t") or t.tag == "t")
+                                shared.append(txt)
+                    sheet_names = sorted(n for n in zf.namelist() if n.startswith("xl/worksheets/sheet") and n.endswith(".xml"))
+                    if sheet_names:
+                        root_sh = ET.fromstring(zf.read(sheet_names[0]))
+                        rows_out: list[list[str]] = []
+                        for row_el in root_sh.iter():
+                            if row_el.tag.endswith("}row") or row_el.tag == "row":
+                                row_vals: list[str] = []
+                                for c_el in row_el:
+                                    t_attr = c_el.attrib.get("t", "")
+                                    v_txt = ""
+                                    for ch in c_el.iter():
+                                        if (ch.tag.endswith("}v") or ch.tag == "v" or ch.tag.endswith("}t") or ch.tag == "t") and ch.text:
+                                            v_txt += ch.text
+                                    if t_attr == "s" and v_txt.isdigit() and int(v_txt) < len(shared):
+                                        v_txt = shared[int(v_txt)]
+                                    row_vals.append(v_txt.strip())
+                                if any(row_vals):
+                                    rows_out.append(row_vals)
+                        if rows_out:
+                            return rows_out
+            except Exception:
+                pass
 
-    linhas = [ln for ln in texto.splitlines() if ln.strip()]
+        # Decodifica texto para HTML (.xls) ou CSV/TXT
+        texto = None
+        for enc in ("utf-8-sig", "utf-8", "latin-1", "cp1252"):
+            try:
+                texto = raw_bytes.decode(enc)
+                break
+            except UnicodeDecodeError:
+                continue
+        if texto is None:
+            texto = raw_bytes.decode("latin-1", errors="replace")
+
+        # 2. XLS em formato HTML (comum no Itaú)
+        if "<table" in texto.lower() and "<tr" in texto.lower():
+            class _TblParser(HTMLParser):
+                def __init__(self):
+                    super().__init__()
+                    self.rows: list[list[str]] = []
+                    self.cur_row: list[str] = []
+                    self.cur_cell: list[str] = []
+                    self.in_cell = False
+
+                def handle_starttag(self, tag, attrs):
+                    if tag in ("tr",):
+                        self.cur_row = []
+                    elif tag in ("td", "th"):
+                        self.in_cell = True
+                        self.cur_cell = []
+
+                def handle_endtag(self, tag):
+                    if tag in ("td", "th") and self.in_cell:
+                        self.cur_row.append("".join(self.cur_cell).strip())
+                        self.in_cell = False
+                    elif tag == "tr" and self.cur_row:
+                        self.rows.append(self.cur_row)
+
+                def handle_data(self, data):
+                    if self.in_cell:
+                        self.cur_cell.append(data)
+
+            p = _TblParser()
+            p.feed(texto)
+            if p.rows:
+                return p.rows
+
+        # 3. CSV / TXT
+        linhas_txt = [ln for ln in texto.splitlines() if ln.strip()]
+        delim = ";" if any(ln.count(";") > ln.count(",") for ln in linhas_txt[:15]) else ","
+        return list(csv.reader(linhas_txt, delimiter=delim))
+
+    rows_tab = _ler_linhas_tabular(raw)
     idx_header = None
-    delim = ","
-    for i, ln in enumerate(linhas):
-        low = ln.lower()
-        if ("nome do funcion" in low or "favorecido" in low) and "dados da conta" in low:
+    headers_norm: list[str] = []
+    for i, r in enumerate(rows_tab):
+        low_cells = [c.strip().lower() for c in r]
+        joined = " ".join(low_cells)
+        if ("nome do funcion" in joined or "favorecido" in joined) and "dados da conta" in joined:
             idx_header = i
-            delim = ";" if ln.count(";") > ln.count(",") else ","
+            headers_norm = low_cells
             break
 
     if idx_header is None:
         raise HTTPException(
             status_code=422,
-            detail="Cabeçalho 'nome do funcionário, CPF, dados da conta' não encontrado no CSV.",
+            detail="Cabeçalho 'nome do funcionário, CPF, dados da conta' não encontrado no arquivo (use CSV, TXT ou XLSX exportado do Itaú).",
         )
 
-    reader = csv.DictReader(linhas[idx_header:], delimiter=delim)
+    registros = []
+    for r in rows_tab[idx_header + 1:]:
+        norm_row = {headers_norm[j]: (r[j].strip() if j < len(r) else "") for j in range(len(headers_norm))}
+        registros.append(norm_row)
+
     importados = 0
     atualizados = 0
     titulos_vinculados = 0
 
-    for row in reader:
-        norm_row = {(k or "").strip().lower(): (v or "").strip() for k, v in row.items()}
+    for norm_row in registros:
         nome = (
             norm_row.get("nome do funcionário")
             or norm_row.get("nome do funcionario")
