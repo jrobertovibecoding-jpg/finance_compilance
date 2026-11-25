@@ -2267,17 +2267,23 @@ def _carregar_candidatos_remessa(
 
     titulos_db = q.order_by(Titulo.dt_vencimento.asc(), Titulo.favorecido_nome.asc()).all()
 
-    # Mapa de chave PIX do fornecedor como fallback quando o título não tem pix_chave próprio
-    forn_ids = [t.fornecedor_id for t in titulos_db if t.fornecedor_id]
-    forn_pix_map: dict[str, str] = {}
-    if forn_ids:
-        for f in db.query(Fornecedor).filter(Fornecedor.tenant_id == tenant_id, Fornecedor.id.in_(forn_ids)).all():
-            if f.pix_chave:
-                forn_pix_map[f.id] = f.pix_chave.strip()
+    # Mapa de fornecedores/colaboradores (Chave PIX + Dados Bancários) por ID, CPF/CNPJ ou Nome
+    forn_all = db.query(Fornecedor).filter(Fornecedor.tenant_id == tenant_id).all()
+    forn_by_id = {f.id: f for f in forn_all}
+    forn_by_doc = {limpar_documento(f.cnpj_cpf): f for f in forn_all if f.cnpj_cpf}
+    forn_by_nome = {f.razao_social.strip().upper(): f for f in forn_all if f.razao_social}
 
     candidatos = []
     for t in titulos_db:
-        pix_final = (t.pix_chave or "").strip() or forn_pix_map.get(t.fornecedor_id or "", "")
+        forn_obj = (
+            forn_by_id.get(t.fornecedor_id or "")
+            or forn_by_doc.get(limpar_documento(t.favorecido_doc or ""))
+            or forn_by_nome.get((t.favorecido_nome or "").strip().upper())
+        )
+        pix_final = (t.pix_chave or "").strip() or (forn_obj.pix_chave.strip() if forn_obj and forn_obj.pix_chave else "")
+        dados_banco_final = (forn_obj.dados_banco.strip() if forn_obj and forn_obj.dados_banco else "")
+        forn_tipo = (forn_obj.tipo if forn_obj else "") or ""
+        doc_final = (t.favorecido_doc or "").strip() or (forn_obj.cnpj_cpf if forn_obj and forn_obj.cnpj_cpf else "")
         candidatos.append({
             "id": t.id,
             "db_id": t.id,
@@ -2285,13 +2291,15 @@ def _carregar_candidatos_remessa(
             "numero_doc": t.numero_documento,
             "numero_tx": t.numero_tx,
             "fornecedor": t.favorecido_nome,
-            "favorecido_doc": t.favorecido_doc or "",
+            "fornecedor_tipo": forn_tipo,
+            "favorecido_doc": doc_final,
             "dt_vencimento": t.dt_vencimento.isoformat(),
             "valor_liquido": str(to_dec(t.valor_liquido)),
             "valor_bruto": str(to_dec(t.valor_bruto)),
             "forma_pgto": t.forma_pgto or "",
             "cod_barras": t.cod_barras or "",
             "pix_chave": pix_final,
+            "dados_banco": dados_banco_final,
         })
     return candidatos
 
@@ -2443,6 +2451,7 @@ def compat_preview_remessa_multibanco(
         "BOLETO_OUTRO_BANCO": "Boletos Outros Bancos",
         "ARRECADACAO": "Concessionárias / Tributos (Seg. O)",
         "PIX_CHAVE": "PIX Transferência por Chave (Seg. A+B)",
+        "FOLHA_CREDITO_CC": "Folha Pagamento Crédito C/C (Seg. A+B)",
     }
     validos_out = []
     total_val = 0.0
@@ -2557,3 +2566,133 @@ def compat_gerar_remessa_multibanco(
             "Access-Control-Expose-Headers": "Content-Disposition",
         },
     )
+
+
+@router.post("/fornecedores/importar-favorecidos-itau")
+async def compat_importar_favorecidos_itau(
+    request: Request,
+    file: UploadFile = File(...),
+    ctx: TenantContext = Depends(require_v2_roles("OWNER", "DIRETOR_APROVADOR", "FINANCEIRO")),
+    db: Session = Depends(get_db),
+):
+    import csv
+
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=422, detail="Arquivo CSV vazio.")
+
+    texto = None
+    for enc in ("utf-8-sig", "utf-8", "latin-1", "cp1252"):
+        try:
+            texto = raw.decode(enc)
+            break
+        except UnicodeDecodeError:
+            continue
+    if texto is None:
+        texto = raw.decode("latin-1", errors="replace")
+
+    linhas = [ln for ln in texto.splitlines() if ln.strip()]
+    idx_header = None
+    delim = ","
+    for i, ln in enumerate(linhas):
+        low = ln.lower()
+        if ("nome do funcion" in low or "favorecido" in low) and "dados da conta" in low:
+            idx_header = i
+            delim = ";" if ln.count(";") > ln.count(",") else ","
+            break
+
+    if idx_header is None:
+        raise HTTPException(
+            status_code=422,
+            detail="Cabeçalho 'nome do funcionário, CPF, dados da conta' não encontrado no CSV.",
+        )
+
+    reader = csv.DictReader(linhas[idx_header:], delimiter=delim)
+    importados = 0
+    atualizados = 0
+    titulos_vinculados = 0
+
+    for row in reader:
+        norm_row = {(k or "").strip().lower(): (v or "").strip() for k, v in row.items()}
+        nome = (
+            norm_row.get("nome do funcionário")
+            or norm_row.get("nome do funcionario")
+            or norm_row.get("favorecido")
+            or ""
+        ).strip()
+        cpf = limpar_documento(norm_row.get("cpf") or norm_row.get("cpf/cnpj") or "")
+        dados_conta = norm_row.get("dados da conta") or ""
+        if not nome or not dados_conta:
+            continue
+
+        forn = None
+        if cpf:
+            forn = (
+                db.query(Fornecedor)
+                .filter(Fornecedor.tenant_id == ctx.tenant_id, Fornecedor.cnpj_cpf == cpf)
+                .first()
+            )
+        if not forn:
+            forn = (
+                db.query(Fornecedor)
+                .filter(Fornecedor.tenant_id == ctx.tenant_id, func.lower(Fornecedor.razao_social) == nome.lower())
+                .first()
+            )
+
+        if forn:
+            forn.tipo = "COLABORADOR"
+            forn.dados_banco = dados_conta[:120]
+            if not forn.forma_pgto_padrao:
+                forn.forma_pgto_padrao = "FOLHA ITAÚ (C/C)"
+            if cpf and not forn.cnpj_cpf:
+                forn.cnpj_cpf = cpf
+            atualizados += 1
+        else:
+            forn = Fornecedor(
+                tenant_id=ctx.tenant_id,
+                razao_social=nome.upper()[:200],
+                nome_fantasia=nome.upper()[:200],
+                cnpj_cpf=cpf or None,
+                tipo="COLABORADOR",
+                forma_pgto_padrao="FOLHA ITAÚ (C/C)",
+                dados_banco=dados_conta[:120],
+                ativo=True,
+            )
+            db.add(forn)
+            db.flush()
+            importados += 1
+
+        # Vincula títulos em aberto do colaborador que ainda estejam sem fornecedor_id ou CPF
+        tits = (
+            db.query(Titulo)
+            .filter(
+                Titulo.tenant_id == ctx.tenant_id,
+                Titulo.conciliado.is_(False),
+                func.lower(Titulo.favorecido_nome) == nome.lower(),
+            )
+            .all()
+        )
+        for t in tits:
+            if not t.fornecedor_id:
+                t.fornecedor_id = forn.id
+            if cpf and not t.favorecido_doc:
+                t.favorecido_doc = cpf
+            titulos_vinculados += 1
+
+    registrar_audit_v2(
+        db,
+        ctx.tenant_id,
+        ctx.usuario,
+        "IMPORTAR_FAVORECIDOS_ITAU",
+        "fornecedores",
+        file.filename or "itau_funcionarios.csv",
+        dados_depois={"importados": importados, "atualizados": atualizados, "titulos_vinculados": titulos_vinculados},
+        ip=extrair_ip(request),
+    )
+    db.commit()
+    return {
+        "success": True,
+        "importados": importados,
+        "atualizados": atualizados,
+        "titulos_vinculados": titulos_vinculados,
+    }

@@ -243,6 +243,52 @@ def detectar_tipo_chave_pix(chave: Optional[str]) -> tuple[str, str]:
     return "", ""
 
 
+def parse_dados_conta_bancaria(dados_banco: Optional[str], banco_padrao: str = "341") -> Optional[dict[str, str]]:
+    """
+    Extrai banco, agência, conta e DAC de strings como:
+      - 'ag: 0334 c/c: 81270-8'
+      - '341 | 0334 | 81270-8'
+      - 'banco: 341 ag: 0334 cc: 81270-8'
+    Retorna {'banco': '341', 'agencia': '0334', 'conta': '81270', 'dac': '8'} ou None.
+    """
+    if not dados_banco:
+        return None
+    txt = str(dados_banco).strip()
+    if not txt:
+        return None
+
+    m_banco = re.search(r"banco\s*[:\-]?\s*(\d{3})", txt, re.IGNORECASE)
+    banco = m_banco.group(1) if m_banco else re.sub(r"\D", "", banco_padrao or "341").zfill(3)[-3:]
+
+    m_ag_cc = re.search(
+        r"ag(?:[êe]ncia)?\s*[:\-]?\s*(\d{1,5}).*?(?:c/c|cc|conta)\s*[:\-]?\s*(\d{1,12})\s*[- ]?\s*(\d|x)?",
+        txt,
+        re.IGNORECASE,
+    )
+    if m_ag_cc:
+        ag = m_ag_cc.group(1)
+        cc = m_ag_cc.group(2)
+        dac = (m_ag_cc.group(3) or "0").upper()
+        return {"banco": banco, "agencia": ag, "conta": cc, "dac": dac}
+
+    # Fallback: formato separado por pipe "341|0334|81270-8"
+    parts = [p.strip() for p in re.split(r"[|;]", txt) if p.strip()]
+    if len(parts) >= 3 and re.sub(r"\D", "", parts[0]):
+        b = re.sub(r"\D", "", parts[0]).zfill(3)[-3:]
+        ag = re.sub(r"\D", "", parts[1])
+        cc_raw = parts[2]
+        if "-" in cc_raw:
+            cc, dac = cc_raw.split("-", 1)
+        else:
+            cc, dac = cc_raw[:-1], cc_raw[-1:]
+        cc = re.sub(r"\D", "", cc)
+        dac = re.sub(r"[^0-9Xx]", "", dac).upper() or "0"
+        if ag and cc:
+            return {"banco": b, "agencia": ag, "conta": cc, "dac": dac}
+
+    return None
+
+
 def _para_centavos(valor) -> int:
     dec = Decimal(str(valor or "0")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     if dec < Decimal("0.00"):
@@ -312,6 +358,7 @@ def classificar_titulos_cnab(
         forma = str(tit.get("forma_pgto") or "").upper()
         pix_raw = tit.get("pix_chave") or ""
         pix_tipo, pix_chave = detectar_tipo_chave_pix(pix_raw)
+        conta_fav = parse_dados_conta_bancaria(tit.get("dados_banco"), banco_padrao=cod_pagador)
 
         item = dict(tit)
         item["_valor_centavos"] = centavos
@@ -327,7 +374,18 @@ def classificar_titulos_cnab(
             item["_codigo_barras_44"] = barras
             item["_identificador_pgto"] = f"Boleto Banco {banco_boleto}"
             validos.append(item)
-        elif pix_tipo and (forma in ("PIX", "", "TED", "TRANSFERENCIA", "TRANSFERÊNCIA") or not linha_dig):
+        elif conta_fav and (
+            tit.get("fornecedor_tipo") == "COLABORADOR"
+            or "FOLHA" in forma
+            or "SALARIO" in forma
+            or "TRANSFER" in forma
+            or (not pix_tipo and not linha_dig)
+        ):
+            item["_tipo_lote"] = "FOLHA_CREDITO_CC"
+            item["_conta_fav"] = conta_fav
+            item["_identificador_pgto"] = f"Folha C/C {conta_fav['banco']} Ag {conta_fav['agencia']} Cc {conta_fav['conta']}-{conta_fav['dac']}"
+            validos.append(item)
+        elif pix_tipo and (forma in ("PIX", "", "TED", "TRANSFERENCIA", "TRANSFERÊNCIA") or "PIX" in forma or not linha_dig):
             item["_tipo_lote"] = "PIX_CHAVE"
             item["_pix_tipo"] = pix_tipo
             item["_pix_chave"] = pix_chave
@@ -339,7 +397,7 @@ def classificar_titulos_cnab(
             elif forma in ("DARF", "DAS", "DAM", "DARE", "GNRE", "FGTS", "GPS", "GUIA"):
                 motivo = "Falta código de barras da guia (48 dígitos)"
             else:
-                motivo = "Falta código de barras/linha digitável (47 ou 48 dígitos) ou Chave PIX"
+                motivo = "Falta código de barras (47/48 dígitos), Chave PIX ou Conta Itaú (ag/cc)"
             rejeitados.append({
                 "id": tit.get("id"),
                 "numero_doc": tit.get("numero_nf") or tit.get("numero_doc") or "-",
@@ -494,6 +552,7 @@ def gerar_cnab240_multibanco(
         ("BOLETO_OUTRO_BANCO", "20", "31", perfil["versao_lote_j"], "Boletos Outros Bancos (J+J52)"),
         ("ARRECADACAO",        "22", "11", perfil["versao_lote_o"], "Tributos e Concessionárias (O)"),
         ("PIX_CHAVE",          "20", "45", perfil["versao_lote_a"], "PIX Transferência por Chave (A+B)"),
+        ("FOLHA_CREDITO_CC",   "30", "01", perfil["versao_lote_a"], "Folha Pagamento Crédito C/C (A+B)"),
     ]
 
     num_lote = 0
@@ -658,6 +717,63 @@ def gerar_cnab240_multibanco(
                     + ("0" * 8)                                   # 233-240 ISPB (opcional com chave)
                 )
                 _anexar_linha(linhas, seg_b, f"Lote {num_lote} Seg B-PIX #{seq}")
+
+            elif chave_grupo == "FOLHA_CREDITO_CC":
+                cf = tit["_conta_fav"]
+                seq += 1
+                seg_a = (
+                    formatar_campo(cod_banco, 3, "9")         # 001-003 Banco
+                    + formatar_campo(num_lote, 4, "9")        # 004-007 Lote
+                    + "3"                                     # 008     Tipo Registro
+                    + formatar_campo(seq, 5, "9")             # 009-013 Sequencial
+                    + "A"                                     # 014     Segmento A
+                    + "0"                                     # 015     Tipo Movimento
+                    + "00"                                    # 016-017 Código Instrução
+                    + "000"                                   # 018-020 Câmara (000=Crédito em Conta)
+                    + formatar_campo(cf["banco"], 3, "9")     # 021-023 Banco Favorecido
+                    + formatar_campo(cf["agencia"], 5, "9")   # 024-028 Agência Favorecido
+                    + " "                                     # 029     DV Agência
+                    + formatar_campo(cf["conta"], 12, "9")    # 030-041 Conta Favorecido
+                    + " "                                     # 042     DV Conta
+                    + formatar_campo(cf["dac"], 1, "X")       # 043     DAC Conta
+                    + formatar_campo(favorecido, 30, "X")     # 044-073 Nome Favorecido
+                    + formatar_campo(num_doc, 20, "X")        # 074-093 Seu Número
+                    + formatar_campo(dt_pgto_str, 8, "9")     # 094-101 Data Pagamento
+                    + "BRL"                                   # 102-104 Moeda
+                    + ("0" * 15)                              # 105-119 Qtde Moeda
+                    + formatar_campo(centavos, 15, "9")       # 120-134 Valor Pagamento
+                    + (" " * 20)                              # 135-154 Nosso Número
+                    + ("0" * 8)                               # 155-162 Data Real
+                    + ("0" * 15)                              # 163-177 Valor Real
+                    + (" " * 40)                              # 178-217 Finalidade / Info 2
+                    + "  "                                    # 218-219 Finalidade DOC
+                    + "     "                                 # 220-224 Finalidade TED
+                    + "  "                                    # 225-226 Complemento
+                    + "   "                                   # 227-229 CNAB
+                    + "0"                                     # 230     Aviso
+                    + (" " * 10)                              # 231-240 Ocorrências
+                )
+                _anexar_linha(linhas, seg_a, f"Lote {num_lote} Seg A-Folha #{seq}")
+
+                seq += 1
+                seg_b = (
+                    formatar_campo(cod_banco, 3, "9")         # 001-003 Banco
+                    + formatar_campo(num_lote, 4, "9")        # 004-007 Lote
+                    + "3"                                     # 008     Tipo Registro
+                    + formatar_campo(seq, 5, "9")             # 009-013 Sequencial
+                    + "B"                                     # 014     Segmento B
+                    + "   "                                   # 015-017 Brancos
+                    + fav_tipo_insc                           # 018     Tipo Inscrição (1=CPF)
+                    + formatar_campo(fav_doc, 14, "9")        # 019-032 CPF Favorecido
+                    + (" " * 95)                              # 033-127 Endereço/Bairro/Cidade
+                    + ("0" * 8)                               # 128-135 CEP
+                    + "  "                                    # 136-137 UF
+                    + formatar_campo(dt_venc_str, 8, "9")     # 138-145 Data Vencimento
+                    + formatar_campo(centavos, 15, "9")       # 146-160 Valor Documento
+                    + ("0" * 60)                              # 161-220 Abatimento/Desconto/Mora/Multa
+                    + (" " * 20)                              # 221-240 Código/Documento/CNAB
+                )
+                _anexar_linha(linhas, seg_b, f"Lote {num_lote} Seg B-Folha #{seq}")
 
         _anexar_linha(
             linhas,

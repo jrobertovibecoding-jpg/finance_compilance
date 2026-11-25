@@ -3330,6 +3330,8 @@
         <div style="display: flex; gap: 5px;">
           <select id="rem-conta-select" onchange="atualizarPreviewRemessa()" style="flex: 1; padding: 6px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; font-weight: 600;"></select>
           <button type="button" class="tool-btn" onclick="toggleFormNovaContaRemessa()" style="font-size: 11px; padding: 5px 9px; white-space: nowrap;">+ Nova Conta</button>
+          <input type="file" id="input-csv-funcionarios-itau" accept=".csv,.txt" style="display: none;" onchange="importarCsvFuncionariosItau(event)">
+          <button type="button" class="tool-btn" onclick="document.getElementById('input-csv-funcionarios-itau').click()" style="font-size: 11px; padding: 5px 9px; white-space: nowrap; background: #ecfdf5; border-color: #10b981; color: #065f46; font-weight: 700;" title="Importar planilha CSV de funcionários cadastrados no Itaú (agência e conta)">📥 Importar CSV Itaú (Folha)</button>
         </div>
       </div>
       <div style="width: 155px;">
@@ -16002,6 +16004,32 @@
     const box = document.getElementById('rem-form-nova-conta');
     if (!box) return;
     box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  }
+
+  async function importarCsvFuncionariosItau(event) {
+    const file = event?.target?.files?.[0];
+    if (!file) return;
+    const statusEl = document.getElementById('rem-status-msg');
+    if (statusEl) statusEl.textContent = 'Importando funcionários e contas Itaú...';
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const resp = await apiFetch(`${API_BASE}/fornecedores/importar-favorecidos-itau`, {
+        method: 'POST',
+        body: fd,
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(data.detail || 'Erro ao importar CSV Itaú');
+      if (statusEl) {
+        statusEl.textContent = `✅ CSV Itaú importado: ${data.importados} novo(s), ${data.atualizados} atualizado(s), ${data.titulos_vinculados} título(s) vinculado(s)!`;
+      }
+      await atualizarPreviewRemessa();
+    } catch (e) {
+      if (statusEl) statusEl.textContent = `❌ ${e.message}`;
+      alert('Erro ao importar CSV Itaú: ' + e.message);
+    } finally {
+      if (event?.target) event.target.value = '';
+    }
   }
 
   async function carregarContasRemessa() {
