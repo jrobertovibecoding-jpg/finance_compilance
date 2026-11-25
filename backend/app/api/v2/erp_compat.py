@@ -2268,17 +2268,24 @@ def _carregar_candidatos_remessa(
     titulos_db = q.order_by(Titulo.dt_vencimento.asc(), Titulo.favorecido_nome.asc()).all()
 
     # Mapa de fornecedores/colaboradores (Chave PIX + Dados Bancários) por ID, CPF/CNPJ ou Nome
+    def _norm_nome_chave(s: str) -> str:
+        import unicodedata
+        nfkd = unicodedata.normalize("NFKD", str(s or ""))
+        sem = "".join(c for c in nfkd if not unicodedata.combining(c))
+        toks = [t for t in re.sub(r"[^A-Za-z0-9\s]", " ", sem).upper().split() if t not in {"DE", "DA", "DO", "DOS", "DAS"}]
+        return " ".join(toks)
+
     forn_all = db.query(Fornecedor).filter(Fornecedor.tenant_id == tenant_id).all()
     forn_by_id = {f.id: f for f in forn_all}
     forn_by_doc = {limpar_documento(f.cnpj_cpf): f for f in forn_all if f.cnpj_cpf}
-    forn_by_nome = {f.razao_social.strip().upper(): f for f in forn_all if f.razao_social}
+    forn_by_nome = {_norm_nome_chave(f.razao_social): f for f in forn_all if f.razao_social}
 
     candidatos = []
     for t in titulos_db:
         forn_obj = (
             forn_by_id.get(t.fornecedor_id or "")
             or forn_by_doc.get(limpar_documento(t.favorecido_doc or ""))
-            or forn_by_nome.get((t.favorecido_nome or "").strip().upper())
+            or forn_by_nome.get(_norm_nome_chave(t.favorecido_nome or ""))
         )
         pix_final = (t.pix_chave or "").strip() or (forn_obj.pix_chave.strip() if forn_obj and forn_obj.pix_chave else "")
         dados_banco_final = (forn_obj.dados_banco.strip() if forn_obj and forn_obj.dados_banco else "")
@@ -2585,6 +2592,11 @@ async def compat_importar_favorecidos_itau(
         raise HTTPException(status_code=422, detail="Arquivo vazio.")
 
     def _ler_linhas_tabular(raw_bytes: bytes) -> list[list[str]]:
+        if raw_bytes[:4] == b"\xd0\xcf\x11\xe0":
+            raise HTTPException(
+                status_code=422,
+                detail="Este arquivo está no formato Excel antigo (.xls binário). Abra no Excel e clique em 'Salvar como' -> .xlsx ou .csv para importar.",
+            )
         # 1. XLSX (ZIP OOXML) usando apenas stdlib
         if raw_bytes[:2] == b"PK":
             try:

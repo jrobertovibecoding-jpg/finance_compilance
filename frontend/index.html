@@ -16019,10 +16019,12 @@
         body: fd,
       });
       const data = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(data.detail || 'Erro ao importar CSV Itaú');
+      if (!resp.ok) throw new Error(data.detail || 'Erro ao importar arquivo Itaú');
+      const msg = `✅ Planilha Itaú importada!\n\n• Novos colaboradores: ${data.importados || 0}\n• Atualizados: ${data.atualizados || 0}\n• Títulos em aberto vinculados: ${data.titulos_vinculados || 0}`;
       if (statusEl) {
-        statusEl.textContent = `✅ CSV Itaú importado: ${data.importados} novo(s), ${data.atualizados} atualizado(s), ${data.titulos_vinculados} título(s) vinculado(s)!`;
+        statusEl.textContent = `✅ Itaú: ${data.importados || 0} novo(s), ${data.atualizados || 0} atualizado(s), ${data.titulos_vinculados || 0} título(s) vinculado(s)!`;
       }
+      alert(msg);
       await atualizarPreviewRemessa();
     } catch (e) {
       if (statusEl) statusEl.textContent = `❌ ${e.message}`;
