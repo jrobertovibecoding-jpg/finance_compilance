@@ -2352,6 +2352,9 @@
           <button class="btn-filtro-rapido" id="btn-rel-faccao" onclick="selecionarRelatorioBimer('faccao')" style="padding: 6px 12px; font-weight: 700; font-size: 11px;">
             <svg class="bimer-svg" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg> F) Facção &amp; Produção (CMV)
           </button>
+          <button class="btn-filtro-rapido" id="btn-rel-raiox" onclick="selecionarRelatorioBimer('raiox')" style="padding: 6px 12px; font-weight: 700; font-size: 11px;">
+            <svg class="bimer-svg" viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg> G) Raio-X de Consumo &amp; Ofensores
+          </button>
         </div>
 
         <!-- BARRA DE FILTROS ESPECÍFICOS & BOTÕES DE AÇÃO -->
@@ -2414,6 +2417,19 @@
               <div>
                 <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Buscar Peça / Modelo / Remessa:</label>
                 <input type="text" id="rel-filtro-fac-busca" oninput="renderizarRelatorioAtual()" placeholder="Ex: Tereza, Loreta, 54711..." style="padding: 4px 8px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 3px; min-width: 185px; color: #090d16;">
+              </div>
+            </div>
+
+            <div id="rel-filtro-raiox-box" style="display: none; gap: 6px; align-items: flex-end; flex-wrap: wrap;">
+              <div>
+                <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Zoom de Consumo (Onde a torneira está aberta):</label>
+                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                  <button type="button" class="tool-btn raiox-zoom-btn" data-zoom="TODOS" onclick="definirZoomRaioX('TODOS')" style="padding: 4px 9px; font-size: 10.5px; font-weight: 700; background: #0f172a; color: #fff; border-color: #0f172a;">Visão Geral</button>
+                  <button type="button" class="tool-btn raiox-zoom-btn" data-zoom="OPERACIONAL" onclick="definirZoomRaioX('OPERACIONAL')" style="padding: 4px 9px; font-size: 10.5px;">Escritório, Manut. &amp; Limpeza</button>
+                  <button type="button" class="tool-btn raiox-zoom-btn" data-zoom="PRODUCAO" onclick="definirZoomRaioX('PRODUCAO')" style="padding: 4px 9px; font-size: 10.5px;">Produção (Tecidos/Facção)</button>
+                  <button type="button" class="tool-btn raiox-zoom-btn" data-zoom="OCUPACAO" onclick="definirZoomRaioX('OCUPACAO')" style="padding: 4px 9px; font-size: 10.5px;">Ocupação (Aluguel/Luz/Net)</button>
+                  <button type="button" class="tool-btn raiox-zoom-btn" data-zoom="FRETES" onclick="definirZoomRaioX('FRETES')" style="padding: 4px 9px; font-size: 10.5px;">Fretes &amp; Logística</button>
+                </div>
               </div>
             </div>
           </div>
@@ -12557,7 +12573,8 @@
       'ccusto': 'btn-rel-ccusto',
       'fluxo': 'btn-rel-fluxo',
       'itens': 'btn-rel-itens',
-      'faccao': 'btn-rel-faccao'
+      'faccao': 'btn-rel-faccao',
+      'raiox': 'btn-rel-raiox'
     };
     const activeBtn = document.getElementById(btnMap[tipo]);
     if (activeBtn) activeBtn.classList.add('active');
@@ -12567,10 +12584,12 @@
     const boxCcusto = document.getElementById('rel-filtro-ccusto-box');
     const boxItem = document.getElementById('rel-filtro-item-box');
     const boxFaccao = document.getElementById('rel-filtro-faccao-box');
-    if (boxStatus) boxStatus.style.display = (tipo === 'vencimento' || tipo === 'retencoes' || tipo === 'faccao') ? 'block' : 'none';
+    const boxRaiox = document.getElementById('rel-filtro-raiox-box');
+    if (boxStatus) boxStatus.style.display = (tipo === 'vencimento' || tipo === 'retencoes' || tipo === 'faccao' || tipo === 'raiox') ? 'block' : 'none';
     if (boxCcusto) boxCcusto.style.display = (tipo === 'vencimento' || tipo === 'ccusto') ? 'block' : 'none';
     if (boxItem) boxItem.style.display = (tipo === 'itens') ? 'block' : 'none';
     if (boxFaccao) boxFaccao.style.display = (tipo === 'faccao') ? 'flex' : 'none';
+    if (boxRaiox) boxRaiox.style.display = (tipo === 'raiox') ? 'flex' : 'none';
 
     renderizarRelatorioAtual();
     atualizarBarraRodape();
@@ -12592,6 +12611,8 @@
       container.innerHTML = gerarHtmlRelatorioItensNF();
     } else if (relatorioAtivo === 'faccao') {
       container.innerHTML = gerarHtmlRelatorioFaccao();
+    } else if (relatorioAtivo === 'raiox') {
+      container.innerHTML = gerarHtmlRelatorioRaioX();
     }
   }
 
@@ -13692,6 +13713,262 @@
         </tbody>
       </table>
     `;
+    return html;
+  }
+
+  let _raioxZoomAtual = 'TODOS';
+
+  function definirZoomRaioX(modo) {
+    _raioxZoomAtual = modo || 'TODOS';
+    document.querySelectorAll('.raiox-zoom-btn').forEach(btn => {
+      const ativo = btn.dataset.zoom === _raioxZoomAtual;
+      btn.style.background = ativo ? '#0f172a' : '';
+      btn.style.color = ativo ? '#ffffff' : '';
+      btn.style.borderColor = ativo ? '#0f172a' : '';
+      btn.style.fontWeight = ativo ? '700' : '600';
+    });
+    renderizarRelatorioAtual();
+  }
+
+  function _classificarZoomRaioX(t) {
+    const cc = String(t.ccusto || '').toLowerCase();
+    const desc = String(t.descricao || t.historico || '').toLowerCase();
+    const txt = `${cc} ${desc}`;
+    const tipo = String(t.tipo_doc || '').toUpperCase();
+    const cfop = String(t.cod_operacao || '').replace(/\D/g, '');
+
+    if (tipo === 'CTE' || cfop.startsWith('135') || cfop.startsWith('235') || /frete|transport|correio|motoboy|logistica|envio/.test(txt)) {
+      return 'FRETES';
+    }
+    if (/tecido|aviamento|faccionista|faccao|malha|confeccao|bordado|estamparia|modelagem|piloto|12101|12102|12111/.test(txt)) {
+      return 'PRODUCAO';
+    }
+    if (/aluguel|condominio|energia|coelba|agua|embasa|internet|telefone|iptu|fpp|locacao|ocupacao/.test(txt)) {
+      return 'OCUPACAO';
+    }
+    if (/escritorio|papel|limpeza|manutencao|predial|copa|cafe|higiene|descartavel|informatica|toner|cartucho|material|conservacao|reparo|jardim|seguranca|sistema|software|21204|21501/.test(txt)) {
+      return 'OPERACIONAL';
+    }
+    return 'OUTROS';
+  }
+
+  function gerarHtmlRelatorioRaioX() {
+    const { dataIni, dataFim, status } = obterFiltrosRelatorio();
+    const labelsZoom = {
+      TODOS: 'Visão Geral (Todas as Despesas)',
+      OPERACIONAL: 'Gastos Operacionais & Formiguinha (Escritório, Manutenção, Limpeza e Sistemas)',
+      PRODUCAO: 'Produção (Tecidos, Aviamentos & Facção)',
+      OCUPACAO: 'Ocupação & Fixos (Aluguel, Condomínio, Energia, Água e Internet)',
+      FRETES: 'Fretes & Logística (CT-e e Transportadoras)'
+    };
+
+    const filtrados = (titulos || []).filter(t => {
+      if (t.tipo === 'IMPOSTO' || String(t.id || '').startsWith('IMP_')) return false;
+      const dt = (t.vencimento || t.data_emissao || '').slice(0, 10);
+      if (dt && (dt < dataIni || dt > dataFim)) return false;
+      const isConc = t.situacao === 'CONCILIADO' || t.status === 'CONCILIADO';
+      if (status === 'ABERTO' && isConc) return false;
+      if (status === 'CONCILIADO' && !isConc) return false;
+      if (_raioxZoomAtual !== 'TODOS' && _classificarZoomRaioX(t) !== _raioxZoomAtual) return false;
+      return true;
+    });
+
+    const totalGeral = filtrados.reduce((acc, t) => acc + Number(t.valor || 0), 0);
+    const ticketMedio = filtrados.length > 0 ? (totalGeral / filtrados.length) : 0;
+
+    // Agrupa por Categoria
+    const mapCat = {};
+    const mapForn = {};
+    filtrados.forEach(t => {
+      const cat = t.ccusto || 'Sem Categoria';
+      const forn = t.favorecido || 'Não Informado';
+      const val = Number(t.valor || 0);
+      if (!mapCat[cat]) mapCat[cat] = { nome: cat, total: 0, qtd: 0 };
+      mapCat[cat].total += val;
+      mapCat[cat].qtd += 1;
+
+      if (!mapForn[forn]) mapForn[forn] = { nome: forn, catPrincipal: cat, total: 0, qtd: 0 };
+      mapForn[forn].total += val;
+      mapForn[forn].qtd += 1;
+    });
+
+    const listaCats = Object.values(mapCat).sort((a, b) => b.total - a.total);
+    const listaForns = Object.values(mapForn).sort((a, b) => b.total - a.total);
+    const fornMaisFreq = [...listaForns].sort((a, b) => b.qtd - a.qtd || b.total - a.total)[0];
+    const top1Cat = listaCats[0];
+    const somaTop3 = listaCats.slice(0, 3).reduce((acc, c) => acc + c.total, 0);
+    const pctTop3 = totalGeral > 0 ? ((somaTop3 / totalGeral) * 100).toFixed(1) : '0.0';
+
+    let html = gerarCabecalhoRelatorio(
+      'RAIO-X DE CONSUMO DE CAIXA & OFENSORES (SPEND ANALYTICS)',
+      `${labelsZoom[_raioxZoomAtual] || labelsZoom.TODOS}`
+    );
+
+    html += `
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;">
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid #004b87; padding: 8px 12px; border-radius: 4px;">
+          <div style="font-size: 9.5px; font-weight: 800; color: #1e40af; text-transform: uppercase;">1. Total Consumido</div>
+          <div style="font-size: 15px; font-weight: 800; color: #004b87;">${formatarMoeda(totalGeral)}</div>
+          <div style="font-size: 9.5px; color: #1d4ed8;">${filtrados.length} lanç. • Ticket: <strong>${formatarMoeda(ticketMedio)}</strong></div>
+        </div>
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #dc2626; padding: 8px 12px; border-radius: 4px;">
+          <div style="font-size: 9.5px; font-weight: 800; color: #991b1b; text-transform: uppercase;">2. Maior Dreno de Caixa</div>
+          <div style="font-size: 12.5px; font-weight: 800; color: #b91c1c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(top1Cat?.nome || '-')}">${escapeHtml(top1Cat?.nome || '-')}</div>
+          <div style="font-size: 9.5px; color: #dc2626;">${top1Cat ? `${formatarMoeda(top1Cat.total)} (${totalGeral > 0 ? ((top1Cat.total / totalGeral) * 100).toFixed(1) : 0}%)` : '-'}</div>
+        </div>
+        <div style="background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #d97706; padding: 8px 12px; border-radius: 4px;">
+          <div style="font-size: 9.5px; font-weight: 800; color: #92400e; text-transform: uppercase;">3. Concentração Top 3</div>
+          <div style="font-size: 15px; font-weight: 800; color: #b45309;">${pctTop3}%</div>
+          <div style="font-size: 9.5px; color: #b45309;">${formatarMoeda(somaTop3)} em 3 categorias</div>
+        </div>
+        <div style="background: #f5f3ff; border: 1px solid #ddd6fe; border-left: 4px solid #6d28d9; padding: 8px 12px; border-radius: 4px;">
+          <div style="font-size: 9.5px; font-weight: 800; color: #4c1d95; text-transform: uppercase;">4. Maior Frequência</div>
+          <div style="font-size: 12px; font-weight: 800; color: #5b21b6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(fornMaisFreq?.nome || '-')}">${escapeHtml(fornMaisFreq?.nome || '-')}</div>
+          <div style="font-size: 9.5px; color: #6d28d9;">${fornMaisFreq ? `${fornMaisFreq.qtd}x no período (${formatarMoeda(fornMaisFreq.total)})` : '-'}</div>
+        </div>
+      </div>
+    `;
+
+    if (filtrados.length === 0) {
+      html += `<div style="text-align: center; padding: 36px; color: #334155; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px;">Nenhuma despesa encontrada para este filtro no período selecionado.</div>`;
+      return html;
+    }
+
+    // Gráfico de Rosca Vetorial SVG (Top 6 + Outros)
+    const cores = ['#004b87', '#0284c7', '#6d28d9', '#059669', '#d97706', '#dc2626', '#64748b'];
+    const fatias = listaCats.slice(0, 6).map((c, i) => ({ nome: c.nome, valor: c.total, cor: cores[i] }));
+    const restoValor = listaCats.slice(6).reduce((acc, c) => acc + c.total, 0);
+    if (restoValor > 0) fatias.push({ nome: 'Demais Categorias', valor: restoValor, cor: cores[6] });
+
+    const raio = 58;
+    const circ = 2 * Math.PI * raio;
+    let offsetAcum = 0;
+    const segmentosSvg = fatias.map(f => {
+      const frac = totalGeral > 0 ? (f.valor / totalGeral) : 0;
+      const dash = frac * circ;
+      const seg = `<circle cx="80" cy="80" r="${raio}" fill="transparent" stroke="${f.cor}" stroke-width="24" stroke-dasharray="${dash.toFixed(2)} ${(circ - dash).toFixed(2)}" stroke-dashoffset="${(-offsetAcum).toFixed(2)}" transform="rotate(-90 80 80)"></circle>`;
+      offsetAcum += dash;
+      return seg;
+    }).join('');
+
+    const legendaDonut = fatias.map(f => {
+      const p = totalGeral > 0 ? ((f.valor / totalGeral) * 100).toFixed(1) : '0.0';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:10px;padding:2px 0;border-bottom:1px solid #f1f5f9;">
+        <div style="display:flex;align-items:center;gap:6px;min-width:0;">
+          <span style="width:9px;height:9px;border-radius:2px;background:${f.cor};flex-shrink:0;"></span>
+          <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#0f172a;font-weight:600;">${escapeHtml(f.nome)}</span>
+        </div>
+        <span style="font-family:monospace;font-weight:700;color:#334155;white-space:nowrap;">${p}%</span>
+      </div>`;
+    }).join('');
+
+    // Barras Estilo "Uso de Bateria do Celular"
+    const maxCat = listaCats[0]?.total || 1;
+    const barrasBateria = listaCats.slice(0, 12).map((c, idx) => {
+      const pctTotal = totalGeral > 0 ? ((c.total / totalGeral) * 100) : 0;
+      const larguraBarra = Math.max(3, (c.total / maxCat) * 100);
+      const corBarra = cores[idx % cores.length];
+      return `
+        <div style="margin-bottom: 8px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:10.5px;margin-bottom:2px;">
+            <div>
+              <strong style="color:#0f172a;">${idx + 1}. ${escapeHtml(c.nome)}</strong>
+              <span style="font-size:9.5px;color:#64748b;margin-left:5px;">(${c.qtd}x)</span>
+            </div>
+            <div style="font-family:monospace;white-space:nowrap;">
+              <strong style="color:#0f172a;">${formatarMoeda(c.total)}</strong>
+              <span style="color:${corBarra};font-weight:800;margin-left:6px;">${pctTotal.toFixed(1)}%</span>
+            </div>
+          </div>
+          <div style="background:#e2e8f0;height:10px;border-radius:5px;overflow:hidden;width:100%;">
+            <div style="background:${corBarra};height:100%;width:${larguraBarra.toFixed(1)}%;border-radius:5px;"></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    html += `
+      <div style="display: grid; grid-template-columns: 290px 1fr; gap: 16px; margin-bottom: 18px; align-items: start;">
+        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px;">
+          <div style="font-size: 10.5px; font-weight: 800; color: #004b87; text-transform: uppercase; margin-bottom: 8px; text-align: center;">Distribuição do Caixa</div>
+          <div style="display: flex; justify-content: center; margin-bottom: 8px;">
+            <svg width="160" height="160" viewBox="0 0 160 160">
+              <circle cx="80" cy="80" r="${raio}" fill="transparent" stroke="#e2e8f0" stroke-width="24"></circle>
+              ${segmentosSvg}
+              <text x="80" y="76" text-anchor="middle" style="font-size:9px;font-weight:700;fill:#64748b;">TOTAL</text>
+              <text x="80" y="91" text-anchor="middle" style="font-size:11px;font-weight:800;fill:#0f172a;">${formatarMoeda(totalGeral)}</text>
+            </svg>
+          </div>
+          <div>${legendaDonut}</div>
+        </div>
+
+        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 12px 14px;">
+          <div style="font-size: 10.5px; font-weight: 800; color: #004b87; text-transform: uppercase; margin-bottom: 10px;">
+            Ranking de Consumo por Categoria ("Uso de Bateria do Caixa")
+          </div>
+          ${barrasBateria}
+        </div>
+      </div>
+
+      <div style="font-weight: 800; font-size: 11px; color: #004b87; text-transform: uppercase; margin-bottom: 6px;">Top 10 Fornecedores que Mais Consomem Caixa</div>
+      <table class="alterdata-grid" style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 16px;">
+        <thead>
+          <tr style="background: #0f172a; color: white;">
+            <th style="padding: 5px 6px; text-align: left;">Fornecedor / Favorecido</th>
+            <th style="padding: 5px 6px; text-align: left;">Categoria Principal</th>
+            <th style="padding: 5px 6px; text-align: center; width: 65px;">Freq.</th>
+            <th style="padding: 5px 6px; text-align: right; width: 95px;">Ticket Médio</th>
+            <th style="padding: 5px 6px; text-align: right; width: 105px;">Total (R$)</th>
+            <th style="padding: 5px 6px; text-align: center; width: 65px;">% Caixa</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${listaForns.slice(0, 10).map((f, idx) => {
+            const p = totalGeral > 0 ? ((f.total / totalGeral) * 100).toFixed(1) : '0.0';
+            const tm = f.qtd > 0 ? (f.total / f.qtd) : 0;
+            return `<tr style="${idx % 2 === 1 ? 'background:#f8fafc;' : 'background:#ffffff;'}">
+              <td style="padding:5px 6px;font-weight:700;color:#0f172a;">${idx + 1}. ${escapeHtml(f.nome)}</td>
+              <td style="padding:5px 6px;color:#475569;">${escapeHtml(f.catPrincipal)}</td>
+              <td style="padding:5px 6px;text-align:center;font-weight:700;">${f.qtd}x</td>
+              <td style="padding:5px 6px;text-align:right;font-family:monospace;">${formatarMoeda(tm)}</td>
+              <td style="padding:5px 6px;text-align:right;font-family:monospace;font-weight:800;">${formatarMoeda(f.total)}</td>
+              <td style="padding:5px 6px;text-align:center;font-weight:700;color:#0369a1;">${p}%</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+
+    if (_raioxZoomAtual !== 'TODOS') {
+      html += `
+        <div style="font-weight: 800; font-size: 11px; color: #991b1b; text-transform: uppercase; margin-bottom: 6px;">Detalhamento dos Lançamentos no Zoom Selecionado (${filtrados.length})</div>
+        <table class="alterdata-grid" style="width: 100%; border-collapse: collapse; font-size: 9.5px;">
+          <thead>
+            <tr style="background: #0f172a; color: white;">
+              <th style="padding: 5px 6px; text-align: center; width: 72px;">Data</th>
+              <th style="padding: 5px 6px; text-align: left; width: 80px;">Doc</th>
+              <th style="padding: 5px 6px; text-align: left;">Fornecedor</th>
+              <th style="padding: 5px 6px; text-align: left;">Categoria</th>
+              <th style="padding: 5px 6px; text-align: left;">Descrição</th>
+              <th style="padding: 5px 6px; text-align: right; width: 95px;">Valor (R$)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filtrados.sort((a, b) => Number(b.valor || 0) - Number(a.valor || 0)).map((t, idx) => `
+              <tr style="${idx % 2 === 1 ? 'background:#f8fafc;' : 'background:#ffffff;'}">
+                <td style="padding:4px 6px;text-align:center;white-space:nowrap;">${formatarData(t.vencimento || t.data_emissao)}</td>
+                <td style="padding:4px 6px;font-weight:700;">${escapeHtml(t.numero_doc || '-')}</td>
+                <td style="padding:4px 6px;font-weight:600;">${escapeHtml(t.favorecido || '-')}</td>
+                <td style="padding:4px 6px;color:#0369a1;">${escapeHtml(t.ccusto || '-')}</td>
+                <td style="padding:4px 6px;">${escapeHtml(limparHistoricoRedundante(t.descricao || t.historico || '-'))}</td>
+                <td style="padding:4px 6px;text-align:right;font-family:monospace;font-weight:800;">${formatarMoeda(Number(t.valor || 0))}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
     return html;
   }
 
