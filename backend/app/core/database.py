@@ -287,10 +287,14 @@ def get_connection():
 
     db_file = _resolve_sqlite_path()
     os.makedirs(os.path.dirname(os.path.abspath(db_file)), exist_ok=True)
-    conn = sqlite3.connect(db_file, check_same_thread=False, timeout=15)
+    conn = sqlite3.connect(db_file, check_same_thread=False, timeout=30)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA busy_timeout = 30000")
     conn.execute("PRAGMA foreign_keys = ON")
-    conn.execute("PRAGMA journal_mode = WAL")
+    try:
+        conn.execute("PRAGMA journal_mode = WAL")
+    except sqlite3.OperationalError:
+        pass
     return conn
 
 
