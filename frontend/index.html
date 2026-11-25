@@ -16833,7 +16833,7 @@
         cnpj_favorecido: l.cnpj_favorecido || '',
         linha_dig: l.linha_dig || '',
         numero_doc: docPadrao,
-        vencimento: (ehBol && l.vencimento) ? l.vencimento : venc,
+        vencimento: venc || l.vencimento,
         competencia: l.competencia || '',
         forma_pgto: l.forma_pgto || 'FOLHA ITAÚ (C/C)',
         cnpj_empresa: l.cnpj || '',
