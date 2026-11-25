@@ -3288,6 +3288,70 @@
   </div>
 </div>
 
+<!-- ==================== MODAL POP-UP: BENEFICIÁRIOS & RATEIO DO TÍTULO ==================== -->
+<div id="modal-beneficiarios-titulo" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.72); z-index: 100070; align-items: center; justify-content: center; padding: 14px;">
+  <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; width: 100%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(15,23,42,0.4); overflow: hidden;">
+    <div style="background: linear-gradient(90deg, #4c1d95 0%, #6d28d9 100%); color: #ffffff; padding: 11px 16px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <div style="font-size: 13.5px; font-weight: 800;">👥 Beneficiários &amp; Rateio por Filial</div>
+        <div style="font-size: 11px; color: #ddd6fe;" id="ben-tit-subtitulo">-</div>
+      </div>
+      <button type="button" onclick="fecharModalBeneficiariosTitulo()" style="background: none; border: none; font-size: 18px; color: #e9d5ff; cursor: pointer; padding: 2px 6px;">✕</button>
+    </div>
+
+    <div style="padding: 12px 16px; overflow-y: auto; flex: 1;">
+      <div style="display: flex; gap: 8px; align-items: flex-end; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 6px; padding: 9px 10px; margin-bottom: 10px;">
+        <div style="flex: 1.4;">
+          <label style="display: block; font-size: 10px; font-weight: 700; color: #4c1d95;">Beneficiário / Colaborador</label>
+          <input type="text" id="ben-inp-nome" list="datalist-colabs-pessoal" placeholder="Digite o nome do colaborador..." style="width: 100%; padding: 5px 8px; font-size: 11.5px; border: 1px solid #c4b5fd; border-radius: 4px;">
+        </div>
+        <div style="width: 145px;">
+          <label style="display: block; font-size: 10px; font-weight: 700; color: #4c1d95;">Filial do Rateio</label>
+          <select id="ben-inp-filial" style="width: 100%; padding: 5px 7px; font-size: 11px; border: 1px solid #c4b5fd; border-radius: 4px; background: #fff;">
+            <option value="Boah - Matriz">Boah - Matriz</option>
+            <option value="Boah - Barra">Boah - Barra</option>
+            <option value="Boah - Paseo">Boah - Paseo</option>
+            <option value="Boah - Horto">Boah - Horto</option>
+            <option value="Boah - SDB">Boah - SDB</option>
+            <option value="Boah - Vilas">Boah - Vilas</option>
+            <option value="Solar - Geral">Solar - Geral</option>
+          </select>
+        </div>
+        <div style="width: 120px;">
+          <label style="display: block; font-size: 10px; font-weight: 700; color: #4c1d95;">Valor (R$)</label>
+          <input type="number" id="ben-inp-valor" step="0.01" min="0.01" placeholder="380.00" style="width: 100%; padding: 5px 8px; font-size: 11.5px; border: 1px solid #c4b5fd; border-radius: 4px;">
+        </div>
+        <button type="button" class="tool-btn primary" onclick="adicionarBeneficiarioTitulo()" style="background: #059669; border-color: #047857; color: #fff; font-weight: 700; font-size: 11px; padding: 6px 12px;">+ Incluir</button>
+      </div>
+
+      <div id="ben-resumo-filiais" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;"></div>
+
+      <div style="border: 1px solid #e2e8f0; border-radius: 5px; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+          <thead>
+            <tr style="background: #f1f5f9; color: #334155; text-align: left;">
+              <th style="padding: 6px 8px;">Beneficiário</th>
+              <th style="padding: 6px 8px;">CPF</th>
+              <th style="padding: 6px 8px;">Filial</th>
+              <th style="padding: 6px 8px; text-align: right;">Valor</th>
+              <th style="padding: 6px 8px; width: 40px;"></th>
+            </tr>
+          </thead>
+          <tbody id="ben-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="padding: 10px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+      <span id="ben-totais-info" style="font-size: 11.5px; font-weight: 700; color: #4c1d95;"></span>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="tool-btn" onclick="fecharModalBeneficiariosTitulo()">Fechar</button>
+        <button type="button" id="btn-salvar-beneficiarios-tit" class="tool-btn primary" onclick="salvarBeneficiariosTitulo()" style="background: #6d28d9; border-color: #5b21b6; color: #fff; font-weight: 800; font-size: 11.5px; padding: 7px 16px;">💾 Salvar Beneficiários &amp; Rateio</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ==================== MODAL POP-UP: DOSSIÊ DIGITAL / ANEXOS DO TÍTULO ==================== -->
 <div id="modal-anexos-titulo" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.68); z-index: 100050; align-items: center; justify-content: center; padding: 16px;">
   <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; width: 100%; max-width: 640px; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 22px 50px rgba(15,23,42,0.35); overflow: hidden;">
@@ -3423,6 +3487,70 @@
         <button type="button" id="btn-baixar-remessa-cnab" class="tool-btn primary" onclick="gerarArquivoRemessaCNAB()" style="background: #ea580c; border-color: #c2410c; color: #fff; font-weight: 800; font-size: 11.5px; padding: 7px 16px;">
           ⬇️ Gerar e Baixar Arquivo .REM (CNAB 240)
         </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL POP-UP: BENEFICIÁRIOS & RATEIO DO TÍTULO ==================== -->
+<div id="modal-beneficiarios-titulo" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.72); z-index: 100070; align-items: center; justify-content: center; padding: 14px;">
+  <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; width: 100%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(15,23,42,0.4); overflow: hidden;">
+    <div style="background: linear-gradient(90deg, #4c1d95 0%, #6d28d9 100%); color: #ffffff; padding: 11px 16px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <div style="font-size: 13.5px; font-weight: 800;">👥 Beneficiários &amp; Rateio por Filial</div>
+        <div style="font-size: 11px; color: #ddd6fe;" id="ben-tit-subtitulo">-</div>
+      </div>
+      <button type="button" onclick="fecharModalBeneficiariosTitulo()" style="background: none; border: none; font-size: 18px; color: #e9d5ff; cursor: pointer; padding: 2px 6px;">✕</button>
+    </div>
+
+    <div style="padding: 12px 16px; overflow-y: auto; flex: 1;">
+      <div style="display: flex; gap: 8px; align-items: flex-end; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 6px; padding: 9px 10px; margin-bottom: 10px;">
+        <div style="flex: 1.4;">
+          <label style="display: block; font-size: 10px; font-weight: 700; color: #4c1d95;">Beneficiário / Colaborador</label>
+          <input type="text" id="ben-inp-nome" list="datalist-colabs-pessoal" placeholder="Digite o nome do colaborador..." style="width: 100%; padding: 5px 8px; font-size: 11.5px; border: 1px solid #c4b5fd; border-radius: 4px;">
+        </div>
+        <div style="width: 145px;">
+          <label style="display: block; font-size: 10px; font-weight: 700; color: #4c1d95;">Filial do Rateio</label>
+          <select id="ben-inp-filial" style="width: 100%; padding: 5px 7px; font-size: 11px; border: 1px solid #c4b5fd; border-radius: 4px; background: #fff;">
+            <option value="Boah - Matriz">Boah - Matriz</option>
+            <option value="Boah - Barra">Boah - Barra</option>
+            <option value="Boah - Paseo">Boah - Paseo</option>
+            <option value="Boah - Horto">Boah - Horto</option>
+            <option value="Boah - SDB">Boah - SDB</option>
+            <option value="Boah - Vilas">Boah - Vilas</option>
+            <option value="Solar - Geral">Solar - Geral</option>
+          </select>
+        </div>
+        <div style="width: 120px;">
+          <label style="display: block; font-size: 10px; font-weight: 700; color: #4c1d95;">Valor (R$)</label>
+          <input type="number" id="ben-inp-valor" step="0.01" min="0.01" placeholder="380.00" style="width: 100%; padding: 5px 8px; font-size: 11.5px; border: 1px solid #c4b5fd; border-radius: 4px;">
+        </div>
+        <button type="button" class="tool-btn primary" onclick="adicionarBeneficiarioTitulo()" style="background: #059669; border-color: #047857; color: #fff; font-weight: 700; font-size: 11px; padding: 6px 12px;">+ Incluir</button>
+      </div>
+
+      <div id="ben-resumo-filiais" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;"></div>
+
+      <div style="border: 1px solid #e2e8f0; border-radius: 5px; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+          <thead>
+            <tr style="background: #f1f5f9; color: #334155; text-align: left;">
+              <th style="padding: 6px 8px;">Beneficiário</th>
+              <th style="padding: 6px 8px;">CPF</th>
+              <th style="padding: 6px 8px;">Filial</th>
+              <th style="padding: 6px 8px; text-align: right;">Valor</th>
+              <th style="padding: 6px 8px; width: 40px;"></th>
+            </tr>
+          </thead>
+          <tbody id="ben-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="padding: 10px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+      <span id="ben-totais-info" style="font-size: 11.5px; font-weight: 700; color: #4c1d95;"></span>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="tool-btn" onclick="fecharModalBeneficiariosTitulo()">Fechar</button>
+        <button type="button" id="btn-salvar-beneficiarios-tit" class="tool-btn primary" onclick="salvarBeneficiariosTitulo()" style="background: #6d28d9; border-color: #5b21b6; color: #fff; font-weight: 800; font-size: 11.5px; padding: 7px 16px;">💾 Salvar Beneficiários &amp; Rateio</button>
       </div>
     </div>
   </div>
@@ -3582,12 +3710,76 @@
       <div style="text-align: right; margin-top: 8px; font-size: 12.5px; font-weight: 800; color: #5b21b6;" id="dp-man-total">Total do Lote: R$ 0,00</div>
     </div>
 
-    <div style="padding: 10px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+    <div style="padding: 10px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between;">
       <span id="dp-lote-status" style="font-size: 11px; font-weight: 600; color: #475569;"></span>
       <div style="display: flex; gap: 8px;">
         <button type="button" class="tool-btn" onclick="fecharModalDespesasPessoal()" style="font-size: 11.5px;">Fechar</button>
         <button type="button" id="btn-gravar-dp-zip" class="tool-btn primary" onclick="gravarLotesFolhaDP()" style="display: none; background: #6d28d9; border-color: #5b21b6; color: #fff; font-weight: 800; font-size: 11.5px; padding: 7px 16px;">✅ Lançar Lotes Selecionados no Contas a Pagar</button>
         <button type="button" id="btn-gravar-dp-manual" class="tool-btn primary" onclick="gravarLoteManualPessoal()" style="display: none; background: #6d28d9; border-color: #5b21b6; color: #fff; font-weight: 800; font-size: 11.5px; padding: 7px 16px;">✅ Gravar Lote Único no Contas a Pagar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL POP-UP: BENEFICIÁRIOS & RATEIO DO TÍTULO ==================== -->
+<div id="modal-beneficiarios-titulo" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.72); z-index: 100070; align-items: center; justify-content: center; padding: 14px;">
+  <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; width: 100%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(15,23,42,0.4); overflow: hidden;">
+    <div style="background: linear-gradient(90deg, #4c1d95 0%, #6d28d9 100%); color: #ffffff; padding: 11px 16px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <div style="font-size: 13.5px; font-weight: 800;">👥 Beneficiários &amp; Rateio por Filial</div>
+        <div style="font-size: 11px; color: #ddd6fe;" id="ben-tit-subtitulo">-</div>
+      </div>
+      <button type="button" onclick="fecharModalBeneficiariosTitulo()" style="background: none; border: none; font-size: 18px; color: #e9d5ff; cursor: pointer; padding: 2px 6px;">✕</button>
+    </div>
+
+    <div style="padding: 12px 16px; overflow-y: auto; flex: 1;">
+      <div style="display: flex; gap: 8px; align-items: flex-end; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 6px; padding: 9px 10px; margin-bottom: 10px;">
+        <div style="flex: 1.4;">
+          <label style="display: block; font-size: 10px; font-weight: 700; color: #4c1d95;">Beneficiário / Colaborador</label>
+          <input type="text" id="ben-inp-nome" list="datalist-colabs-pessoal" placeholder="Digite o nome do colaborador..." style="width: 100%; padding: 5px 8px; font-size: 11.5px; border: 1px solid #c4b5fd; border-radius: 4px;">
+        </div>
+        <div style="width: 145px;">
+          <label style="display: block; font-size: 10px; font-weight: 700; color: #4c1d95;">Filial do Rateio</label>
+          <select id="ben-inp-filial" style="width: 100%; padding: 5px 7px; font-size: 11px; border: 1px solid #c4b5fd; border-radius: 4px; background: #fff;">
+            <option value="Boah - Matriz">Boah - Matriz</option>
+            <option value="Boah - Barra">Boah - Barra</option>
+            <option value="Boah - Paseo">Boah - Paseo</option>
+            <option value="Boah - Horto">Boah - Horto</option>
+            <option value="Boah - SDB">Boah - SDB</option>
+            <option value="Boah - Vilas">Boah - Vilas</option>
+            <option value="Solar - Geral">Solar - Geral</option>
+          </select>
+        </div>
+        <div style="width: 120px;">
+          <label style="display: block; font-size: 10px; font-weight: 700; color: #4c1d95;">Valor (R$)</label>
+          <input type="number" id="ben-inp-valor" step="0.01" min="0.01" placeholder="380.00" style="width: 100%; padding: 5px 8px; font-size: 11.5px; border: 1px solid #c4b5fd; border-radius: 4px;">
+        </div>
+        <button type="button" class="tool-btn primary" onclick="adicionarBeneficiarioTitulo()" style="background: #059669; border-color: #047857; color: #fff; font-weight: 700; font-size: 11px; padding: 6px 12px;">+ Incluir</button>
+      </div>
+
+      <div id="ben-resumo-filiais" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;"></div>
+
+      <div style="border: 1px solid #e2e8f0; border-radius: 5px; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+          <thead>
+            <tr style="background: #f1f5f9; color: #334155; text-align: left;">
+              <th style="padding: 6px 8px;">Beneficiário</th>
+              <th style="padding: 6px 8px;">CPF</th>
+              <th style="padding: 6px 8px;">Filial</th>
+              <th style="padding: 6px 8px; text-align: right;">Valor</th>
+              <th style="padding: 6px 8px; width: 40px;"></th>
+            </tr>
+          </thead>
+          <tbody id="ben-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="padding: 10px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+      <span id="ben-totais-info" style="font-size: 11.5px; font-weight: 700; color: #4c1d95;"></span>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="tool-btn" onclick="fecharModalBeneficiariosTitulo()">Fechar</button>
+        <button type="button" id="btn-salvar-beneficiarios-tit" class="tool-btn primary" onclick="salvarBeneficiariosTitulo()" style="background: #6d28d9; border-color: #5b21b6; color: #fff; font-weight: 800; font-size: 11.5px; padding: 7px 16px;">💾 Salvar Beneficiários &amp; Rateio</button>
       </div>
     </div>
   </div>
@@ -3830,6 +4022,70 @@
           <div id="saas-dre-resultado" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px; max-height: 360px; overflow-y: auto;"></div>
           <div id="saas-audit-resultado" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px; max-height: 360px; overflow-y: auto;"></div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL POP-UP: BENEFICIÁRIOS & RATEIO DO TÍTULO ==================== -->
+<div id="modal-beneficiarios-titulo" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.72); z-index: 100070; align-items: center; justify-content: center; padding: 14px;">
+  <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; width: 100%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(15,23,42,0.4); overflow: hidden;">
+    <div style="background: linear-gradient(90deg, #4c1d95 0%, #6d28d9 100%); color: #ffffff; padding: 11px 16px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <div style="font-size: 13.5px; font-weight: 800;">👥 Beneficiários &amp; Rateio por Filial</div>
+        <div style="font-size: 11px; color: #ddd6fe;" id="ben-tit-subtitulo">-</div>
+      </div>
+      <button type="button" onclick="fecharModalBeneficiariosTitulo()" style="background: none; border: none; font-size: 18px; color: #e9d5ff; cursor: pointer; padding: 2px 6px;">✕</button>
+    </div>
+
+    <div style="padding: 12px 16px; overflow-y: auto; flex: 1;">
+      <div style="display: flex; gap: 8px; align-items: flex-end; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 6px; padding: 9px 10px; margin-bottom: 10px;">
+        <div style="flex: 1.4;">
+          <label style="display: block; font-size: 10px; font-weight: 700; color: #4c1d95;">Beneficiário / Colaborador</label>
+          <input type="text" id="ben-inp-nome" list="datalist-colabs-pessoal" placeholder="Digite o nome do colaborador..." style="width: 100%; padding: 5px 8px; font-size: 11.5px; border: 1px solid #c4b5fd; border-radius: 4px;">
+        </div>
+        <div style="width: 145px;">
+          <label style="display: block; font-size: 10px; font-weight: 700; color: #4c1d95;">Filial do Rateio</label>
+          <select id="ben-inp-filial" style="width: 100%; padding: 5px 7px; font-size: 11px; border: 1px solid #c4b5fd; border-radius: 4px; background: #fff;">
+            <option value="Boah - Matriz">Boah - Matriz</option>
+            <option value="Boah - Barra">Boah - Barra</option>
+            <option value="Boah - Paseo">Boah - Paseo</option>
+            <option value="Boah - Horto">Boah - Horto</option>
+            <option value="Boah - SDB">Boah - SDB</option>
+            <option value="Boah - Vilas">Boah - Vilas</option>
+            <option value="Solar - Geral">Solar - Geral</option>
+          </select>
+        </div>
+        <div style="width: 120px;">
+          <label style="display: block; font-size: 10px; font-weight: 700; color: #4c1d95;">Valor (R$)</label>
+          <input type="number" id="ben-inp-valor" step="0.01" min="0.01" placeholder="380.00" style="width: 100%; padding: 5px 8px; font-size: 11.5px; border: 1px solid #c4b5fd; border-radius: 4px;">
+        </div>
+        <button type="button" class="tool-btn primary" onclick="adicionarBeneficiarioTitulo()" style="background: #059669; border-color: #047857; color: #fff; font-weight: 700; font-size: 11px; padding: 6px 12px;">+ Incluir</button>
+      </div>
+
+      <div id="ben-resumo-filiais" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;"></div>
+
+      <div style="border: 1px solid #e2e8f0; border-radius: 5px; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+          <thead>
+            <tr style="background: #f1f5f9; color: #334155; text-align: left;">
+              <th style="padding: 6px 8px;">Beneficiário</th>
+              <th style="padding: 6px 8px;">CPF</th>
+              <th style="padding: 6px 8px;">Filial</th>
+              <th style="padding: 6px 8px; text-align: right;">Valor</th>
+              <th style="padding: 6px 8px; width: 40px;"></th>
+            </tr>
+          </thead>
+          <tbody id="ben-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="padding: 10px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+      <span id="ben-totais-info" style="font-size: 11.5px; font-weight: 700; color: #4c1d95;"></span>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="tool-btn" onclick="fecharModalBeneficiariosTitulo()">Fechar</button>
+        <button type="button" id="btn-salvar-beneficiarios-tit" class="tool-btn primary" onclick="salvarBeneficiariosTitulo()" style="background: #6d28d9; border-color: #5b21b6; color: #fff; font-weight: 800; font-size: 11.5px; padding: 7px 16px;">💾 Salvar Beneficiários &amp; Rateio</button>
       </div>
     </div>
   </div>
@@ -10895,6 +11151,7 @@
           <button type="button" class="tool-btn" onclick="fecharModalDetalhesTitulo(); repetirLancamentoTitulo('${item.id}')">${bimerIcon('refresh', 'bimer-svg-xs')} Repetir / Clonar</button>
           <button type="button" class="tool-btn" onclick="fecharModalDetalhesTitulo(); abrirFolhaRostoTitulo('${item.id}')">${bimerIcon('printer', 'bimer-svg-xs')} Folha de Rosto</button>
           <button type="button" class="tool-btn" style="border-color: #0284c7; color: #0369a1; background: #e0f2fe; font-weight: 700;" onclick="abrirModalAnexosTitulo('${item.id}', 'Doc: ${escapeHtml(item.numero_doc || '-').replace(/'/g, '')} • ${escapeHtml(item.favorecido || '-').replace(/'/g, '')}')">Dossiê / Anexos${item.anexos_count > 0 ? ` (${item.anexos_count})` : ''}</button>
+          <button type="button" class="tool-btn" style="border-color: #7c3aed; color: #5b21b6; background: #f5f3ff; font-weight: 700;" onclick="abrirModalBeneficiariosTitulo('${item.id}')">👥 Beneficiários / Rateio${(item.itens && item.itens.some(x => x.unidade === 'FOLHA_COLAB')) ? ` (${item.itens.filter(x => x.unidade === 'FOLHA_COLAB').length})` : ''}</button>
         </div>
         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
           <button type="button" class="tool-btn primary" style="background: ${isPago ? '#b45309' : '#16a34a'}; border-color: ${isPago ? '#92400e' : '#15803d'};" onclick="fecharModalDetalhesTitulo(); alternarBaixa('${item.id}')">
@@ -16719,6 +16976,127 @@
       await carregarDadosIniciais();
     } catch (e) {
       alert('Erro ao gravar lote: ' + e.message);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ==============================================================================
+  // BENEFICIÁRIOS & RATEIO EM TÍTULO EXISTENTE
+  // ==============================================================================
+  let _benTituloIdAtual = null;
+  let _benTituloValorRef = 0;
+  let _benListaAtual = [];
+
+  async function abrirModalBeneficiariosTitulo(idTitulo) {
+    const item = titulos.find(t => String(t.id) === String(idTitulo));
+    if (!item) return;
+    _benTituloIdAtual = item.id;
+    _benTituloValorRef = Number(item.valor || item.valor_bruto || 0);
+    _benListaAtual = (item.itens || [])
+      .filter(it => it.unidade === 'FOLHA_COLAB')
+      .map(it => ({
+        nome: it.descricao || '',
+        cpf: it.codigo || '',
+        filial: it.ncm || 'Boah - Matriz',
+        valor: Number(it.valor_total || 0),
+        dados_banco: '',
+      }));
+
+    document.getElementById('ben-tit-subtitulo').textContent =
+      `${item.numero_doc || '-'} • ${item.favorecido || '-'} • Valor do Título: ${formatarMoeda(_benTituloValorRef)}`;
+    document.getElementById('modal-beneficiarios-titulo').style.display = 'flex';
+    await carregarDatalistColaboradoresPessoal();
+    renderizarTabelaBeneficiariosTitulo();
+  }
+
+  function fecharModalBeneficiariosTitulo() {
+    const m = document.getElementById('modal-beneficiarios-titulo');
+    if (m) m.style.display = 'none';
+  }
+
+  function adicionarBeneficiarioTitulo() {
+    const inpN = document.getElementById('ben-inp-nome');
+    const inpF = document.getElementById('ben-inp-filial');
+    const inpV = document.getElementById('ben-inp-valor');
+    const nomeRaw = (inpN?.value || '').trim().toUpperCase();
+    const val = parseFloat(inpV?.value || '0');
+    if (!nomeRaw || !(val > 0)) {
+      alert('Informe o beneficiário e um valor maior que zero.');
+      return;
+    }
+    const cad = _dpColabsCadastrados.find(c => (c.razao_social || '').toUpperCase() === nomeRaw)
+      || _dpColabsCadastrados.find(c => (c.razao_social || '').toUpperCase().includes(nomeRaw));
+    _benListaAtual.push({
+      nome: cad ? cad.razao_social : nomeRaw,
+      cpf: cad?.cnpj_cpf || '',
+      filial: inpF?.value || 'Boah - Matriz',
+      valor: val,
+      dados_banco: cad?.dados_banco || '',
+    });
+    inpN.value = '';
+    inpV.value = '';
+    inpN.focus();
+    renderizarTabelaBeneficiariosTitulo();
+  }
+
+  function removerBeneficiarioTitulo(idx) {
+    _benListaAtual.splice(idx, 1);
+    renderizarTabelaBeneficiariosTitulo();
+  }
+
+  function renderizarTabelaBeneficiariosTitulo() {
+    const tbody = document.getElementById('ben-tbody');
+    const resEl = document.getElementById('ben-resumo-filiais');
+    const totEl = document.getElementById('ben-totais-info');
+    if (!_benListaAtual.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:16px;color:#64748b;">Nenhum beneficiário cadastrado neste título ainda.</td></tr>';
+      resEl.innerHTML = '';
+      totEl.textContent = `Rateado: R$ 0,00 / Título: ${formatarMoeda(_benTituloValorRef)}`;
+      return;
+    }
+    let soma = 0;
+    const porFil = {};
+    tbody.innerHTML = _benListaAtual.map((b, idx) => {
+      const v = Number(b.valor || 0);
+      soma += v;
+      const f = b.filial || 'Boah - Matriz';
+      porFil[f] = (porFil[f] || 0) + v;
+      return `
+        <tr style="border-top:1px solid #e2e8f0;">
+          <td style="padding:5px 8px;font-weight:600;">${escapeHtml(b.nome)}</td>
+          <td style="padding:5px 8px;font-family:monospace;">${escapeHtml(b.cpf || '-')}</td>
+          <td style="padding:5px 8px;"><span style="background:#f3e8ff;color:#5b21b6;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;">${escapeHtml(f)}</span></td>
+          <td style="padding:5px 8px;text-align:right;font-weight:700;">${formatarMoeda(v)}</td>
+          <td style="padding:5px 8px;text-align:center;"><button type="button" onclick="removerBeneficiarioTitulo(${idx})" style="border:none;background:none;color:#dc2626;cursor:pointer;font-weight:700;">✕</button></td>
+        </tr>
+      `;
+    }).join('');
+    resEl.innerHTML = Object.entries(porFil).map(([f, v]) =>
+      `<span style="background:#ede9fe;border:1px solid #ddd6fe;color:#4c1d95;padding:3px 8px;border-radius:5px;font-size:10.5px;font-weight:700;">${escapeHtml(f)}: ${formatarMoeda(v)}</span>`
+    ).join('');
+    const diff = _benTituloValorRef - soma;
+    totEl.textContent = `Rateado: ${formatarMoeda(soma)} de ${formatarMoeda(_benTituloValorRef)} (Falta: ${formatarMoeda(diff)})`;
+  }
+
+  async function salvarBeneficiariosTitulo() {
+    if (!_benTituloIdAtual) return;
+    const btn = document.getElementById('btn-salvar-beneficiarios-tit');
+    btn.disabled = true;
+    try {
+      const resp = await apiFetch(`${API_BASE}/pessoal/titulos/${encodeURIComponent(_benTituloIdAtual)}/beneficiarios`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ beneficiarios: _benListaAtual }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(data.detail || 'Erro ao salvar beneficiários');
+      alert(`✅ ${data.qtd_beneficiarios} beneficiário(s) e rateio por filial salvos no título!`);
+      fecharModalBeneficiariosTitulo();
+      await carregarDadosIniciais();
+      abrirModalDetalhesTitulo(_benTituloIdAtual);
+    } catch (e) {
+      alert('Erro ao salvar beneficiários: ' + e.message);
     } finally {
       btn.disabled = false;
     }

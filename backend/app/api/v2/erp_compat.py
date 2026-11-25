@@ -3059,3 +3059,96 @@ def compat_gravar_lotes_pessoal(
     )
     db.commit()
     return {"success": True, "lotes_criados": len(criados), "titulos": criados}
+
+
+class PessoalBeneficiariosTituloRequest(BaseModel):
+    beneficiarios: List[PessoalColaboradorItem]
+
+
+@router.post("/pessoal/titulos/{id_ref}/beneficiarios")
+def compat_salvar_beneficiarios_titulo(
+    id_ref: str,
+    req: PessoalBeneficiariosTituloRequest,
+    request: Request,
+    ctx: TenantContext = Depends(require_v2_roles("OWNER", "DIRETOR_APROVADOR", "FINANCEIRO")),
+    db: Session = Depends(get_db),
+):
+    _, raw_id = _strip_ref_id(id_ref)
+    titulo = db.query(Titulo).filter(Titulo.tenant_id == ctx.tenant_id, Titulo.id == raw_id).first()
+    if not titulo:
+        raise HTTPException(status_code=404, detail="Título não encontrado.")
+
+    validos = [b for b in req.beneficiarios if b.nome.strip() and b.valor and b.valor > 0]
+
+    # Limpa beneficiários e rateios anteriores deste título
+    db.query(TituloItem).filter(
+        TituloItem.tenant_id == ctx.tenant_id,
+        TituloItem.titulo_id == titulo.id,
+        TituloItem.unidade == "FOLHA_COLAB",
+    ).delete(synchronize_session=False)
+    db.query(TituloRateio).filter(
+        TituloRateio.tenant_id == ctx.tenant_id,
+        TituloRateio.titulo_id == titulo.id,
+    ).delete(synchronize_session=False)
+
+    rateio_por_filial: dict[str, Decimal] = {}
+    soma_total = Decimal("0.00")
+    for idx, c in enumerate(validos, start=1):
+        val_c = to_dec(c.valor)
+        soma_total += val_c
+        fil_c = (c.filial or "Geral").strip()
+        rateio_por_filial[fil_c] = rateio_por_filial.get(fil_c, Decimal("0.00")) + val_c
+        db.add(
+            TituloItem(
+                tenant_id=ctx.tenant_id,
+                titulo_id=titulo.id,
+                numero_item=idx,
+                codigo_produto=limpar_documento(c.cpf or "")[:60],
+                descricao=c.nome.strip().upper()[:300],
+                ncm=fil_c[:16],
+                unidade="FOLHA_COLAB",
+                quantidade=Decimal("1.0000"),
+                valor_unitario=val_c,
+                valor_total=val_c,
+                fornecedor_nome=(c.dados_banco or "")[:200],
+                numero_nf=titulo.numero_documento,
+                dt_emissao=titulo.dt_emissao or date.today(),
+            )
+        )
+
+    base_pct = soma_total if soma_total > Decimal("0.00") else to_dec(titulo.valor_liquido)
+    if base_pct > Decimal("0.00"):
+        rubrica = titulo.tipo_documento or "Despesas com Pessoal"
+        for fil_nome, val_fil in rateio_por_filial.items():
+            cc_r, pc_r = _resolver_plano_e_ccusto(db, ctx.tenant_id, titulo.empresa_id, fil_nome)
+            pct_r = ((val_fil / base_pct) * Decimal("100.00")).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            db.add(
+                TituloRateio(
+                    tenant_id=ctx.tenant_id,
+                    titulo_id=titulo.id,
+                    centro_custo_id=cc_r.id if cc_r else None,
+                    plano_conta_id=pc_r.id if pc_r else titulo.plano_conta_id,
+                    rubrica=rubrica[:60],
+                    valor=val_fil,
+                    percentual=pct_r,
+                    observacao=f"Rateio Beneficiários ({fil_nome})",
+                )
+            )
+
+    registrar_audit_v2(
+        db,
+        ctx.tenant_id,
+        ctx.usuario,
+        "SALVAR_BENEFICIARIOS_TITULO",
+        "titulos",
+        titulo.id,
+        dados_depois={"qtd_beneficiarios": len(validos), "soma": float(soma_total)},
+        ip=extrair_ip(request),
+    )
+    db.commit()
+    return {
+        "success": True,
+        "qtd_beneficiarios": len(validos),
+        "soma": float(soma_total),
+        "rateios": {k: float(v) for k, v in rateio_por_filial.items()},
+    }
