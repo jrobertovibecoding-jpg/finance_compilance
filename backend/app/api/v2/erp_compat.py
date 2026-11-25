@@ -2000,6 +2000,13 @@ def _diretorio_anexos_base() -> Path:
     return base
 
 
+def _supabase_storage_cfg() -> tuple[str, str, str]:
+    url = (os.getenv("SUPABASE_URL") or "").strip().rstrip("/")
+    key = (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
+    bucket = (os.getenv("SUPABASE_STORAGE_BUCKET") or "dossie-anexos").strip()
+    return url, key, bucket
+
+
 @router.get("/titulos/{id_ref}/anexos")
 def compat_listar_anexos_titulo(
     id_ref: str,
@@ -2060,9 +2067,27 @@ async def compat_upload_anexo_titulo(
     anexo_uid = str(uuid.uuid4())
     safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", nome_orig)[:120]
     rel_key = f"{ctx.tenant_id}/{titulo.id}/{anexo_uid}_{safe_name}"
-    dest = _diretorio_anexos_base() / rel_key
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_bytes(conteudo)
+    mime_final = (file.content_type or "application/octet-stream").lower()[:120]
+
+    sb_url, sb_key, sb_bucket = _supabase_storage_cfg()
+    if sb_url and sb_key:
+        up_resp = requests.post(
+            f"{sb_url}/storage/v1/object/{sb_bucket}/{rel_key}",
+            headers={
+                "Authorization": f"Bearer {sb_key}",
+                "apikey": sb_key,
+                "Content-Type": mime_final,
+                "x-upsert": "true",
+            },
+            data=conteudo,
+            timeout=25,
+        )
+        if up_resp.status_code >= 400:
+            raise HTTPException(status_code=502, detail=f"Falha ao gravar no Supabase Storage: {up_resp.text[:200]}")
+    else:
+        dest = _diretorio_anexos_base() / rel_key
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(conteudo)
 
     anexo = DocumentoAnexo(
         id=anexo_uid,
@@ -2072,7 +2097,7 @@ async def compat_upload_anexo_titulo(
         entidade_id=titulo.id,
         storage_key=rel_key,
         nome_original=nome_orig,
-        mime_type=(file.content_type or "application/octet-stream").lower()[:120],
+        mime_type=mime_final,
         tamanho_bytes=len(conteudo),
         sha256=sha,
         uploaded_by=ctx.usuario.id,
@@ -2114,6 +2139,21 @@ def compat_download_anexo(
     )
     if not anexo:
         raise HTTPException(status_code=404, detail="Anexo não encontrado.")
+    sb_url, sb_key, sb_bucket = _supabase_storage_cfg()
+    if sb_url and sb_key:
+        dl_resp = requests.get(
+            f"{sb_url}/storage/v1/object/{sb_bucket}/{anexo.storage_key}",
+            headers={"Authorization": f"Bearer {sb_key}", "apikey": sb_key},
+            timeout=25,
+        )
+        if dl_resp.status_code >= 400:
+            raise HTTPException(status_code=404, detail="Arquivo não encontrado no Supabase Storage.")
+        safe_dl = re.sub(r'["\\\r\n]+', "_", anexo.nome_original or "documento")
+        return Response(
+            content=dl_resp.content,
+            media_type=anexo.mime_type or "application/octet-stream",
+            headers={"Content-Disposition": f'attachment; filename="{safe_dl}"'},
+        )
     caminho = _diretorio_anexos_base() / anexo.storage_key
     if not caminho.exists():
         raise HTTPException(status_code=404, detail="Arquivo físico não encontrado no servidor.")
@@ -2134,12 +2174,23 @@ def compat_excluir_anexo(
     )
     if not anexo:
         raise HTTPException(status_code=404, detail="Anexo não encontrado.")
-    caminho = _diretorio_anexos_base() / anexo.storage_key
-    try:
-        if caminho.exists():
-            os.remove(caminho)
-    except OSError:
-        pass
+    sb_url, sb_key, sb_bucket = _supabase_storage_cfg()
+    if sb_url and sb_key:
+        try:
+            requests.delete(
+                f"{sb_url}/storage/v1/object/{sb_bucket}/{anexo.storage_key}",
+                headers={"Authorization": f"Bearer {sb_key}", "apikey": sb_key},
+                timeout=15,
+            )
+        except Exception:
+            pass
+    else:
+        caminho = _diretorio_anexos_base() / anexo.storage_key
+        try:
+            if caminho.exists():
+                os.remove(caminho)
+        except OSError:
+            pass
     db.delete(anexo)
     registrar_audit_v2(
         db,
