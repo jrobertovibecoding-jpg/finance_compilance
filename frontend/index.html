@@ -7744,7 +7744,10 @@
 
       acoes.innerHTML = `
         <span style="color: var(--text-muted); font-weight: 600;">${titulos.length} títulos no Contas a Pagar</span>
-        <button class="tool-btn primary" onclick="gravarDocumento()"><svg class="bimer-svg" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Gravar (F10)</button>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <button type="button" class="tool-btn" onclick="gravarDocumento(true)" style="background: #0284c7; border-color: #0369a1; color: #ffffff; font-weight: 700;" title="Grava este lançamento, mantém Favorecido/Categoria/Forma/Vencimento e limpa só Nº Documento e Valor">🔁 Gravar e Repetir</button>
+          <button class="tool-btn primary" onclick="gravarDocumento()"><svg class="bimer-svg" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Gravar (F10)</button>
+        </div>
       `;
     }
     else if (abaAtivaAtual === 'aba-financeiro') {
