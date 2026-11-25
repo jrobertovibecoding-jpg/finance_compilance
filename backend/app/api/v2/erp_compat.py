@@ -162,6 +162,7 @@ class TituloCompatEdicao(BaseModel):
     valor: Optional[float] = None
     forma_pgto: Optional[str] = None
     linha_dig: Optional[str] = None
+    pix_chave: Optional[str] = None
     dados_banco: Optional[str] = None
 
 
@@ -720,6 +721,7 @@ def compat_listar_titulos(
             "solicitante": t.solicitante or "",
             "forma_pgto": t.forma_pgto or "PIX",
             "linha_dig": t.cod_barras or "",
+            "pix_chave": t.pix_chave or "",
             "status": n_status,
             "status_aprovacao": t.status,
             "situacao": n_situacao,
@@ -1092,6 +1094,8 @@ def compat_editar_titulo(
         titulo.forma_pgto = dados.forma_pgto.strip().upper()[:30]
     if dados.linha_dig is not None:
         titulo.cod_barras = dados.linha_dig.strip()[:80]
+    if dados.pix_chave is not None:
+        titulo.pix_chave = dados.pix_chave.strip()[:140]
     if dados.ccusto:
         cc_obj, pc_obj = _resolver_plano_e_ccusto(db, ctx.tenant_id, titulo.empresa_id, dados.ccusto)
         if cc_obj:
@@ -1118,6 +1122,7 @@ def compat_editar_titulo(
             cnpj_cpf=dados.cnpj,
             categoria=dados.categoria or dados.ccusto,
             forma_pgto=dados.forma_pgto,
+            pix_chave=dados.pix_chave,
             dados_banco=dados.dados_banco,
             cod_operacao=dados.cod_operacao,
             cnae=dados.cnae,
