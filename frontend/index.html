@@ -1169,6 +1169,7 @@
               <option value="PIX Chave CPF">PIX Chave CPF</option>
               <option value="PIX Chave Tel / E-mail">PIX Chave Tel / E-mail</option>
               <option value="Transferência Bancária">Transferência Bancária</option>
+              <option value="Folha Itaú (C/C)">Folha Itaú (C/C)</option>
               <option value="Débito Automático">Débito Automático</option>
               <option value="Guia Municipal">Guia Municipal</option>
               <option value="DARF Federal">DARF Federal</option>
@@ -2177,6 +2178,7 @@
               <option value="PIX Chave CPF">PIX Chave CPF</option>
               <option value="PIX Chave Tel / E-mail">PIX Chave Tel / E-mail</option>
               <option value="Transferência Bancária">Transferência Bancária</option>
+              <option value="Folha Itaú (C/C)">Folha Itaú (C/C)</option>
               <option value="Débito Automático">Débito Automático</option>
               <option value="Guia Municipal">Guia Municipal</option>
               <option value="DARF Federal">DARF Federal</option>
@@ -3249,6 +3251,7 @@
               <option value="PIX Chave CPF">PIX Chave CPF</option>
               <option value="PIX Chave Tel / E-mail">PIX Chave Tel / E-mail</option>
               <option value="Transferência Bancária">Transferência Bancária</option>
+              <option value="Folha Itaú (C/C)">Folha Itaú (C/C)</option>
               <option value="Débito Automático">Débito Automático</option>
               <option value="Guia Municipal">Guia Municipal</option>
               <option value="DARF Federal">DARF Federal</option>
@@ -6695,6 +6698,20 @@
       if (cnpj && !cnpj.value && matchExato.cnpj_cpf) {
         cnpj.value = matchExato.cnpj_cpf;
         checarDuplicidadeLive();
+      }
+      const dadosB = document.getElementById('dados_bancarios');
+      if (dadosB && !dadosB.value && matchExato.dados_banco) {
+        dadosB.value = matchExato.dados_banco;
+      }
+      const selForma = document.getElementById('forma_pagamento');
+      const formaAlvo = matchExato.forma_pgto || ((matchExato.tipo || '').toUpperCase() === 'COLABORADOR' ? 'Folha Itaú (C/C)' : '');
+      if (selForma && formaAlvo) {
+        for (let opt of selForma.options) {
+          if (opt.value.toLowerCase() === formaAlvo.toLowerCase() || opt.text.toLowerCase().includes(formaAlvo.toLowerCase())) {
+            selForma.value = opt.value;
+            break;
+          }
+        }
       }
     }
   }
