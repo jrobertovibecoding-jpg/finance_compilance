@@ -27,6 +27,7 @@ from ...core.cnab240_multibanco import (
     gerar_cnab240_multibanco,
     obter_perfil_banco,
 )
+from ...core.folha_dp_parser import parse_pacote_folha_dp
 from ...core.itau_sispag import filtrar_titulos_cnab_validos, gerar_cnab240_sispag_itau
 from ...core.security import gerar_hash_senha, verificar_senha
 from ...core.validators import limpar_documento, validar_documento
@@ -2280,8 +2281,57 @@ def _carregar_candidatos_remessa(
     forn_by_doc = {limpar_documento(f.cnpj_cpf): f for f in forn_all if f.cnpj_cpf}
     forn_by_nome = {_norm_nome_chave(f.razao_social): f for f in forn_all if f.razao_social}
 
+    # Itens de lote de pessoal (unidade == 'FOLHA_COLAB') para desmembramento automático na remessa
+    tit_ids_list = [t.id for t in titulos_db]
+    folha_itens_map: dict[str, list[TituloItem]] = {}
+    if tit_ids_list:
+        for it in (
+            db.query(TituloItem)
+            .filter(
+                TituloItem.tenant_id == tenant_id,
+                TituloItem.titulo_id.in_(tit_ids_list),
+                TituloItem.unidade == "FOLHA_COLAB",
+            )
+            .order_by(TituloItem.numero_item.asc())
+            .all()
+        ):
+            folha_itens_map.setdefault(it.titulo_id, []).append(it)
+
     candidatos = []
     for t in titulos_db:
+        itens_colab = folha_itens_map.get(t.id, [])
+        if itens_colab:
+            for it in itens_colab:
+                cpf_it = limpar_documento(it.codigo_produto or "")
+                nome_it = (it.descricao or "").strip()
+                forn_c = (
+                    forn_by_doc.get(cpf_it)
+                    or forn_by_nome.get(_norm_nome_chave(nome_it))
+                )
+                db_c = (
+                    (forn_c.dados_banco.strip() if forn_c and forn_c.dados_banco else "")
+                    or (it.fornecedor_nome or "").strip()
+                )
+                doc_c = cpf_it or (forn_c.cnpj_cpf if forn_c and forn_c.cnpj_cpf else "")
+                candidatos.append({
+                    "id": t.id,
+                    "db_id": t.id,
+                    "numero_nf": t.numero_documento,
+                    "numero_doc": t.numero_documento,
+                    "numero_tx": t.numero_tx,
+                    "fornecedor": nome_it or t.favorecido_nome,
+                    "fornecedor_tipo": "COLABORADOR",
+                    "favorecido_doc": doc_c,
+                    "dt_vencimento": t.dt_vencimento.isoformat(),
+                    "valor_liquido": str(to_dec(it.valor_total)),
+                    "valor_bruto": str(to_dec(it.valor_total)),
+                    "forma_pgto": "FOLHA ITAÚ (C/C)",
+                    "cod_barras": "",
+                    "pix_chave": (forn_c.pix_chave.strip() if forn_c and forn_c.pix_chave else ""),
+                    "dados_banco": db_c,
+                })
+            continue
+
         forn_obj = (
             forn_by_id.get(t.fornecedor_id or "")
             or forn_by_doc.get(limpar_documento(t.favorecido_doc or ""))
@@ -2798,3 +2848,180 @@ async def compat_importar_favorecidos_itau(
         "atualizados": atualizados,
         "titulos_vinculados": titulos_vinculados,
     }
+
+
+# ---------------------------------------------------------------------------
+# DESPESAS COM PESSOAL EM LOTE (FOLHA DP .ZIP/.PDF + LOTE MANUAL)
+# ---------------------------------------------------------------------------
+
+class PessoalColaboradorItem(BaseModel):
+    nome: str
+    cpf: Optional[str] = ""
+    valor: float
+    dados_banco: Optional[str] = ""
+
+
+class PessoalLoteEntrada(BaseModel):
+    filial: str
+    ccusto: Optional[str] = ""
+    categoria: str = "12201 - Salários"
+    numero_doc: str
+    vencimento: str
+    competencia: Optional[str] = ""
+    forma_pgto: Optional[str] = "FOLHA ITAÚ (C/C)"
+    cnpj_empresa: Optional[str] = ""
+    eh_solar: bool = False
+    colaboradores: List[PessoalColaboradorItem]
+
+
+class PessoalGravarLotesRequest(BaseModel):
+    lotes: List[PessoalLoteEntrada]
+
+
+@router.post("/pessoal/parse-folha-dp")
+async def compat_parse_folha_dp(
+    file: UploadFile = File(...),
+    ctx: TenantContext = Depends(require_v2_roles("OWNER", "DIRETOR_APROVADOR", "FINANCEIRO")),
+    db: Session = Depends(get_db),
+):
+    import unicodedata
+
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=422, detail="Arquivo vazio.")
+
+    try:
+        lotes = parse_pacote_folha_dp(raw, file.filename or "folha.zip")
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=f"Não foi possível ler o arquivo da folha: {exc}")
+
+    if not lotes:
+        raise HTTPException(
+            status_code=422,
+            detail="Nenhum colaborador/valor encontrado. Envie o .ZIP ou PDF de 'Extrato Mensal' / 'Relatório de Líquidos' do DP.",
+        )
+
+    def _norm_n(s: str) -> str:
+        nfkd = unicodedata.normalize("NFKD", str(s or ""))
+        sem = "".join(c for c in nfkd if not unicodedata.combining(c))
+        toks = [t for t in re.sub(r"[^A-Za-z0-9\s]", " ", sem).upper().split() if t not in {"DE", "DA", "DO", "DOS", "DAS"}]
+        return " ".join(toks)
+
+    forn_all = db.query(Fornecedor).filter(Fornecedor.tenant_id == ctx.tenant_id).all()
+    forn_by_cpf = {limpar_documento(f.cnpj_cpf): f for f in forn_all if f.cnpj_cpf}
+    forn_by_nome = {_norm_n(f.razao_social): f for f in forn_all if f.razao_social}
+
+    for lote in lotes:
+        com_conta = 0
+        for colab in lote["colaboradores"]:
+            cpf_limpo = limpar_documento(colab.get("cpf") or "")
+            f_obj = forn_by_cpf.get(cpf_limpo) or forn_by_nome.get(_norm_n(colab.get("nome") or ""))
+            db_txt = (f_obj.dados_banco.strip() if f_obj and f_obj.dados_banco else "")
+            colab["dados_banco"] = db_txt
+            colab["conta_ok"] = bool(db_txt)
+            if not cpf_limpo and f_obj and f_obj.cnpj_cpf:
+                colab["cpf"] = f_obj.cnpj_cpf
+            if db_txt:
+                com_conta += 1
+        lote["qtd_com_conta"] = com_conta
+        lote["qtd_total"] = len(lote["colaboradores"])
+
+    return {"success": True, "lotes": lotes}
+
+
+@router.post("/pessoal/gravar-lotes")
+def compat_gravar_lotes_pessoal(
+    req: PessoalGravarLotesRequest,
+    request: Request,
+    ctx: TenantContext = Depends(require_v2_roles("OWNER", "DIRETOR_APROVADOR", "FINANCEIRO")),
+    db: Session = Depends(get_db),
+):
+    if not req.lotes:
+        raise HTTPException(status_code=422, detail="Nenhum lote informado para gravação.")
+
+    emp_padrao = _resolver_empresa_padrao(db, ctx.tenant_id)
+    todas_emps = db.query(Empresa).filter(Empresa.tenant_id == ctx.tenant_id, Empresa.ativo.is_(True)).all()
+    emp_solar = next((e for e in todas_emps if "26607445" in limpar_documento(e.cnpj or "") or "SOLAR" in (e.nome_fantasia or "").upper()), None)
+
+    criados = []
+    for lote in req.lotes:
+        colabs_validos = [c for c in lote.colaboradores if c.valor and c.valor > 0]
+        if not colabs_validos:
+            continue
+
+        emp_alvo = emp_solar if (lote.eh_solar and emp_solar) else emp_padrao
+        total_dec = sum((to_dec(c.valor) for c in colabs_validos), Decimal("0.00"))
+        dt_venc = _parse_date(lote.vencimento, date.today())
+        cat_label = (lote.ccusto or lote.categoria or "Geral").strip()
+        cc_obj, pc_obj = _resolver_plano_e_ccusto(db, ctx.tenant_id, emp_alvo.id, lote.categoria)
+        if not cc_obj and cat_label:
+            cc_obj, _ = _resolver_plano_e_ccusto(db, ctx.tenant_id, emp_alvo.id, cat_label)
+
+        fav_nome = f"{lote.categoria.split(' - ')[-1].strip()} — {lote.filial}".strip()[:200]
+        num_tx = f"DP-{uuid.uuid4().hex[:8].upper()}"
+
+        titulo = Titulo(
+            tenant_id=ctx.tenant_id,
+            empresa_id=emp_alvo.id,
+            centro_custo_id=cc_obj.id if cc_obj else None,
+            plano_conta_id=pc_obj.id if pc_obj else None,
+            tipo_movimento="PAGAR",
+            tipo_documento="FOLHA_LOTE",
+            numero_tx=num_tx,
+            numero_documento=lote.numero_doc.strip()[:60] or num_tx,
+            favorecido_nome=fav_nome,
+            favorecido_doc=limpar_documento(lote.cnpj_empresa or "") or emp_alvo.cnpj,
+            dt_emissao=date.today(),
+            dt_vencimento=dt_venc,
+            valor_bruto=total_dec,
+            valor_liquido=total_dec,
+            status="PENDENTE",
+            forma_pgto=(lote.forma_pgto or "FOLHA ITAÚ (C/C)").strip().upper()[:30],
+            descricao=f"{lote.categoria} | {lote.filial}" + (f" ({lote.competencia})" if lote.competencia else "") + f" — {len(colabs_validos)} colaborador(es)",
+            observacao=f"Lote Pessoal: {lote.ccusto or lote.filial} | {len(colabs_validos)} colaboradores",
+            solicitante="RH",
+            conciliado=False,
+        )
+        db.add(titulo)
+        db.flush()
+
+        for idx, c in enumerate(colabs_validos, start=1):
+            val_c = to_dec(c.valor)
+            db.add(
+                TituloItem(
+                    tenant_id=ctx.tenant_id,
+                    titulo_id=titulo.id,
+                    numero_item=idx,
+                    codigo_produto=limpar_documento(c.cpf or "")[:60],
+                    descricao=c.nome.strip().upper()[:300],
+                    ncm=(lote.filial or "")[:16],
+                    unidade="FOLHA_COLAB",
+                    quantidade=Decimal("1.0000"),
+                    valor_unitario=val_c,
+                    valor_total=val_c,
+                    fornecedor_nome=(c.dados_banco or "")[:200],
+                    numero_nf=titulo.numero_documento,
+                    dt_emissao=date.today(),
+                )
+            )
+
+        criados.append({
+            "id": titulo.id,
+            "numero_doc": titulo.numero_documento,
+            "favorecido": titulo.favorecido_nome,
+            "qtd_colaboradores": len(colabs_validos),
+            "valor": float(total_dec),
+        })
+
+    registrar_audit_v2(
+        db,
+        ctx.tenant_id,
+        ctx.usuario,
+        "GRAVAR_LOTES_PESSOAL",
+        "titulos",
+        f"{len(criados)}_lotes",
+        dados_depois={"lotes": criados},
+        ip=extrair_ip(request),
+    )
+    db.commit()
+    return {"success": True, "lotes_criados": len(criados), "titulos": criados}

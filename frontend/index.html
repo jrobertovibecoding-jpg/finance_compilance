@@ -1407,6 +1407,9 @@
             <button class="tool-btn" onclick="abrirModalRemessaCNAB()" style="background: #ea580c; color: white; font-weight: 700; border-color: #c2410c; padding: 5px 12px;" title="Gerar Remessa Bancária CNAB 240 (Multi-Banco: Boletos, Tributos e PIX)">
               <svg class="bimer-svg" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg> 🏦 Remessa Bancária (CNAB 240)
             </button>
+            <button class="tool-btn" onclick="abrirModalDespesasPessoal()" style="background: #7c3aed; color: white; font-weight: 700; border-color: #6d28d9; padding: 5px 12px;" title="Lançar Folha, Domingos, VT, Alimentação, FGTS/INSS em lote (1 linha por filial com detalhamento interno)">
+              👥 Despesas c/ Pessoal (Lote)
+            </button>
             <button class="tool-btn" onclick="enviarWhatsAppDiretoria()" style="background: #16a34a; color: white; font-weight: 700; border-color: #15803d; padding: 5px 12px;" title="Enviar resumo consolidado de pagamentos para o WhatsApp da Diretoria">
               <svg class="bimer-svg" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg> 📱 WhatsApp Diretoria
             </button>
@@ -3420,6 +3423,134 @@
         <button type="button" id="btn-baixar-remessa-cnab" class="tool-btn primary" onclick="gerarArquivoRemessaCNAB()" style="background: #ea580c; border-color: #c2410c; color: #fff; font-weight: 800; font-size: 11.5px; padding: 7px 16px;">
           ⬇️ Gerar e Baixar Arquivo .REM (CNAB 240)
         </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL POP-UP: DESPESAS COM PESSOAL EM LOTE ==================== -->
+<div id="modal-despesas-pessoal" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.72); z-index: 100065; align-items: center; justify-content: center; padding: 14px;">
+  <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; width: 100%; max-width: 920px; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 24px 60px rgba(15,23,42,0.4); overflow: hidden;">
+    <div style="background: linear-gradient(90deg, #4c1d95 0%, #7c3aed 100%); color: #ffffff; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <div style="font-size: 14px; font-weight: 800;">👥 Despesas com Pessoal em Lote (Borderô / Folha)</div>
+        <div style="font-size: 11px; color: #ddd6fe;">Gera 1 lançamento limpo por filial no Contas a Pagar com todos os colaboradores detalhados dentro — e desmembra sozinho na Remessa Itaú!</div>
+      </div>
+      <button type="button" onclick="fecharModalDespesasPessoal()" style="background: none; border: none; font-size: 18px; color: #e9d5ff; cursor: pointer; padding: 2px 6px;">✕</button>
+    </div>
+
+    <!-- Abas -->
+    <div style="display: flex; gap: 6px; padding: 10px 16px 0 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+      <button type="button" id="tab-btn-dp-zip" onclick="trocarAbaPessoal('zip')" style="padding: 7px 14px; font-size: 11.5px; font-weight: 700; border: 1px solid #cbd5e1; border-bottom: none; border-radius: 6px 6px 0 0; background: #ffffff; color: #5b21b6; cursor: pointer;">📥 Importar Folha do DP (.ZIP / .PDF)</button>
+      <button type="button" id="tab-btn-dp-manual" onclick="trocarAbaPessoal('manual')" style="padding: 7px 14px; font-size: 11.5px; font-weight: 700; border: 1px solid #cbd5e1; border-bottom: none; border-radius: 6px 6px 0 0; background: #f1f5f9; color: #475569; cursor: pointer;">✍️ Lote Rápido Manual (Domingos, VT, Alimentação, Extras)</button>
+    </div>
+
+    <!-- ABA 1: IMPORTAR .ZIP / .PDF DO DP -->
+    <div id="tab-dp-zip" style="padding: 14px 16px; overflow-y: auto; flex: 1;">
+      <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 6px; padding: 10px 12px; margin-bottom: 12px;">
+        <div>
+          <input type="file" id="input-folha-dp-arquivo" accept=".zip,.pdf" style="display: none;" onchange="carregarArquivoFolhaDP(event)">
+          <button type="button" class="tool-btn primary" onclick="document.getElementById('input-folha-dp-arquivo').click()" style="background: #6d28d9; border-color: #5b21b6; color: #fff; font-weight: 700; font-size: 11.5px; padding: 7px 14px;">📂 Selecionar .ZIP ou .PDF da Folha</button>
+        </div>
+        <div style="width: 150px;">
+          <label style="display: block; font-size: 10px; font-weight: 700; color: #4c1d95;">Data de Vencimento *</label>
+          <input type="date" id="dp-zip-vencimento" style="width: 100%; padding: 5px 7px; font-size: 11.5px; border: 1px solid #c4b5fd; border-radius: 4px;">
+        </div>
+        <div style="flex: 1; min-width: 180px;">
+          <label style="display: block; font-size: 10px; font-weight: 700; color: #4c1d95;">Categoria Contábil</label>
+          <select id="dp-zip-categoria" style="width: 100%; padding: 5px 7px; font-size: 11.5px; border: 1px solid #c4b5fd; border-radius: 4px; background: #fff;">
+            <option value="12201 - Salários">12201 - Salários</option>
+            <option value="12211 - 13º Salário">12211 - 13º Salário</option>
+            <option value="12206 - Férias">12206 - Férias</option>
+            <option value="12207 - Rescisão">12207 - Rescisão</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="dp-zip-preview" style="font-size: 11.5px; color: #475569;">
+        <div style="text-align: center; padding: 28px; border: 1px dashed #cbd5e1; border-radius: 6px;">
+          Envie o arquivo <b>.ZIP</b> (ex: <i>Folha_maio_2026.zip</i>) ou um <b>.PDF</b> (<i>Extrato Mensal</i> / <i>Relatório de Líquidos</i>) do DP para visualizar todas as filiais e colaboradores antes de gravar.
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA 2: LOTE RÁPIDO MANUAL -->
+    <div id="tab-dp-manual" style="display: none; padding: 14px 16px; overflow-y: auto; flex: 1;">
+      <div style="display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+        <div>
+          <label style="display: block; font-size: 10px; font-weight: 700; color: #334155;">Categoria / Despesa *</label>
+          <select id="dp-man-categoria" style="width: 100%; padding: 5px 7px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff;">
+            <option value="12208 - Domingos e Feriados Trabalhados">12208 - Domingos e Feriados</option>
+            <option value="12201 - Salários">12201 - Salários</option>
+            <option value="12203 - Transportes">12203 - Transportes (VT)</option>
+            <option value="12204 - Alimentação">12204 - Alimentação (Ticket)</option>
+            <option value="12205 - FGTS">12205 - FGTS</option>
+            <option value="12205 - INSS">12205 - INSS</option>
+            <option value="12206 - Férias">12206 - Férias</option>
+            <option value="12207 - Rescisão">12207 - Rescisão</option>
+            <option value="12213 - Extras">12213 - Extras / Adiantamento</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 10px; font-weight: 700; color: #334155;">Filial / Unidade *</label>
+          <select id="dp-man-filial" style="width: 100%; padding: 5px 7px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff;">
+            <option value="Boah - Matriz">Boah - Matriz</option>
+            <option value="Boah - Barra">Boah - Barra</option>
+            <option value="Boah - Paseo">Boah - Paseo</option>
+            <option value="Boah - Horto">Boah - Horto</option>
+            <option value="Boah - SDB">Boah - SDB</option>
+            <option value="Boah - Vilas">Boah - Vilas</option>
+            <option value="Solar - Geral">Solar - Geral</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 10px; font-weight: 700; color: #334155;">Nº Documento *</label>
+          <input type="text" id="dp-man-doc" placeholder="Ex: DOM-29NOV" style="width: 100%; padding: 5px 7px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px;">
+        </div>
+        <div>
+          <label style="display: block; font-size: 10px; font-weight: 700; color: #334155;">Vencimento *</label>
+          <input type="date" id="dp-man-venc" style="width: 100%; padding: 5px 7px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px;">
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; align-items: flex-end; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 9px 10px; margin-bottom: 10px;">
+        <div style="flex: 1;">
+          <label style="display: block; font-size: 10px; font-weight: 700; color: #334155;">Colaborador (cadastrado no Itaú)</label>
+          <input type="text" id="dp-man-colab-input" list="datalist-colabs-pessoal" placeholder="Digite o nome do colaborador..." style="width: 100%; padding: 5px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 4px;">
+          <datalist id="datalist-colabs-pessoal"></datalist>
+        </div>
+        <div style="width: 130px;">
+          <label style="display: block; font-size: 10px; font-weight: 700; color: #334155;">Valor (R$)</label>
+          <input type="number" id="dp-man-colab-valor" step="0.01" min="0.01" placeholder="33.75" style="width: 100%; padding: 5px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 4px;">
+        </div>
+        <button type="button" class="tool-btn primary" onclick="adicionarColaboradorManualPessoal()" style="background: #059669; border-color: #047857; color: #fff; font-weight: 700; font-size: 11px; padding: 6px 12px;">+ Incluir no Lote</button>
+      </div>
+
+      <div style="border: 1px solid #e2e8f0; border-radius: 5px; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+          <thead>
+            <tr style="background: #f1f5f9; color: #334155; text-align: left;">
+              <th style="padding: 6px 8px;">Colaborador</th>
+              <th style="padding: 6px 8px;">CPF</th>
+              <th style="padding: 6px 8px;">Conta Itaú</th>
+              <th style="padding: 6px 8px; text-align: right;">Valor</th>
+              <th style="padding: 6px 8px; width: 40px;"></th>
+            </tr>
+          </thead>
+          <tbody id="dp-man-tbody">
+            <tr><td colspan="5" style="text-align: center; padding: 16px; color: #64748b;">Nenhum colaborador incluído ainda.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="text-align: right; margin-top: 8px; font-size: 12.5px; font-weight: 800; color: #5b21b6;" id="dp-man-total">Total do Lote: R$ 0,00</div>
+    </div>
+
+    <div style="padding: 10px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+      <span id="dp-lote-status" style="font-size: 11px; font-weight: 600; color: #475569;"></span>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="tool-btn" onclick="fecharModalDespesasPessoal()" style="font-size: 11.5px;">Fechar</button>
+        <button type="button" id="btn-gravar-dp-zip" class="tool-btn primary" onclick="gravarLotesFolhaDP()" style="display: none; background: #6d28d9; border-color: #5b21b6; color: #fff; font-weight: 800; font-size: 11.5px; padding: 7px 16px;">✅ Lançar Lotes Selecionados no Contas a Pagar</button>
+        <button type="button" id="btn-gravar-dp-manual" class="tool-btn primary" onclick="gravarLoteManualPessoal()" style="display: none; background: #6d28d9; border-color: #5b21b6; color: #fff; font-weight: 800; font-size: 11.5px; padding: 7px 16px;">✅ Gravar Lote Único no Contas a Pagar</button>
       </div>
     </div>
   </div>
@@ -16244,6 +16375,274 @@
   function exportarLoteItauModal() {
     const dataLote = document.getElementById('aut-data-lote')?.value || '';
     abrirModalRemessaCNAB(dataLote);
+  }
+
+  // ==============================================================================
+  // DESPESAS COM PESSOAL EM LOTE (FOLHA DP .ZIP/.PDF + LOTE MANUAL)
+  // ==============================================================================
+  let _dpZipLotesAtual = [];
+  let _dpManualColabs = [];
+  let _dpColabsCadastrados = [];
+
+  async function abrirModalDespesasPessoal() {
+    const modal = document.getElementById('modal-despesas-pessoal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    const hoje = new Date().toISOString().slice(0, 10);
+    const vZip = document.getElementById('dp-zip-vencimento');
+    const vMan = document.getElementById('dp-man-venc');
+    if (vZip && !vZip.value) vZip.value = hoje;
+    if (vMan && !vMan.value) vMan.value = hoje;
+    document.getElementById('dp-lote-status').textContent = '';
+    trocarAbaPessoal('zip');
+    await carregarDatalistColaboradoresPessoal();
+  }
+
+  function fecharModalDespesasPessoal() {
+    const modal = document.getElementById('modal-despesas-pessoal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  function trocarAbaPessoal(aba) {
+    const isZip = aba === 'zip';
+    document.getElementById('tab-dp-zip').style.display = isZip ? 'block' : 'none';
+    document.getElementById('tab-dp-manual').style.display = isZip ? 'none' : 'block';
+    document.getElementById('tab-btn-dp-zip').style.background = isZip ? '#ffffff' : '#f1f5f9';
+    document.getElementById('tab-btn-dp-zip').style.color = isZip ? '#5b21b6' : '#475569';
+    document.getElementById('tab-btn-dp-manual').style.background = isZip ? '#f1f5f9' : '#ffffff';
+    document.getElementById('tab-btn-dp-manual').style.color = isZip ? '#475569' : '#5b21b6';
+    document.getElementById('btn-gravar-dp-zip').style.display = (isZip && _dpZipLotesAtual.length > 0) ? 'inline-flex' : 'none';
+    document.getElementById('btn-gravar-dp-manual').style.display = !isZip ? 'inline-flex' : 'none';
+  }
+
+  async function carregarDatalistColaboradoresPessoal() {
+    try {
+      const resp = await apiFetch(`${API_BASE}/fornecedores`);
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const todos = data.fornecedores || [];
+      _dpColabsCadastrados = todos.filter(f => (f.tipo || '').toUpperCase() === 'COLABORADOR' || f.dados_banco);
+      const dl = document.getElementById('datalist-colabs-pessoal');
+      if (dl) {
+        dl.innerHTML = _dpColabsCadastrados.map(c =>
+          `<option value="${escapeHtml(c.razao_social)}">${escapeHtml(c.cnpj_cpf || '')} ${escapeHtml(c.dados_banco || '')}</option>`
+        ).join('');
+      }
+    } catch (e) {}
+  }
+
+  async function carregarArquivoFolhaDP(event) {
+    const file = event?.target?.files?.[0];
+    if (!file) return;
+    const prev = document.getElementById('dp-zip-preview');
+    const st = document.getElementById('dp-lote-status');
+    prev.innerHTML = '<div style="text-align:center;padding:24px;color:#5b21b6;font-weight:700;">Lendo PDFs da folha e cruzando CPFs com contas Itaú...</div>';
+    if (st) st.textContent = 'Processando arquivo do DP...';
+
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const resp = await apiFetch(`${API_BASE}/pessoal/parse-folha-dp`, { method: 'POST', body: fd });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(data.detail || 'Erro ao ler folha');
+
+      _dpZipLotesAtual = data.lotes || [];
+      renderizarPreviewFolhaDP();
+      document.getElementById('btn-gravar-dp-zip').style.display = _dpZipLotesAtual.length > 0 ? 'inline-flex' : 'none';
+      if (st) st.textContent = `✅ ${_dpZipLotesAtual.length} filial(is)/empresa(s) lidas de ${file.name}.`;
+    } catch (e) {
+      _dpZipLotesAtual = [];
+      prev.innerHTML = `<div style="padding:16px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:6px;">❌ ${escapeHtml(e.message)}</div>`;
+      if (st) st.textContent = '';
+    } finally {
+      if (event?.target) event.target.value = '';
+    }
+  }
+
+  function renderizarPreviewFolhaDP() {
+    const prev = document.getElementById('dp-zip-preview');
+    if (!_dpZipLotesAtual.length) {
+      prev.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b;">Nenhum lote encontrado.</div>';
+      return;
+    }
+    const totalGeral = _dpZipLotesAtual.reduce((s, l) => s + Number(l.total_liquido || 0), 0);
+    const totalColabs = _dpZipLotesAtual.reduce((s, l) => s + Number(l.qtd_total || 0), 0);
+
+    prev.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;">
+        <span style="font-weight:800;color:#166534;">${_dpZipLotesAtual.length} Lotes prontos • ${totalColabs} colaboradores</span>
+        <span style="font-weight:800;color:#166534;font-size:13px;">Total Líquido: ${formatarMoeda(totalGeral)}</span>
+      </div>
+      ${_dpZipLotesAtual.map((l, idx) => `
+        <details style="border:1px solid ${l.eh_solar ? '#fde68a' : '#e2e8f0'};border-radius:6px;margin-bottom:8px;background:${l.eh_solar ? '#fffbeb' : '#ffffff'};overflow:hidden;">
+          <summary style="padding:9px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:700;color:#0f172a;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="event.stopPropagation()">
+              <input type="checkbox" class="dp-zip-chk" data-idx="${idx}" checked>
+              <span>${escapeHtml(l.filial)} ${l.eh_solar ? '<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:10px;">SOLAR</span>' : ''}</span>
+              <span style="font-weight:500;color:#64748b;font-size:11px;">(${l.qtd_total} colab. • ${l.qtd_com_conta}/${l.qtd_total} com conta Itaú • Comp. ${escapeHtml(l.competencia || '-')})</span>
+            </label>
+            <span style="color:#5b21b6;font-size:12.5px;">${formatarMoeda(l.total_liquido)}</span>
+          </summary>
+          <div style="padding:8px 12px;border-top:1px solid #e2e8f0;background:#f8fafc;">
+            <table style="width:100%;border-collapse:collapse;font-size:10.5px;">
+              <thead><tr style="color:#475569;text-align:left;"><th style="padding:4px;">Colaborador</th><th style="padding:4px;">CPF</th><th style="padding:4px;">Conta Itaú</th><th style="padding:4px;text-align:right;">Líquido</th></tr></thead>
+              <tbody>
+                ${(l.colaboradores || []).map(c => `
+                  <tr style="border-top:1px solid #e2e8f0;">
+                    <td style="padding:4px;font-weight:600;">${escapeHtml(c.nome)}</td>
+                    <td style="padding:4px;font-family:monospace;">${escapeHtml(c.cpf || '-')}</td>
+                    <td style="padding:4px;">${c.conta_ok ? `<span style="color:#047857;font-weight:600;">${escapeHtml(c.dados_banco)}</span>` : '<span style="color:#b45309;">Sem conta no Itaú</span>'}</td>
+                    <td style="padding:4px;text-align:right;font-weight:700;">${formatarMoeda(c.liquido)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      `).join('')}
+    `;
+  }
+
+  async function gravarLotesFolhaDP() {
+    const idxs = Array.from(document.querySelectorAll('.dp-zip-chk:checked')).map(cb => Number(cb.dataset.idx));
+    if (!idxs.length) { alert('Selecione pelo menos 1 filial/lote.'); return; }
+    const venc = document.getElementById('dp-zip-vencimento')?.value;
+    if (!venc) { alert('Informe a data de vencimento.'); return; }
+    const cat = document.getElementById('dp-zip-categoria')?.value || '12201 - Salários';
+
+    const lotesPayload = idxs.map(i => {
+      const l = _dpZipLotesAtual[i];
+      const compSlug = (l.competencia || venc.slice(0, 7)).replace('/', '');
+      return {
+        filial: l.filial,
+        ccusto: l.ccusto,
+        categoria: cat,
+        numero_doc: `FOLHA-${compSlug}-${l.filial.replace(/[^A-Za-z0-9]/g, '').slice(-5).toUpperCase()}`,
+        vencimento: venc,
+        competencia: l.competencia || '',
+        forma_pgto: 'FOLHA ITAÚ (C/C)',
+        cnpj_empresa: l.cnpj || '',
+        eh_solar: Boolean(l.eh_solar),
+        colaboradores: (l.colaboradores || []).map(c => ({
+          nome: c.nome,
+          cpf: c.cpf || '',
+          valor: Number(c.liquido || 0),
+          dados_banco: c.dados_banco || '',
+        })),
+      };
+    });
+
+    const btn = document.getElementById('btn-gravar-dp-zip');
+    btn.disabled = true;
+    try {
+      const resp = await apiFetch(`${API_BASE}/pessoal/gravar-lotes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lotes: lotesPayload }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(data.detail || 'Erro ao gravar lotes');
+      alert(`✅ ${data.lotes_criados} lançamento(s) de Folha gravado(s) no Contas a Pagar!\n\nCada filial ficou em 1 linha limpa com todos os colaboradores detalhados dentro.`);
+      fecharModalDespesasPessoal();
+      await carregarTitulosDoServidor();
+    } catch (e) {
+      alert('Erro ao gravar lotes: ' + e.message);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function adicionarColaboradorManualPessoal() {
+    const inpNome = document.getElementById('dp-man-colab-input');
+    const inpVal = document.getElementById('dp-man-colab-valor');
+    const nomeRaw = (inpNome?.value || '').trim().toUpperCase();
+    const val = parseFloat(inpVal?.value || '0');
+    if (!nomeRaw || !(val > 0)) {
+      alert('Informe o colaborador e um valor maior que zero.');
+      return;
+    }
+    const cad = _dpColabsCadastrados.find(c => (c.razao_social || '').toUpperCase() === nomeRaw)
+      || _dpColabsCadastrados.find(c => (c.razao_social || '').toUpperCase().includes(nomeRaw));
+    _dpManualColabs.push({
+      nome: cad ? cad.razao_social : nomeRaw,
+      cpf: cad?.cnpj_cpf || '',
+      dados_banco: cad?.dados_banco || '',
+      valor: val,
+    });
+    inpNome.value = '';
+    inpVal.value = '';
+    inpNome.focus();
+    renderizarTabelaManualPessoal();
+  }
+
+  function removerColaboradorManualPessoal(idx) {
+    _dpManualColabs.splice(idx, 1);
+    renderizarTabelaManualPessoal();
+  }
+
+  function renderizarTabelaManualPessoal() {
+    const tbody = document.getElementById('dp-man-tbody');
+    const totEl = document.getElementById('dp-man-total');
+    if (!_dpManualColabs.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:16px;color:#64748b;">Nenhum colaborador incluído ainda.</td></tr>';
+      totEl.textContent = 'Total do Lote: R$ 0,00';
+      return;
+    }
+    let soma = 0;
+    tbody.innerHTML = _dpManualColabs.map((c, idx) => {
+      soma += Number(c.valor || 0);
+      return `
+        <tr style="border-top:1px solid #e2e8f0;">
+          <td style="padding:5px 8px;font-weight:600;">${escapeHtml(c.nome)}</td>
+          <td style="padding:5px 8px;font-family:monospace;">${escapeHtml(c.cpf || '-')}</td>
+          <td style="padding:5px 8px;color:#047857;">${escapeHtml(c.dados_banco || 'Sem conta')}</td>
+          <td style="padding:5px 8px;text-align:right;font-weight:700;">${formatarMoeda(c.valor)}</td>
+          <td style="padding:5px 8px;text-align:center;"><button type="button" onclick="removerColaboradorManualPessoal(${idx})" style="border:none;background:none;color:#dc2626;cursor:pointer;font-weight:700;">✕</button></td>
+        </tr>
+      `;
+    }).join('');
+    totEl.textContent = `Total do Lote (${_dpManualColabs.length} colab.): ${formatarMoeda(soma)}`;
+  }
+
+  async function gravarLoteManualPessoal() {
+    if (!_dpManualColabs.length) { alert('Inclua pelo menos 1 colaborador no lote.'); return; }
+    const cat = document.getElementById('dp-man-categoria')?.value || '12208 - Domingos e Feriados Trabalhados';
+    const fil = document.getElementById('dp-man-filial')?.value || 'Boah - Matriz';
+    const doc = (document.getElementById('dp-man-doc')?.value || '').trim() || `DP-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}`;
+    const venc = document.getElementById('dp-man-venc')?.value;
+    if (!venc) { alert('Informe o vencimento.'); return; }
+
+    const btn = document.getElementById('btn-gravar-dp-manual');
+    btn.disabled = true;
+    try {
+      const resp = await apiFetch(`${API_BASE}/pessoal/gravar-lotes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lotes: [{
+            filial: fil,
+            ccusto: fil,
+            categoria: cat,
+            numero_doc: doc,
+            vencimento: venc,
+            forma_pgto: 'FOLHA ITAÚ (C/C)',
+            eh_solar: fil.toLowerCase().includes('solar'),
+            colaboradores: _dpManualColabs,
+          }],
+        }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(data.detail || 'Erro ao gravar lote');
+      _dpManualColabs = [];
+      renderizarTabelaManualPessoal();
+      alert(`✅ Lote único "${doc}" gravado no Contas a Pagar!`);
+      fecharModalDespesasPessoal();
+      await carregarTitulosDoServidor();
+    } catch (e) {
+      alert('Erro ao gravar lote: ' + e.message);
+    } finally {
+      btn.disabled = false;
+    }
   }
 
   async function enviarWhatsAppDiretoria(dataFiltro, numeroDestino = '') {
