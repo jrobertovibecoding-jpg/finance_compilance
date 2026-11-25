@@ -1,13 +1,18 @@
 from datetime import date, datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
+import hashlib
 from itertools import combinations
 import io
+import os
+from pathlib import Path
 import re
 from typing import Any, List, Optional, Union
+import uuid
 
 import ofxparse
 import requests
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, Response, UploadFile, status
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
@@ -26,6 +31,7 @@ from ...db.models import (
     ConciliacaoItem,
     ContaBancaria,
     DespesaRecorrente,
+    DocumentoAnexo,
     Empresa,
     ExtratoBancario,
     ExtratoTransacao,
@@ -631,6 +637,7 @@ def compat_listar_titulos(
     impostos_map: dict[str, list[TituloImposto]] = {}
     itens_map: dict[str, list[TituloItem]] = {}
     rateios_count: dict[str, int] = {}
+    anexos_count: dict[str, int] = {}
     if tit_ids:
         for imp in (
             db.query(TituloImposto)
@@ -652,6 +659,17 @@ def compat_listar_titulos(
             .all()
         ):
             rateios_count[tid] = cnt
+        for tid, cnt in (
+            db.query(DocumentoAnexo.entidade_id, func.count(DocumentoAnexo.id))
+            .filter(
+                DocumentoAnexo.tenant_id == ctx.tenant_id,
+                DocumentoAnexo.entidade_tipo == "TITULO",
+                DocumentoAnexo.entidade_id.in_(tit_ids),
+            )
+            .group_by(DocumentoAnexo.entidade_id)
+            .all()
+        ):
+            anexos_count[tid] = cnt
 
     cc_map = {
         c.id: c.nome
@@ -677,6 +695,7 @@ def compat_listar_titulos(
             "centro_custo_id": t.centro_custo_id,
             "plano_conta_id": t.plano_conta_id,
             "rateios_count": rateios_count.get(t.id, 0),
+            "anexos_count": anexos_count.get(t.id, 0),
             "origem": "NOTA",
             "tipo": "FORNECEDOR",
             "tipo_doc": t.tipo_documento or "NFSE",
@@ -1973,3 +1992,163 @@ def compat_disparar_whatsapp(
         "mensagem_enviada": msg,
         "whatsapp_status": resp.json() if resp.headers.get("content-type", "").startswith("application/json") else resp.text,
     }
+
+
+def _diretorio_anexos_base() -> Path:
+    base = Path("/app/data/anexos") if Path("/app/data").exists() else Path(__file__).resolve().parents[3] / "data" / "anexos"
+    base.mkdir(parents=True, exist_ok=True)
+    return base
+
+
+@router.get("/titulos/{id_ref}/anexos")
+def compat_listar_anexos_titulo(
+    id_ref: str,
+    ctx: TenantContext = Depends(get_tenant_context),
+    db: Session = Depends(get_db),
+):
+    _, raw_id = _strip_ref_id(id_ref)
+    anexos = (
+        db.query(DocumentoAnexo)
+        .filter(
+            DocumentoAnexo.tenant_id == ctx.tenant_id,
+            DocumentoAnexo.entidade_tipo == "TITULO",
+            DocumentoAnexo.entidade_id == raw_id,
+        )
+        .order_by(DocumentoAnexo.criado_em.desc())
+        .all()
+    )
+    return {
+        "success": True,
+        "anexos": [
+            {
+                "id": a.id,
+                "nome_original": a.nome_original,
+                "mime_type": a.mime_type,
+                "tamanho_bytes": a.tamanho_bytes,
+                "criado_em": a.criado_em.isoformat() if a.criado_em else "",
+            }
+            for a in anexos
+        ],
+    }
+
+
+@router.post("/titulos/{id_ref}/anexos")
+async def compat_upload_anexo_titulo(
+    id_ref: str,
+    request: Request,
+    file: UploadFile = File(...),
+    ctx: TenantContext = Depends(require_v2_roles("OWNER", "DIRETOR_APROVADOR", "FINANCEIRO", "SOLICITANTE")),
+    db: Session = Depends(get_db),
+):
+    _, raw_id = _strip_ref_id(id_ref)
+    titulo = db.query(Titulo).filter(Titulo.tenant_id == ctx.tenant_id, Titulo.id == raw_id).first()
+    if not titulo:
+        raise HTTPException(status_code=404, detail="Título não encontrado.")
+
+    nome_orig = (file.filename or "documento.pdf").strip()[:255]
+    ext = Path(nome_orig).suffix.lower()
+    if ext not in (".pdf", ".png", ".jpg", ".jpeg", ".webp", ".xml"):
+        raise HTTPException(status_code=422, detail="Formato não permitido. Use PDF, JPG, PNG, WEBP ou XML.")
+
+    conteudo = await file.read()
+    if not conteudo:
+        raise HTTPException(status_code=422, detail="Arquivo vazio.")
+    if len(conteudo) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=422, detail="Arquivo excede o limite de 10 MB.")
+
+    sha = hashlib.sha256(conteudo).hexdigest()
+    anexo_uid = str(uuid.uuid4())
+    safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", nome_orig)[:120]
+    rel_key = f"{ctx.tenant_id}/{titulo.id}/{anexo_uid}_{safe_name}"
+    dest = _diretorio_anexos_base() / rel_key
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_bytes(conteudo)
+
+    anexo = DocumentoAnexo(
+        id=anexo_uid,
+        tenant_id=ctx.tenant_id,
+        empresa_id=titulo.empresa_id,
+        entidade_tipo="TITULO",
+        entidade_id=titulo.id,
+        storage_key=rel_key,
+        nome_original=nome_orig,
+        mime_type=(file.content_type or "application/octet-stream").lower()[:120],
+        tamanho_bytes=len(conteudo),
+        sha256=sha,
+        uploaded_by=ctx.usuario.id,
+    )
+    db.add(anexo)
+    registrar_audit_v2(
+        db,
+        ctx.tenant_id,
+        ctx.usuario,
+        "UPLOAD_ANEXO_TITULO",
+        "documentos_anexos",
+        anexo.id,
+        dados_depois={"titulo_id": titulo.id, "nome_original": nome_orig, "tamanho_bytes": len(conteudo)},
+        ip=extrair_ip(request),
+    )
+    db.commit()
+    return {
+        "success": True,
+        "anexo": {
+            "id": anexo.id,
+            "nome_original": anexo.nome_original,
+            "mime_type": anexo.mime_type,
+            "tamanho_bytes": anexo.tamanho_bytes,
+            "criado_em": anexo.criado_em.isoformat() if anexo.criado_em else "",
+        },
+    }
+
+
+@router.get("/anexos/{anexo_id}/download")
+def compat_download_anexo(
+    anexo_id: str,
+    ctx: TenantContext = Depends(get_tenant_context),
+    db: Session = Depends(get_db),
+):
+    anexo = (
+        db.query(DocumentoAnexo)
+        .filter(DocumentoAnexo.id == anexo_id, DocumentoAnexo.tenant_id == ctx.tenant_id)
+        .first()
+    )
+    if not anexo:
+        raise HTTPException(status_code=404, detail="Anexo não encontrado.")
+    caminho = _diretorio_anexos_base() / anexo.storage_key
+    if not caminho.exists():
+        raise HTTPException(status_code=404, detail="Arquivo físico não encontrado no servidor.")
+    return FileResponse(caminho, media_type=anexo.mime_type, filename=anexo.nome_original)
+
+
+@router.delete("/anexos/{anexo_id}")
+def compat_excluir_anexo(
+    anexo_id: str,
+    request: Request,
+    ctx: TenantContext = Depends(require_v2_roles("OWNER", "DIRETOR_APROVADOR", "FINANCEIRO")),
+    db: Session = Depends(get_db),
+):
+    anexo = (
+        db.query(DocumentoAnexo)
+        .filter(DocumentoAnexo.id == anexo_id, DocumentoAnexo.tenant_id == ctx.tenant_id)
+        .first()
+    )
+    if not anexo:
+        raise HTTPException(status_code=404, detail="Anexo não encontrado.")
+    caminho = _diretorio_anexos_base() / anexo.storage_key
+    try:
+        if caminho.exists():
+            os.remove(caminho)
+    except OSError:
+        pass
+    db.delete(anexo)
+    registrar_audit_v2(
+        db,
+        ctx.tenant_id,
+        ctx.usuario,
+        "EXCLUIR_ANEXO_TITULO",
+        "documentos_anexos",
+        anexo_id,
+        ip=extrair_ip(request),
+    )
+    db.commit()
+    return {"success": True}

@@ -2394,6 +2394,9 @@
           <button class="btn-filtro-rapido" id="btn-rel-raiox" onclick="selecionarRelatorioBimer('raiox')" style="padding: 6px 12px; font-weight: 700; font-size: 11px;">
             <svg class="bimer-svg" viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg> G) Raio-X de Consumo &amp; Ofensores
           </button>
+          <button class="btn-filtro-rapido" id="btn-rel-evolucao" onclick="selecionarRelatorioBimer('evolucao')" style="padding: 6px 12px; font-weight: 700; font-size: 11px;">
+            <svg class="bimer-svg" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> H) Evolução Mensal (MoM) &amp; Inflação
+          </button>
         </div>
 
         <!-- BARRA DE FILTROS ESPECÍFICOS & BOTÕES DE AÇÃO -->
@@ -3265,10 +3268,38 @@
     <!-- Barra de Rodapé / Ações -->
     <div style="background: #e2e8f0; border-top: 1px solid #cbd5e1; padding: 8px 14px; display: flex; justify-content: space-between; align-items: center;">
       <span style="font-size: 10.5px; color: #334155;">Pressione <strong>ESC</strong> para cancelar</span>
-      <div style="display: flex; gap: 8px;">
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button type="button" class="tool-btn" id="btn-edit-abrir-anexos" onclick="abrirModalAnexosDoTituloAtual()" style="border-color: #0284c7; color: #0369a1; background: #e0f2fe; font-weight: 700;">Dossiê / Anexos</button>
         <button type="button" class="tool-btn" onclick="fecharModalEdicaoTitulo()">Cancelar</button>
         <button type="button" class="tool-btn primary" onclick="salvarEdicaoTitulo()" style="background: #004b87; color: white; font-weight: 700;"><svg class="bimer-svg" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Salvar Alterações</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL POP-UP: DOSSIÊ DIGITAL / ANEXOS DO TÍTULO ==================== -->
+<div id="modal-anexos-titulo" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.68); z-index: 10020; align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; width: 100%; max-width: 640px; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 22px 50px rgba(15,23,42,0.35); overflow: hidden;">
+    <div style="background: #f0f9ff; border-bottom: 1px solid #bae6fd; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <div style="font-size: 13.5px; font-weight: 800; color: #0c4a6e;">Dossiê Digital &amp; Anexos do Título</div>
+        <div style="font-size: 11px; color: #0369a1;" id="modal-anexos-subtitulo">Anexe NF, Boleto, Romaneio ou Comprovante de Pagamento (PDF, JPG, PNG, XML — máx. 10 MB).</div>
+      </div>
+      <button type="button" onclick="fecharModalAnexosTitulo()" style="background: none; border: none; font-size: 18px; color: #64748b; cursor: pointer; padding: 2px 6px;">✕</button>
+    </div>
+
+    <div style="padding: 12px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+      <input type="file" id="input-upload-anexo-titulo" accept=".pdf,.png,.jpg,.jpeg,.webp,.xml" multiple style="display: none;" onchange="enviarAnexosTitulo(event)">
+      <button type="button" class="tool-btn primary" onclick="document.getElementById('input-upload-anexo-titulo').click()" style="padding: 5px 12px; font-size: 11.5px;">+ Anexar Arquivo (PDF / Imagem / XML)</button>
+      <span id="modal-anexos-status" style="font-size: 11px; font-weight: 600; color: #0369a1;"></span>
+    </div>
+
+    <div style="padding: 12px 16px; overflow-y: auto; flex: 1;" id="modal-anexos-lista">
+      <div style="text-align: center; padding: 24px; color: #64748b; font-size: 11.5px;">Carregando anexos...</div>
+    </div>
+
+    <div style="padding: 10px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end;">
+      <button type="button" class="tool-btn" onclick="fecharModalAnexosTitulo()" style="font-size: 11px;">Fechar</button>
     </div>
   </div>
 </div>
@@ -12614,7 +12645,8 @@
       'fluxo': 'btn-rel-fluxo',
       'itens': 'btn-rel-itens',
       'faccao': 'btn-rel-faccao',
-      'raiox': 'btn-rel-raiox'
+      'raiox': 'btn-rel-raiox',
+      'evolucao': 'btn-rel-evolucao'
     };
     const activeBtn = document.getElementById(btnMap[tipo]);
     if (activeBtn) activeBtn.classList.add('active');
@@ -12653,6 +12685,8 @@
       container.innerHTML = gerarHtmlRelatorioFaccao();
     } else if (relatorioAtivo === 'raiox') {
       container.innerHTML = gerarHtmlRelatorioRaioX();
+    } else if (relatorioAtivo === 'evolucao') {
+      container.innerHTML = gerarHtmlRelatorioEvolucao();
     }
   }
 
@@ -14195,6 +14229,335 @@
       `;
     }
 
+    return html;
+  }
+
+  // ==================== DOSSIÊ DIGITAL / ANEXOS POR TÍTULO (FASE 2) ====================
+  let _anexoTituloIdAtual = null;
+
+  function abrirModalAnexosDoTituloAtual() {
+    const idEdicao = document.getElementById('edit-titulo-id')?.value || '';
+    if (!idEdicao) {
+      alert('Nenhum título selecionado para anexos.');
+      return;
+    }
+    const t = (titulos || []).find(x => String(x.id) === String(idEdicao) || String(x.db_id) === String(idEdicao));
+    const sub = t ? `Doc: ${t.numero_doc || '-'} • ${t.favorecido || '-'}` : `Título ${idEdicao}`;
+    abrirModalAnexosTitulo(t?.id || idEdicao, sub);
+  }
+
+  function abrirModalAnexosTitulo(tituloId, subtitulo = '') {
+    _anexoTituloIdAtual = tituloId;
+    const elSub = document.getElementById('modal-anexos-subtitulo');
+    if (elSub) elSub.innerText = subtitulo || 'Anexe NF, Boleto, Romaneio ou Comprovante (PDF, JPG, PNG, XML — máx. 10 MB).';
+    const elStatus = document.getElementById('modal-anexos-status');
+    if (elStatus) elStatus.innerText = '';
+    const modal = document.getElementById('modal-anexos-titulo');
+    if (modal) modal.style.display = 'flex';
+    carregarListaAnexosTitulo();
+  }
+
+  function fecharModalAnexosTitulo() {
+    const modal = document.getElementById('modal-anexos-titulo');
+    if (modal) modal.style.display = 'none';
+  }
+
+  async function carregarListaAnexosTitulo() {
+    const box = document.getElementById('modal-anexos-lista');
+    if (!box || !_anexoTituloIdAtual) return;
+    box.innerHTML = '<div style="text-align:center;padding:20px;color:#64748b;font-size:11px;">Carregando anexos...</div>';
+    try {
+      const resp = await apiFetch(`${API_BASE}/titulos/${encodeURIComponent(_anexoTituloIdAtual)}/anexos`);
+      if (!resp.ok) throw new Error('Falha ao listar anexos');
+      const data = await resp.json();
+      const lista = data.anexos || [];
+      if (lista.length === 0) {
+        box.innerHTML = '<div style="text-align:center;padding:28px;color:#64748b;border:1px dashed #cbd5e1;border-radius:6px;font-size:11.5px;">Nenhum arquivo anexado a este título ainda.<br>Clique em <strong>+ Anexar Arquivo</strong> acima para subir NF, Boleto, Romaneio ou Comprovante.</div>';
+        return;
+      }
+      box.innerHTML = lista.map(a => {
+        const kb = Math.max(1, Math.round((a.tamanho_bytes || 0) / 1024));
+        const dt = a.criado_em ? formatarData(a.criado_em.slice(0, 10)) : '';
+        return `
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:5px;margin-bottom:6px;background:#ffffff;">
+            <div style="min-width:0;">
+              <div style="font-size:11.5px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(a.nome_original)}</div>
+              <div style="font-size:10px;color:#64748b;">${kb} KB ${dt ? `• Enviado em ${dt}` : ''}</div>
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0;">
+              <button type="button" class="tool-btn" onclick="baixarAnexoTitulo('${a.id}', '${escapeHtml(a.nome_original).replace(/'/g, '')}')" style="font-size:10.5px;padding:3px 8px;border-color:#0284c7;color:#0369a1;background:#e0f2fe;font-weight:700;">Abrir / Baixar</button>
+              <button type="button" class="tool-btn" onclick="excluirAnexoTitulo('${a.id}')" style="font-size:10.5px;padding:3px 8px;color:#b91c1c;border-color:#fecaca;background:#fef2f2;">Excluir</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      box.innerHTML = `<div style="color:#b91c1c;font-size:11px;padding:12px;">Erro ao carregar anexos: ${escapeHtml(e.message)}</div>`;
+    }
+  }
+
+  async function enviarAnexosTitulo(event) {
+    const files = Array.from(event?.target?.files || []);
+    if (!files.length || !_anexoTituloIdAtual) return;
+    const elStatus = document.getElementById('modal-anexos-status');
+    for (let i = 0; i < files.length; i++) {
+      if (elStatus) elStatus.innerText = `Enviando ${i + 1}/${files.length}: ${files[i].name}...`;
+      const fd = new FormData();
+      fd.append('file', files[i]);
+      try {
+        const resp = await apiFetch(`${API_BASE}/titulos/${encodeURIComponent(_anexoTituloIdAtual)}/anexos`, {
+          method: 'POST',
+          body: fd
+        });
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          alert(`Erro ao anexar "${files[i].name}": ${err.detail || 'Falha no upload'}`);
+        }
+      } catch (e) {
+        alert(`Erro ao anexar "${files[i].name}": ${e.message}`);
+      }
+    }
+    if (elStatus) elStatus.innerText = 'Upload concluído ✓';
+    if (event?.target) event.target.value = '';
+    await carregarListaAnexosTitulo();
+  }
+
+  async function baixarAnexoTitulo(anexoId, nomeArquivo) {
+    try {
+      const resp = await apiFetch(`${API_BASE}/anexos/${encodeURIComponent(anexoId)}/download`);
+      if (!resp.ok) throw new Error('Arquivo não disponível');
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.download = nomeArquivo || 'documento';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (e) {
+      alert('Não foi possível abrir o anexo: ' + e.message);
+    }
+  }
+
+  async function excluirAnexoTitulo(anexoId) {
+    if (!confirm('Deseja excluir permanentemente este anexo do dossiê?')) return;
+    try {
+      const resp = await apiFetch(`${API_BASE}/anexos/${encodeURIComponent(anexoId)}`, { method: 'DELETE' });
+      if (!resp.ok) throw new Error('Falha ao excluir');
+      await carregarListaAnexosTitulo();
+    } catch (e) {
+      alert('Erro ao excluir anexo: ' + e.message);
+    }
+  }
+
+  // ==================== RELATÓRIO H: EVOLUÇÃO MENSAL (MoM) & INFLAÇÃO (FASE 4) ====================
+  function gerarHtmlRelatorioEvolucao() {
+    const mesesMap = {};
+    const catPorMes = {};
+    const precosItens = {};
+
+    (titulos || []).forEach(t => {
+      if (t.tipo === 'IMPOSTO' || String(t.id || '').startsWith('IMP_')) return;
+      const dt = (t.vencimento || t.data_emissao || '').slice(0, 10);
+      if (!dt || dt.length < 7) return;
+      const ym = dt.slice(0, 7);
+      const val = Number(t.valor || 0);
+      const cat = t.ccusto || 'Sem Categoria';
+
+      if (!mesesMap[ym]) mesesMap[ym] = { ym, total: 0, qtd: 0 };
+      mesesMap[ym].total += val;
+      mesesMap[ym].qtd += 1;
+
+      if (!catPorMes[cat]) catPorMes[cat] = {};
+      catPorMes[cat][ym] = (catPorMes[cat][ym] || 0) + val;
+
+      // Coleta histórico de preços unitários de itens NF-e
+      if (Array.isArray(t.itens)) {
+        t.itens.forEach(it => {
+          const desc = String(it.descricao || '').trim().toUpperCase();
+          const vUnit = Number(it.valor_unitario || 0);
+          if (!desc || vUnit <= 0) return;
+          if (!precosItens[desc]) precosItens[desc] = { descricao: it.descricao, fornecedor: t.favorecido || '-', unidade: it.unidade || 'UN', historico: [] };
+          precosItens[desc].historico.push({ data: (t.data_emissao || dt).slice(0, 10), preco: vUnit, fornecedor: t.favorecido || '-' });
+        });
+      }
+    });
+
+    const mesesOrd = Object.values(mesesMap).sort((a, b) => a.ym.localeCompare(b.ym)).slice(-6);
+    const fmtMes = (ym) => {
+      const [y, m] = ym.split('-');
+      const nomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      return `${nomes[(parseInt(m, 10) || 1) - 1]}/${String(y).slice(-2)}`;
+    };
+
+    const mesAtualObj = mesesOrd[mesesOrd.length - 1] || null;
+    const mesAntObj = mesesOrd.length >= 2 ? mesesOrd[mesesOrd.length - 2] : null;
+    const mediaMensal = mesesOrd.length > 0 ? (mesesOrd.reduce((a, b) => a + b.total, 0) / mesesOrd.length) : 0;
+    const deltaMoM = (mesAtualObj && mesAntObj && mesAntObj.total > 0)
+      ? (((mesAtualObj.total - mesAntObj.total) / mesAntObj.total) * 100)
+      : null;
+
+    // Monitor de Inflação (itens com 2+ compras e variação de preço)
+    const alertasInflacao = [];
+    Object.values(precosItens).forEach(p => {
+      if (p.historico.length < 2) return;
+      p.historico.sort((a, b) => a.data.localeCompare(b.data));
+      const primeiro = p.historico[0];
+      const ultimo = p.historico[p.historico.length - 1];
+      const menor = Math.min(...p.historico.map(h => h.preco));
+      const varPct = primeiro.preco > 0 ? (((ultimo.preco - primeiro.preco) / primeiro.preco) * 100) : 0;
+      if (Math.abs(varPct) >= 0.5) {
+        alertasInflacao.push({
+          descricao: p.descricao,
+          fornecedor: ultimo.fornecedor,
+          unidade: p.unidade,
+          compras: p.historico.length,
+          menorPreco: menor,
+          primeiroPreco: primeiro.preco,
+          ultimoPreco: ultimo.preco,
+          varPct
+        });
+      }
+    });
+    alertasInflacao.sort((a, b) => b.varPct - a.varPct);
+
+    let html = gerarCabecalhoRelatorio(
+      'BI COMPARATIVO MÊS A MÊS (MoM) & MONITOR DE INFLAÇÃO',
+      'Tendência Histórica de Despesas, Variação por Categoria e Alerta de Reajuste de Preços Unitários (NF-e)'
+    );
+
+    html += `
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;">
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid #004b87; padding: 8px 12px; border-radius: 4px;">
+          <div style="font-size: 9.5px; font-weight: 800; color: #1e40af; text-transform: uppercase;">1. Último Mês (${mesAtualObj ? fmtMes(mesAtualObj.ym) : '-'})</div>
+          <div style="font-size: 15px; font-weight: 800; color: #004b87;">${formatarMoeda(mesAtualObj?.total || 0)}</div>
+          <div style="font-size: 9.5px; color: #1d4ed8;">${mesAtualObj?.qtd || 0} lançamentos</div>
+        </div>
+        <div style="background: ${deltaMoM !== null && deltaMoM > 0 ? '#fef2f2' : '#f0fdf4'}; border: 1px solid ${deltaMoM !== null && deltaMoM > 0 ? '#fecaca' : '#bbf7d0'}; border-left: 4px solid ${deltaMoM !== null && deltaMoM > 0 ? '#dc2626' : '#059669'}; padding: 8px 12px; border-radius: 4px;">
+          <div style="font-size: 9.5px; font-weight: 800; color: #334155; text-transform: uppercase;">2. Variação MoM</div>
+          <div style="font-size: 15px; font-weight: 800; color: ${deltaMoM !== null && deltaMoM > 0 ? '#dc2626' : '#059669'};">${deltaMoM !== null ? `${deltaMoM > 0 ? '+' : ''}${deltaMoM.toFixed(1)}%` : 'Base 1º Mês'}</div>
+          <div style="font-size: 9.5px; color: #475569;">${mesAntObj ? `vs. ${fmtMes(mesAntObj.ym)} (${formatarMoeda(mesAntObj.total)})` : 'Aguardando 2º mês'}</div>
+        </div>
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #64748b; padding: 8px 12px; border-radius: 4px;">
+          <div style="font-size: 9.5px; font-weight: 800; color: #334155; text-transform: uppercase;">3. Média Mensal (${mesesOrd.length}m)</div>
+          <div style="font-size: 15px; font-weight: 800; color: #0f172a;">${formatarMoeda(mediaMensal)}</div>
+          <div style="font-size: 9.5px; color: #475569;">Patamar histórico médio</div>
+        </div>
+        <div style="background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #d97706; padding: 8px 12px; border-radius: 4px;">
+          <div style="font-size: 9.5px; font-weight: 800; color: #92400e; text-transform: uppercase;">4. Alertas de Preço (NF-e)</div>
+          <div style="font-size: 15px; font-weight: 800; color: #b45309;">${alertasInflacao.filter(a => a.varPct > 0).length} item(ns)</div>
+          <div style="font-size: 9.5px; color: #b45309;">Com reajuste detectado</div>
+        </div>
+      </div>
+    `;
+
+    // Gráfico de Barras Verticais SVG (Últimos 6 meses)
+    if (mesesOrd.length > 0) {
+      const maxMes = Math.max(...mesesOrd.map(m => m.total), 1);
+      const barW = 72;
+      const gap = 36;
+      const svgW = Math.max(420, mesesOrd.length * (barW + gap) + 60);
+      const barsSvg = mesesOrd.map((m, i) => {
+        const h = Math.max(8, Math.round((m.total / maxMes) * 120));
+        const x = 40 + i * (barW + gap);
+        const y = 140 - h;
+        const fill = (i === mesesOrd.length - 1) ? '#004b87' : '#38bdf8';
+        return `
+          <rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="4" fill="${fill}"></rect>
+          <text x="${x + barW / 2}" y="${y - 6}" text-anchor="middle" style="font-size:9.5px;font-weight:800;fill:#0f172a;">${formatarMoeda(m.total)}</text>
+          <text x="${x + barW / 2}" y="158" text-anchor="middle" style="font-size:10.5px;font-weight:700;fill:#334155;">${fmtMes(m.ym)}</text>
+          <text x="${x + barW / 2}" y="171" text-anchor="middle" style="font-size:8.5px;fill:#64748b;">(${m.qtd} lanç.)</text>
+        `;
+      }).join('');
+
+      html += `
+        <div style="background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;padding:12px;margin-bottom:18px;text-align:center;">
+          <div style="font-size:10.5px;font-weight:800;color:#004b87;text-transform:uppercase;margin-bottom:8px;">Evolução Mensal de Despesas (Últimos ${mesesOrd.length} Meses)</div>
+          <svg width="100%" height="182" viewBox="0 0 ${svgW} 182" preserveAspectRatio="xMidYMid meet">
+            <line x1="20" y1="140" x2="${svgW - 20}" y2="140" stroke="#cbd5e1" stroke-width="1"></line>
+            ${barsSvg}
+          </svg>
+        </div>
+      `;
+    }
+
+    // Tabela Comparativa por Categoria (Mês Atual vs. Mês Anterior)
+    if (mesAtualObj) {
+      const ymAt = mesAtualObj.ym;
+      const ymAnt = mesAntObj ? mesAntObj.ym : null;
+      const linhasCat = Object.entries(catPorMes)
+        .map(([cat, mObj]) => {
+          const vAt = mObj[ymAt] || 0;
+          const vAnt = ymAnt ? (mObj[ymAnt] || 0) : 0;
+          const dif = vAt - vAnt;
+          const pct = vAnt > 0 ? ((dif / vAnt) * 100) : null;
+          return { cat, vAt, vAnt, dif, pct };
+        })
+        .filter(r => r.vAt > 0 || r.vAnt > 0)
+        .sort((a, b) => b.vAt - a.vAt);
+
+      html += `
+        <div style="font-weight:800;font-size:11px;color:#004b87;text-transform:uppercase;margin-bottom:6px;">Comparativo por Categoria (${fmtMes(ymAt)}${ymAnt ? ` vs. ${fmtMes(ymAnt)}` : ''})</div>
+        <table class="alterdata-grid" style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:18px;">
+          <thead>
+            <tr style="background:#0f172a;color:white;">
+              <th style="padding:5px 6px;text-align:left;">Categoria Financeira</th>
+              <th style="padding:5px 6px;text-align:right;width:110px;">${ymAnt ? fmtMes(ymAnt) : 'Mês Anterior'}</th>
+              <th style="padding:5px 6px;text-align:right;width:110px;">${fmtMes(ymAt)}</th>
+              <th style="padding:5px 6px;text-align:right;width:105px;">Variação (R$)</th>
+              <th style="padding:5px 6px;text-align:center;width:85px;">% MoM</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${linhasCat.map((r, idx) => {
+              const corDif = r.dif > 0 ? '#dc2626' : (r.dif < 0 ? '#059669' : '#475569');
+              const pctTxt = r.pct !== null ? `${r.pct > 0 ? '+' : ''}${r.pct.toFixed(1)}%` : (r.vAt > 0 && ymAnt ? 'Novo' : '-');
+              return `<tr style="${idx % 2 === 1 ? 'background:#f8fafc;' : 'background:#ffffff;'}">
+                <td style="padding:5px 6px;font-weight:700;color:#0f172a;">${escapeHtml(r.cat)}</td>
+                <td style="padding:5px 6px;text-align:right;font-family:monospace;">${formatarMoeda(r.vAnt)}</td>
+                <td style="padding:5px 6px;text-align:right;font-family:monospace;font-weight:800;">${formatarMoeda(r.vAt)}</td>
+                <td style="padding:5px 6px;text-align:right;font-family:monospace;font-weight:700;color:${corDif};">${r.dif >= 0 ? '+' : ''}${formatarMoeda(r.dif)}</td>
+                <td style="padding:5px 6px;text-align:center;font-weight:800;color:${corDif};">${pctTxt}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // Monitor de Inflação de Insumos (NF-e)
+    html += `<div style="font-weight:800;font-size:11px;color:#991b1b;text-transform:uppercase;margin-bottom:6px;">Monitor de Inflação de Insumos &amp; Produtos (NF-e com 2+ Compras)</div>`;
+    if (alertasInflacao.length === 0) {
+      html += `<div style="padding:14px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:4px;font-size:10.5px;color:#475569;">Ainda não há itens comprados mais de uma vez com variação de preço unitário. Conforme novas NF-es forem lançadas nos próximos meses, reajustes de fornecedores aparecerão automaticamente aqui.</div>`;
+    } else {
+      html += `
+        <table class="alterdata-grid" style="width:100%;border-collapse:collapse;font-size:10px;">
+          <thead>
+            <tr style="background:#0f172a;color:white;">
+              <th style="padding:5px 6px;text-align:left;">Produto / Insumo</th>
+              <th style="padding:5px 6px;text-align:left;">Último Fornecedor</th>
+              <th style="padding:5px 6px;text-align:center;width:60px;">Compras</th>
+              <th style="padding:5px 6px;text-align:right;width:95px;">1º Preço Unit.</th>
+              <th style="padding:5px 6px;text-align:right;width:95px;">Último Preço</th>
+              <th style="padding:5px 6px;text-align:center;width:85px;">Variação</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${alertasInflacao.map((a, idx) => {
+              const cor = a.varPct > 0 ? '#dc2626' : '#059669';
+              return `<tr style="${idx % 2 === 1 ? 'background:#f8fafc;' : 'background:#ffffff;'}">
+                <td style="padding:5px 6px;font-weight:700;">${escapeHtml(a.descricao)}</td>
+                <td style="padding:5px 6px;color:#475569;">${escapeHtml(a.fornecedor)}</td>
+                <td style="padding:5px 6px;text-align:center;">${a.compras}x</td>
+                <td style="padding:5px 6px;text-align:right;font-family:monospace;">${formatarMoeda(a.primeiroPreco)}</td>
+                <td style="padding:5px 6px;text-align:right;font-family:monospace;font-weight:800;">${formatarMoeda(a.ultimoPreco)}</td>
+                <td style="padding:5px 6px;text-align:center;font-weight:800;color:${cor};">${a.varPct > 0 ? '+' : ''}${a.varPct.toFixed(1)}%</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
     return html;
   }
 
