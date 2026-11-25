@@ -21,6 +21,12 @@ from starlette.concurrency import run_in_threadpool
 
 from ...core import config
 from ...core.auth_v2 import TenantContext, get_tenant_context, require_v2_roles
+from ...core.cnab240_multibanco import (
+    BANCOS_CNAB240,
+    classificar_titulos_cnab,
+    gerar_cnab240_multibanco,
+    obter_perfil_banco,
+)
 from ...core.itau_sispag import filtrar_titulos_cnab_validos, gerar_cnab240_sispag_itau
 from ...core.security import gerar_hash_senha, verificar_senha
 from ...core.validators import limpar_documento, validar_documento
@@ -2203,3 +2209,344 @@ def compat_excluir_anexo(
     )
     db.commit()
     return {"success": True}
+
+
+# ---------------------------------------------------------------------------
+# REMESSA BANCÁRIA CNAB 240 MULTI-BANCO (CONTAS + PREVIEW + GERAÇÃO)
+# ---------------------------------------------------------------------------
+
+class ContaBancariaCompatRequest(BaseModel):
+    banco_codigo: str = "341"
+    banco_nome: Optional[str] = None
+    agencia: str
+    conta: str
+    dac: Optional[str] = "0"
+    convenio_sispag: Optional[str] = ""
+
+
+class RemessaMultibancoRequest(BaseModel):
+    conta_bancaria_id: Optional[str] = None
+    banco_codigo: Optional[str] = None
+    data_pagamento: Optional[str] = None
+    todos_pendentes: bool = False
+    titulo_ids: Optional[List[str]] = None
+
+
+def _carregar_candidatos_remessa(
+    db: Session,
+    tenant_id: str,
+    empresa_id: str,
+    data_pagamento: Optional[str],
+    todos_pendentes: bool,
+    titulo_ids: Optional[List[str]],
+) -> list[dict]:
+    q = db.query(Titulo).filter(
+        Titulo.tenant_id == tenant_id,
+        Titulo.empresa_id == empresa_id,
+        Titulo.tipo_movimento == "PAGAR",
+        Titulo.conciliado.is_(False),
+        Titulo.status.in_(["PENDENTE", "APROVADO"]),
+    )
+    if titulo_ids:
+        raw_ids = []
+        for tid in titulo_ids:
+            _, raw_id = _strip_ref_id(tid)
+            raw_ids.append(raw_id)
+        q = q.filter(Titulo.id.in_(raw_ids))
+    elif data_pagamento and not todos_pendentes:
+        dt_alvo = _parse_date(data_pagamento)
+        if dt_alvo:
+            q = q.filter(Titulo.dt_vencimento == dt_alvo)
+
+    titulos_db = q.order_by(Titulo.dt_vencimento.asc(), Titulo.favorecido_nome.asc()).all()
+
+    # Mapa de chave PIX do fornecedor como fallback quando o título não tem pix_chave próprio
+    forn_ids = [t.fornecedor_id for t in titulos_db if t.fornecedor_id]
+    forn_pix_map: dict[str, str] = {}
+    if forn_ids:
+        for f in db.query(Fornecedor).filter(Fornecedor.tenant_id == tenant_id, Fornecedor.id.in_(forn_ids)).all():
+            if f.pix_chave:
+                forn_pix_map[f.id] = f.pix_chave.strip()
+
+    candidatos = []
+    for t in titulos_db:
+        pix_final = (t.pix_chave or "").strip() or forn_pix_map.get(t.fornecedor_id or "", "")
+        candidatos.append({
+            "id": f"NF_{t.id}",
+            "db_id": t.id,
+            "numero_nf": t.numero_documento,
+            "numero_doc": t.numero_documento,
+            "numero_tx": t.numero_tx,
+            "fornecedor": t.favorecido_nome,
+            "favorecido_doc": t.favorecido_doc or "",
+            "dt_vencimento": t.dt_vencimento.isoformat(),
+            "valor_liquido": str(to_dec(t.valor_liquido)),
+            "valor_bruto": str(to_dec(t.valor_bruto)),
+            "forma_pgto": t.forma_pgto or "",
+            "cod_barras": t.cod_barras or "",
+            "pix_chave": pix_final,
+        })
+    return candidatos
+
+
+def _resolver_conta_remessa(
+    db: Session,
+    tenant_id: str,
+    empresa_id: str,
+    conta_bancaria_id: Optional[str],
+    banco_codigo_override: Optional[str],
+) -> tuple[Optional[ContaBancaria], dict[str, str]]:
+    conta = None
+    if conta_bancaria_id:
+        conta = (
+            db.query(ContaBancaria)
+            .filter(
+                ContaBancaria.tenant_id == tenant_id,
+                ContaBancaria.id == conta_bancaria_id,
+                ContaBancaria.ativo.is_(True),
+            )
+            .first()
+        )
+    if not conta:
+        conta = (
+            db.query(ContaBancaria)
+            .filter(
+                ContaBancaria.tenant_id == tenant_id,
+                ContaBancaria.empresa_id == empresa_id,
+                ContaBancaria.ativo.is_(True),
+            )
+            .order_by(ContaBancaria.criado_em.asc())
+            .first()
+        )
+
+    cod = banco_codigo_override or (conta.banco_codigo if conta else "341")
+    nome = conta.banco_nome if (conta and not banco_codigo_override) else None
+    perfil = obter_perfil_banco(cod, nome)
+    return conta, perfil
+
+
+@router.get("/contas-bancarias")
+def compat_listar_contas_bancarias(
+    ctx: TenantContext = Depends(get_tenant_context),
+    db: Session = Depends(get_db),
+):
+    emp = _resolver_empresa_padrao(db, ctx.tenant_id)
+    contas = (
+        db.query(ContaBancaria)
+        .filter(
+            ContaBancaria.tenant_id == ctx.tenant_id,
+            ContaBancaria.empresa_id == emp.id,
+            ContaBancaria.ativo.is_(True),
+        )
+        .order_by(ContaBancaria.criado_em.asc())
+        .all()
+    )
+    return {
+        "success": True,
+        "contas": [
+            {
+                "id": c.id,
+                "banco_codigo": c.banco_codigo,
+                "banco_nome": c.banco_nome,
+                "agencia": c.agencia,
+                "conta": c.conta,
+                "dac": c.dac,
+                "convenio_sispag": c.convenio_sispag or "",
+            }
+            for c in contas
+        ],
+        "bancos_suportados": [
+            {"codigo": b["codigo"], "label": b["label"], "nome": b["nome"], "sigla": b["sigla"]}
+            for b in BANCOS_CNAB240.values()
+        ],
+    }
+
+
+@router.post("/contas-bancarias")
+def compat_salvar_conta_bancaria(
+    req: ContaBancariaCompatRequest,
+    request: Request,
+    ctx: TenantContext = Depends(require_v2_roles("OWNER", "DIRETOR_APROVADOR", "FINANCEIRO")),
+    db: Session = Depends(get_db),
+):
+    emp = _resolver_empresa_padrao(db, ctx.tenant_id)
+    perfil = obter_perfil_banco(req.banco_codigo, req.banco_nome)
+    ag = re.sub(r"\D", "", req.agencia or "")
+    cc = re.sub(r"\D", "", req.conta or "")
+    dac = (req.dac or "0").strip()[:2] or "0"
+    if not ag or not cc:
+        raise HTTPException(status_code=422, detail="Informe Agência e Conta Corrente válidas.")
+
+    conta = ContaBancaria(
+        tenant_id=ctx.tenant_id,
+        empresa_id=emp.id,
+        banco_codigo=perfil["codigo"],
+        banco_nome=(req.banco_nome or perfil["nome"]).strip()[:80],
+        agencia=ag[:10],
+        conta=cc[:20],
+        dac=dac,
+        convenio_sispag=(req.convenio_sispag or "").strip()[:30] or None,
+        ativo=True,
+    )
+    db.add(conta)
+    db.flush()
+    registrar_audit_v2(
+        db,
+        ctx.tenant_id,
+        ctx.usuario,
+        "CRIAR_CONTA_BANCARIA",
+        "contas_bancarias",
+        conta.id,
+        dados_depois={"banco": conta.banco_codigo, "agencia": conta.agencia, "conta": conta.conta},
+        ip=extrair_ip(request),
+    )
+    db.commit()
+    return {
+        "success": True,
+        "conta": {
+            "id": conta.id,
+            "banco_codigo": conta.banco_codigo,
+            "banco_nome": conta.banco_nome,
+            "agencia": conta.agencia,
+            "conta": conta.conta,
+            "dac": conta.dac,
+            "convenio_sispag": conta.convenio_sispag or "",
+        },
+    }
+
+
+@router.post("/remessa/preview")
+def compat_preview_remessa_multibanco(
+    req: RemessaMultibancoRequest,
+    ctx: TenantContext = Depends(require_v2_roles("OWNER", "DIRETOR_APROVADOR", "FINANCEIRO")),
+    db: Session = Depends(get_db),
+):
+    emp = _resolver_empresa_padrao(db, ctx.tenant_id)
+    conta, perfil = _resolver_conta_remessa(
+        db, ctx.tenant_id, emp.id, req.conta_bancaria_id, req.banco_codigo
+    )
+    candidatos = _carregar_candidatos_remessa(
+        db, ctx.tenant_id, emp.id, req.data_pagamento, req.todos_pendentes, req.titulo_ids
+    )
+    validos, rejeitados = classificar_titulos_cnab(candidatos, banco_pagador=perfil["codigo"])
+
+    lotes_map: dict[str, dict] = {}
+    rotulos = {
+        "BOLETO_MESMO_BANCO": f"Boletos Mesmo Banco ({perfil['sigla']})",
+        "BOLETO_OUTRO_BANCO": "Boletos Outros Bancos",
+        "ARRECADACAO": "Concessionárias / Tributos (Seg. O)",
+        "PIX_CHAVE": "PIX Transferência por Chave (Seg. A+B)",
+    }
+    validos_out = []
+    total_val = 0.0
+    for v in validos:
+        val_f = round(v["_valor_centavos"] / 100.0, 2)
+        total_val += val_f
+        tp = v["_tipo_lote"]
+        if tp not in lotes_map:
+            lotes_map[tp] = {"tipo": tp, "rotulo": rotulos.get(tp, tp), "qtd": 0, "valor": 0.0}
+        lotes_map[tp]["qtd"] += 1
+        lotes_map[tp]["valor"] = round(lotes_map[tp]["valor"] + val_f, 2)
+        validos_out.append({
+            "id": v["id"],
+            "numero_doc": v["numero_doc"],
+            "fornecedor": v["fornecedor"],
+            "dt_vencimento": v["dt_vencimento"],
+            "valor": val_f,
+            "tipo_lote": tp,
+            "rotulo_lote": rotulos.get(tp, tp),
+            "identificador_pgto": v.get("_identificador_pgto", ""),
+        })
+
+    return {
+        "success": True,
+        "conta_configurada": bool(conta or (config.ITAU_AGENCIA and config.ITAU_CONTA)),
+        "banco": perfil,
+        "conta": (
+            {
+                "id": conta.id,
+                "banco_codigo": conta.banco_codigo,
+                "banco_nome": conta.banco_nome,
+                "agencia": conta.agencia,
+                "conta": conta.conta,
+                "dac": conta.dac,
+                "convenio_sispag": conta.convenio_sispag or "",
+            }
+            if conta
+            else None
+        ),
+        "lotes": list(lotes_map.values()),
+        "validos": validos_out,
+        "rejeitados": rejeitados,
+        "totais": {
+            "qtd_validos": len(validos_out),
+            "qtd_rejeitados": len(rejeitados),
+            "valor_total": round(total_val, 2),
+        },
+    }
+
+
+@router.post("/remessa/gerar")
+def compat_gerar_remessa_multibanco(
+    req: RemessaMultibancoRequest,
+    request: Request,
+    ctx: TenantContext = Depends(require_v2_roles("OWNER", "DIRETOR_APROVADOR", "FINANCEIRO")),
+    db: Session = Depends(get_db),
+):
+    emp = _resolver_empresa_padrao(db, ctx.tenant_id)
+    conta, perfil = _resolver_conta_remessa(
+        db, ctx.tenant_id, emp.id, req.conta_bancaria_id, req.banco_codigo
+    )
+    agencia = conta.agencia if conta else config.ITAU_AGENCIA
+    num_conta = conta.conta if conta else config.ITAU_CONTA
+    dac = conta.dac if conta else (config.ITAU_DAC or "0")
+    convenio = (conta.convenio_sispag or "") if conta else ""
+    if not agencia or not num_conta:
+        raise HTTPException(
+            status_code=400,
+            detail="Cadastre uma Conta Bancária da empresa (botão '+ Nova Conta') para gerar a remessa CNAB 240.",
+        )
+
+    candidatos = _carregar_candidatos_remessa(
+        db, ctx.tenant_id, emp.id, req.data_pagamento, req.todos_pendentes, req.titulo_ids
+    )
+    dt_pgto = (req.data_pagamento or date.today().isoformat())[:10]
+    try:
+        conteudo, resumo = gerar_cnab240_multibanco(
+            candidatos,
+            banco_codigo=perfil["codigo"],
+            banco_nome=perfil["nome"],
+            cnpj_empresa=emp.cnpj,
+            razao_social=emp.razao_social,
+            agencia=agencia,
+            conta=num_conta,
+            dac=dac,
+            convenio=convenio,
+            data_pagamento=dt_pgto,
+            cidade=emp.cidade,
+            cep=emp.cep,
+            uf=emp.uf,
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+
+    nome_arquivo = f"REM_{resumo['banco_codigo']}_{resumo['banco_sigla']}_{dt_pgto.replace('-', '')}.REM"
+    registrar_audit_v2(
+        db,
+        ctx.tenant_id,
+        ctx.usuario,
+        "EXPORTAR_CNAB_MULTIBANCO",
+        "titulos",
+        nome_arquivo,
+        dados_depois=resumo,
+        ip=extrair_ip(request),
+    )
+    db.commit()
+    return Response(
+        content=conteudo,
+        media_type="text/plain",
+        headers={
+            "Content-Disposition": f'attachment; filename="{nome_arquivo}"',
+            "Access-Control-Expose-Headers": "Content-Disposition",
+        },
+    )
