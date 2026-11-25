@@ -1179,6 +1179,9 @@
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
               <label style="margin-bottom: 0;">Loja / Unidade de Destino</label>
               <div style="display: flex; gap: 4px; align-items: center;">
+                <button type="button" class="tool-btn" id="btn-abrir-parcelas" onclick="abrirModalParcelasManual()" title="Parcelar lançamento (ver, editar ou gerar parcelas com código de barras individual)" style="padding: 1px 7px; font-size: 10px; border-color: #6ee7b7; color: #065f46; background: #ecfdf5;">
+                  Parcelas <span id="badge-parcelas-btn" style="display: none; background: #059669; color: #fff; padding: 0 5px; border-radius: 8px; font-size: 9px; margin-left: 3px;"></span>
+                </button>
                 <button type="button" class="tool-btn" id="btn-abrir-faccao" onclick="abrirModalFaccao()" title="Informar dados de produção de facção (Modelo, Peças, NF Remessa 5901 e Valor Matéria-Prima)" style="padding: 1px 7px; font-size: 10px; border-color: #c4b5fd; color: #5b21b6; background: #f5f3ff;">
                   Facção <span id="badge-faccao-btn" style="display: none; background: #6d28d9; color: #fff; padding: 0 5px; border-radius: 8px; font-size: 9px; margin-left: 3px;"></span>
                 </button>
@@ -8376,6 +8379,7 @@
         }
       });
       window.xmlParcelasNFeAtual = parcelasExtraidas;
+      if (typeof atualizarBadgeParcelasBtn === 'function') atualizarBadgeParcelasBtn();
 
       if (elNum) elNum.value = nNF;
       if (elSerie && serie) elSerie.value = serie;
@@ -9098,6 +9102,78 @@
   let _parcelasAlvoLoteIdx = null;
   let _parcelasRascunho = [];
 
+  function atualizarBadgeParcelasBtn() {
+    const badge = document.getElementById('badge-parcelas-btn');
+    const btn = document.getElementById('btn-abrir-parcelas');
+    const qtd = (window.xmlParcelasNFeAtual || []).length;
+    if (badge && btn) {
+      if (qtd > 1) {
+        badge.style.display = 'inline-block';
+        badge.innerText = `${qtd}x`;
+        btn.style.borderColor = '#059669';
+        btn.style.fontWeight = '700';
+      } else {
+        badge.style.display = 'none';
+        badge.innerText = '';
+        btn.style.borderColor = '#6ee7b7';
+        btn.style.fontWeight = '600';
+      }
+    }
+  }
+
+  function _obterBrutoAtualParcelas() {
+    if (_parcelasAlvoLoteIdx !== null && _xmlLoteItens[_parcelasAlvoLoteIdx]) {
+      return parseFloat(_xmlLoteItens[_parcelasAlvoLoteIdx].valor_bruto) || 0;
+    }
+    return parseFloat(document.getElementById('valor_bruto')?.value) || 0;
+  }
+
+  function _obterVencPadraoParcelas() {
+    if (_parcelasAlvoLoteIdx !== null && _xmlLoteItens[_parcelasAlvoLoteIdx]) {
+      const it = _xmlLoteItens[_parcelasAlvoLoteIdx];
+      return it.vencimento || it.data_emissao || new Date().toISOString().slice(0, 10);
+    }
+    return document.getElementById('vencimento_principal')?.value || document.getElementById('data_emissao')?.value || new Date().toISOString().slice(0, 10);
+  }
+
+  function abrirModalParcelasManual() {
+    const bruto = parseFloat(document.getElementById('valor_bruto')?.value) || 0;
+    if (bruto <= 0) {
+      alert('Informe primeiro o Valor Bruto do Documento (R$) antes de parcelar.');
+      document.getElementById('valor_bruto')?.focus();
+      return;
+    }
+    _parcelasAlvoLoteIdx = null;
+    const vencBase = _obterVencPadraoParcelas();
+    const linhaBase = document.getElementById('linha_digitavel')?.value.trim() || '';
+    if (window.xmlParcelasNFeAtual && window.xmlParcelasNFeAtual.length > 0) {
+      _parcelasRascunho = window.xmlParcelasNFeAtual.map((p, i) => ({
+        numero: p.numero || String(i + 1),
+        vencimento: p.vencimento || vencBase,
+        valor: Number((parseFloat(p.valor) || 0).toFixed(2)),
+        linha_dig: p.linha_dig || (i === 0 ? linhaBase : '')
+      }));
+    } else {
+      _parcelasRascunho = [{
+        numero: '1',
+        vencimento: vencBase,
+        valor: Number(bruto.toFixed(2)),
+        linha_dig: linhaBase
+      }];
+    }
+    const docNum = document.getElementById('numero_doc')?.value.trim() || 'Novo';
+    const fav = document.getElementById('razao_favorecido')?.value.trim() || 'Lançamento';
+    const sub = document.getElementById('modal-parcelas-subtitulo');
+    if (sub) sub.innerText = `Doc: ${docNum} • ${fav} — No Contas a Pagar cada parcela referencia o nº do documento.`;
+    const inpVenc1 = document.getElementById('parc-gen-venc1');
+    if (inpVenc1) inpVenc1.value = _parcelasRascunho[0]?.vencimento || vencBase;
+    const inpQtd = document.getElementById('parc-gen-qtd');
+    if (inpQtd) inpQtd.value = Math.max(2, _parcelasRascunho.length);
+    renderizarTabelaParcelasModal();
+    const modal = document.getElementById('modal-parcelas-xml');
+    if (modal) modal.style.display = 'flex';
+  }
+
   function abrirModalParcelasParaLote(idx) {
     const item = _xmlLoteItens[idx];
     if (!item || (parseFloat(item.valor_bruto) || 0) <= 0) {
@@ -9165,8 +9241,7 @@
   }
 
   function recalcularResumoParcelasModal() {
-    const item = _xmlLoteItens[_parcelasAlvoLoteIdx];
-    const bruto = parseFloat(item?.valor_bruto) || 0;
+    const bruto = _obterBrutoAtualParcelas();
     const soma = _parcelasRascunho.reduce((acc, p) => acc + (parseFloat(p.valor) || 0), 0);
     const dif = Number((bruto - soma).toFixed(2));
     const elB = document.getElementById('modal-parcelas-bruto');
@@ -9189,10 +9264,9 @@
   }
 
   function gerarParcelasAutoModal() {
-    const item = _xmlLoteItens[_parcelasAlvoLoteIdx];
-    const bruto = parseFloat(item?.valor_bruto) || 0;
+    const bruto = _obterBrutoAtualParcelas();
     const qtd = Math.max(1, Math.min(36, parseInt(document.getElementById('parc-gen-qtd')?.value, 10) || 1));
-    const venc1 = document.getElementById('parc-gen-venc1')?.value || item?.vencimento || new Date().toISOString().slice(0, 10);
+    const venc1 = document.getElementById('parc-gen-venc1')?.value || _obterVencPadraoParcelas();
     const dias = Math.max(1, parseInt(document.getElementById('parc-gen-dias')?.value, 10) || 30);
 
     const valBase = Math.floor((bruto / qtd) * 100) / 100;
@@ -9207,7 +9281,8 @@
       novas.push({
         numero: String(i + 1),
         vencimento: dt.toISOString().slice(0, 10),
-        valor: val
+        valor: val,
+        linha_dig: ''
       });
     }
     _parcelasRascunho = novas;
@@ -9215,17 +9290,17 @@
   }
 
   function adicionarParcelaModal() {
-    const item = _xmlLoteItens[_parcelasAlvoLoteIdx];
-    const bruto = parseFloat(item?.valor_bruto) || 0;
+    const bruto = _obterBrutoAtualParcelas();
     const soma = _parcelasRascunho.reduce((acc, p) => acc + (parseFloat(p.valor) || 0), 0);
     const rest = Math.max(0, Number((bruto - soma).toFixed(2)));
-    const ultVenc = _parcelasRascunho[_parcelasRascunho.length - 1]?.vencimento || item?.vencimento || new Date().toISOString().slice(0, 10);
+    const ultVenc = _parcelasRascunho[_parcelasRascunho.length - 1]?.vencimento || _obterVencPadraoParcelas();
     const dt = new Date(`${ultVenc}T12:00:00`);
     dt.setDate(dt.getDate() + 30);
     _parcelasRascunho.push({
       numero: String(_parcelasRascunho.length + 1),
       vencimento: dt.toISOString().slice(0, 10),
-      valor: rest
+      valor: rest,
+      linha_dig: ''
     });
     renderizarTabelaParcelasModal();
   }
@@ -9237,17 +9312,18 @@
   }
 
   function voltarParcelaUnicaModal() {
-    const item = _xmlLoteItens[_parcelasAlvoLoteIdx];
-    if (!item) return;
-    item.parcelas = [];
-    renderizarTabelaXMLLote();
+    if (_parcelasAlvoLoteIdx !== null && _xmlLoteItens[_parcelasAlvoLoteIdx]) {
+      _xmlLoteItens[_parcelasAlvoLoteIdx].parcelas = [];
+      renderizarTabelaXMLLote();
+    } else {
+      window.xmlParcelasNFeAtual = [];
+      atualizarBadgeParcelasBtn();
+    }
     fecharModalParcelasXML();
   }
 
   function confirmarModalParcelasXML() {
-    const item = _xmlLoteItens[_parcelasAlvoLoteIdx];
-    if (!item) return;
-    const bruto = parseFloat(item.valor_bruto) || 0;
+    const bruto = _obterBrutoAtualParcelas();
     const validas = _parcelasRascunho.filter(p => (parseFloat(p.valor) || 0) > 0 && p.vencimento);
     if (validas.length === 0) {
       alert('Informe ao menos 1 parcela válida com vencimento e valor.');
@@ -9258,22 +9334,42 @@
       alert(`A soma das parcelas (${formatarMoeda(soma)}) excede o Valor Bruto (${formatarMoeda(bruto)}).`);
       return;
     }
+    let novoBruto = bruto;
     if (bruto - soma > 0.05) {
       const okSaldo = confirm(
         `A soma das parcelas selecionadas (${formatarMoeda(soma)}) é menor que o Valor Bruto da nota (${formatarMoeda(bruto)}).\n\nDeseja atualizar o valor do lançamento para apenas este saldo em aberto (caso haja parcelas já quitadas)?`
       );
       if (!okSaldo) return;
-      item.valor_bruto = Number(soma.toFixed(2));
+      novoBruto = Number(soma.toFixed(2));
     }
-    item.parcelas = validas.length > 1 ? validas.map((p, i) => ({
+
+    const parcelasMapeadas = validas.length > 1 ? validas.map((p, i) => ({
       numero: String(p.numero || (i + 1)),
       vencimento: p.vencimento,
       valor: Number((parseFloat(p.valor) || 0).toFixed(2)),
       linha_dig: (p.linha_dig || '').trim()
     })) : [];
-    if (validas[0]?.linha_dig) item.linha_dig = validas[0].linha_dig.trim();
-    item.vencimento = validas[0].vencimento;
-    renderizarTabelaXMLLote();
+
+    if (_parcelasAlvoLoteIdx !== null && _xmlLoteItens[_parcelasAlvoLoteIdx]) {
+      const item = _xmlLoteItens[_parcelasAlvoLoteIdx];
+      item.valor_bruto = novoBruto;
+      item.parcelas = parcelasMapeadas;
+      if (validas[0]?.linha_dig) item.linha_dig = validas[0].linha_dig.trim();
+      item.vencimento = validas[0].vencimento;
+      renderizarTabelaXMLLote();
+    } else {
+      window.xmlParcelasNFeAtual = parcelasMapeadas;
+      const elBruto = document.getElementById('valor_bruto');
+      if (elBruto && novoBruto !== bruto) {
+        elBruto.value = novoBruto.toFixed(2);
+        if (typeof recalcularValores === 'function') recalcularValores();
+      }
+      const elVenc = document.getElementById('vencimento_principal');
+      if (elVenc && validas[0]?.vencimento) elVenc.value = validas[0].vencimento;
+      const elLinha = document.getElementById('linha_digitavel');
+      if (elLinha && validas[0]?.linha_dig) elLinha.value = validas[0].linha_dig.trim();
+      atualizarBadgeParcelasBtn();
+    }
     fecharModalParcelasXML();
   }
 
@@ -9687,6 +9783,7 @@
         window.xmlParcelasNFeAtual = [];
         window.rateioLancamentoAtual = [];
         window.dadosFaccaoAtual = null;
+        atualizarBadgeParcelasBtn();
         atualizarBadgeRateioBtn();
         atualizarBadgeFaccaoBtn();
         const msgParc = (resData.parcelas_geradas && resData.parcelas_geradas > 1) ? `\n• ${resData.parcelas_geradas} parcelas geradas no Contas a Pagar` : '';
