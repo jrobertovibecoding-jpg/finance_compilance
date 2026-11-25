@@ -2593,10 +2593,19 @@ async def compat_importar_favorecidos_itau(
 
     def _ler_linhas_tabular(raw_bytes: bytes) -> list[list[str]]:
         if raw_bytes[:4] == b"\xd0\xcf\x11\xe0":
-            raise HTTPException(
-                status_code=422,
-                detail="Este arquivo está no formato Excel antigo (.xls binário). Abra no Excel e clique em 'Salvar como' -> .xlsx ou .csv para importar.",
-            )
+            try:
+                import xlrd
+                wb = xlrd.open_workbook(file_contents=raw_bytes)
+                sh = wb.sheet_by_index(0)
+                return [
+                    [str(sh.cell_value(r, c)).strip() for c in range(sh.ncols)]
+                    for r in range(sh.nrows)
+                ]
+            except Exception as e_xls:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Não foi possível ler o .xls binário ({e_xls}). Abra no Excel e salve como .xlsx ou .csv.",
+                )
         # 1. XLSX (ZIP OOXML) usando apenas stdlib
         if raw_bytes[:2] == b"PK":
             try:
