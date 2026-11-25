@@ -2392,6 +2392,27 @@
               <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Buscar Produto / NCM / Fornecedor:</label>
               <input type="text" id="rel-filtro-item-busca" oninput="renderizarRelatorioAtual()" placeholder="Ex: tecido, malha, NCM ou fornecedor..." style="padding: 4px 8px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 3px; min-width: 220px; color: #090d16;">
             </div>
+
+            <div id="rel-filtro-faccao-box" style="display: none; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <div>
+                <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Faccionista / Oficina:</label>
+                <select id="rel-filtro-fac-oficina" onchange="renderizarRelatorioAtual()" style="padding: 4px 8px; font-size: 11px; font-weight: 600; border: 1px solid #cbd5e1; border-radius: 3px; color: #0f172a; max-width: 210px;">
+                  <option value="TODAS">Todas as Faccionistas</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Regime:</label>
+                <select id="rel-filtro-fac-regime" onchange="renderizarRelatorioAtual()" style="padding: 4px 8px; font-size: 11px; font-weight: 600; border: 1px solid #cbd5e1; border-radius: 3px; color: #0f172a;">
+                  <option value="TODOS">Todos (NF + Romaneio)</option>
+                  <option value="COM_NF">Somente Com NF (1.124)</option>
+                  <option value="SEM_NF">Somente Romaneio (Sem NF)</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Buscar Peça / Modelo / Remessa:</label>
+                <input type="text" id="rel-filtro-fac-busca" oninput="renderizarRelatorioAtual()" placeholder="Ex: Tereza, Loreta, 54711..." style="padding: 4px 8px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 3px; min-width: 185px; color: #090d16;">
+              </div>
+            </div>
           </div>
 
           <!-- BOTÕES DE IMPRESSÃO & EXPORTAÇÃO -->
@@ -12448,9 +12469,11 @@
     const boxStatus = document.getElementById('rel-filtro-status-box');
     const boxCcusto = document.getElementById('rel-filtro-ccusto-box');
     const boxItem = document.getElementById('rel-filtro-item-box');
-    if (boxStatus) boxStatus.style.display = (tipo === 'vencimento' || tipo === 'retencoes') ? 'block' : 'none';
+    const boxFaccao = document.getElementById('rel-filtro-faccao-box');
+    if (boxStatus) boxStatus.style.display = (tipo === 'vencimento' || tipo === 'retencoes' || tipo === 'faccao') ? 'block' : 'none';
     if (boxCcusto) boxCcusto.style.display = (tipo === 'vencimento' || tipo === 'ccusto') ? 'block' : 'none';
     if (boxItem) boxItem.style.display = (tipo === 'itens') ? 'block' : 'none';
+    if (boxFaccao) boxFaccao.style.display = (tipo === 'faccao') ? 'flex' : 'none';
 
     renderizarRelatorioAtual();
     atualizarBarraRodape();
@@ -13356,8 +13379,13 @@
   }
 
   function gerarHtmlRelatorioFaccao() {
-    const { dataIni, dataFim } = obterFiltrosRelatorio();
-    const registros = [];
+    const { dataIni, dataFim, status } = obterFiltrosRelatorio();
+    const filtroOficina = document.getElementById('rel-filtro-fac-oficina')?.value || 'TODAS';
+    const filtroRegime = document.getElementById('rel-filtro-fac-regime')?.value || 'TODOS';
+    const filtroBusca = (document.getElementById('rel-filtro-fac-busca')?.value || '').trim().toLowerCase();
+
+    const todosFaccao = [];
+    const oficinasSet = new Set();
 
     (titulos || []).forEach(t => {
       if (t.tipo === 'IMPOSTO' || String(t.id || '').startsWith('IMP_')) return;
@@ -13395,10 +13423,14 @@
       const moPeca = qtd > 0 ? (valorMO / qtd) : (meta?.vlr_peca || 0);
       const mpPeca = (qtd > 0 && valorMP > 0) ? (valorMP / qtd) : 0;
       const custoDiretoPeca = mpPeca + moPeca;
+      const isConc = (t.situacao === 'CONCILIADO' || t.status === 'CONCILIADO');
 
-      registros.push({
+      const favNome = t.favorecido || '-';
+      oficinasSet.add(favNome);
+
+      todosFaccao.push({
         data: dtRef || '-',
-        favorecido: t.favorecido || '-',
+        favorecido: favNome,
         numero_doc: t.numero_doc || '-',
         comNF,
         tipoLabel: comNF ? `NF-e (${t.cod_operacao ? t.cod_operacao.split(' - ')[0] : '1.124'})` : 'Romaneio (Sem NF)',
@@ -13410,15 +13442,41 @@
         mpPeca,
         moPeca,
         custoDiretoPeca,
-        situacao: (t.situacao === 'CONCILIADO' || t.status === 'CONCILIADO') ? 'Pago' : 'Em Aberto'
+        isConc,
+        situacao: isConc ? 'Pago' : 'Em Aberto'
       });
+    });
+
+    // Atualiza opções do filtro de Faccionistas dinamicamente preservando a seleção atual
+    const selOficina = document.getElementById('rel-filtro-fac-oficina');
+    if (selOficina) {
+      const listaOficinas = Array.from(oficinasSet).sort((a, b) => a.localeCompare(b));
+      const optsHtml = '<option value="TODAS">Todas as Faccionistas</option>' + listaOficinas.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+      if (selOficina.innerHTML !== optsHtml) {
+        selOficina.innerHTML = optsHtml;
+        selOficina.value = listaOficinas.includes(filtroOficina) ? filtroOficina : 'TODAS';
+      }
+    }
+
+    const registros = todosFaccao.filter(r => {
+      if (status === 'ABERTO' && r.isConc) return false;
+      if (status === 'CONCILIADO' && !r.isConc) return false;
+      if (filtroOficina !== 'TODAS' && r.favorecido !== filtroOficina) return false;
+      if (filtroRegime === 'COM_NF' && !r.comNF) return false;
+      if (filtroRegime === 'SEM_NF' && r.comNF) return false;
+      if (filtroBusca) {
+        const hay = `${r.modelo} ${r.favorecido} ${r.numero_doc} ${r.remessa}`.toLowerCase();
+        if (!hay.includes(filtroBusca)) return false;
+      }
+      return true;
     });
 
     const totalMO = registros.reduce((acc, r) => acc + r.valorMO, 0);
     const totalComNF = registros.filter(r => r.comNF).reduce((acc, r) => acc + r.valorMO, 0);
     const totalSemNF = registros.filter(r => !r.comNF).reduce((acc, r) => acc + r.valorMO, 0);
     const totalPecas = registros.reduce((acc, r) => acc + r.qtd, 0);
-    const custoMedioMO = totalPecas > 0 ? (totalMO / totalPecas) : 0;
+    const totalMOComQtd = registros.filter(r => r.qtd > 0).reduce((acc, r) => acc + r.valorMO, 0);
+    const custoMedioMO = totalPecas > 0 ? (totalMOComQtd / totalPecas) : 0;
     const pctComNF = totalMO > 0 ? ((totalComNF / totalMO) * 100).toFixed(1) : '0.0';
     const pctSemNF = totalMO > 0 ? ((totalSemNF / totalMO) * 100).toFixed(1) : '0.0';
 
