@@ -275,6 +275,25 @@ def parse_boleto_dp_pdf(pdf_bytes: bytes, filename: str = "") -> dict[str, Any] 
             d, m_, y = datas[-1]
             vencimento_iso = f"{y}-{m_}-{d}"
 
+    # Se o próprio PDF do boleto/fatura tiver uma lista de beneficiários (Nome + Valor), extrai automaticamente
+    colabs_extra: list[dict[str, Any]] = []
+    for ln in texto.splitlines():
+        ln_s = ln.strip()
+        if not ln_s or any(k in ln_s.upper() for k in ("TOTAL", "SUBTOTAL", "CNPJ", "PAGINA", "EMISSAO", "BOLETO", "JUROS", "MULTA", "DESCONTO")):
+            continue
+        m_lin = re.match(r"^([A-ZÁÀÃÂÉÊÍÓÔÕÚÇ][A-ZÁÀÃÂÉÊÍÓÔÕÚÇa-záàãâéêíóôõúç\s\.]{7,55}?)\s+(?:(\d{3}\.?\d{3}\.?\d{3}-?\d{2})\s+)?(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})\s*$", ln_s)
+        if m_lin:
+            v_item = _br_float(m_lin.group(3))
+            if 10.0 <= v_item < valor + 0.05:
+                colabs_extra.append({
+                    "nome": re.sub(r"\s+", " ", m_lin.group(1)).strip().upper(),
+                    "cpf": re.sub(r"\D", "", m_lin.group(2) or ""),
+                    "proventos": v_item,
+                    "descontos": 0.0,
+                    "liquido": v_item,
+                    "fgts": 0.0,
+                })
+
     return {
         "arquivo": filename,
         "tipo_pdf": "BOLETO_DP",
@@ -289,7 +308,7 @@ def parse_boleto_dp_pdf(pdf_bytes: bytes, filename: str = "") -> dict[str, Any] 
         "linha_dig": linha_dig,
         "vencimento": vencimento_iso,
         "competencia": "",
-        "colaboradores": [],
+        "colaboradores": colabs_extra,
         "total_liquido": valor,
         "total_fgts": 0.0,
     }

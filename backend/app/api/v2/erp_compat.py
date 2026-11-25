@@ -3152,3 +3152,164 @@ def compat_salvar_beneficiarios_titulo(
         "soma": float(soma_total),
         "rateios": {k: float(v) for k, v in rateio_por_filial.items()},
     }
+
+
+@router.post("/pessoal/parse-lista-beneficiarios")
+async def compat_parse_lista_beneficiarios(
+    file: UploadFile = File(...),
+    ctx: TenantContext = Depends(require_v2_roles("OWNER", "DIRETOR_APROVADOR", "FINANCEIRO")),
+    db: Session = Depends(get_db),
+):
+    """
+    Extrai lista de beneficiários (Nome, CPF, Filial, Valor) de PDF, CSV, TXT, XLS ou XLSX
+    (ex: relatórios Ticket, Salvadorcard, FGTS Digital ou planilhas internas).
+    """
+    import csv
+    import unicodedata
+    import zipfile
+    import xml.etree.ElementTree as ET
+    from pypdf import PdfReader
+
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=422, detail="Arquivo vazio.")
+
+    def _norm_n(s: str) -> str:
+        nfkd = unicodedata.normalize("NFKD", str(s or ""))
+        sem = "".join(c for c in nfkd if not unicodedata.combining(c))
+        toks = [t for t in re.sub(r"[^A-Za-z0-9\s]", " ", sem).upper().split() if t not in {"DE", "DA", "DO", "DOS", "DAS"}]
+        return " ".join(toks)
+
+    def _parse_val_br(s: str) -> float:
+        limpo = re.sub(r"[^\d,\.]", "", str(s or ""))
+        if not limpo:
+            return 0.0
+        if "," in limpo:
+            limpo = limpo.replace(".", "").replace(",", ".")
+        try:
+            return round(float(limpo), 2)
+        except Exception:
+            return 0.0
+
+    def _inferir_filial_txt(txt: str) -> str:
+        up = (txt or "").upper()
+        if "SOLAR" in up:
+            return "Solar - Geral"
+        if "BARRA" in up:
+            return "Boah - Barra"
+        if "PASEO" in up:
+            return "Boah - Paseo"
+        if "HORTO" in up:
+            return "Boah - Horto"
+        if "SDB" in up or "BAHIA" in up:
+            return "Boah - SDB"
+        if "VILAS" in up:
+            return "Boah - Vilas"
+        if "MATRIZ" in up:
+            return "Boah - Matriz"
+        return ""
+
+    forn_all = db.query(Fornecedor).filter(Fornecedor.tenant_id == ctx.tenant_id).all()
+    forn_by_cpf = {limpar_documento(f.cnpj_cpf): f for f in forn_all if f.cnpj_cpf}
+    forn_by_nome = {_norm_n(f.razao_social): f for f in forn_all if f.razao_social}
+
+    fname_low = (file.filename or "").lower()
+    linhas_texto: list[str] = []
+
+    if fname_low.endswith(".pdf") or raw[:4] == b"%PDF":
+        reader = PdfReader(io.BytesIO(raw))
+        for p in reader.pages:
+            linhas_texto.extend((p.extract_text() or "").splitlines())
+    elif raw[:4] == b"\xd0\xcf\x11\xe0":
+        import xlrd
+        wb = xlrd.open_workbook(file_contents=raw)
+        sh = wb.sheet_by_index(0)
+        for r in range(sh.nrows):
+            linhas_texto.append(" | ".join(str(sh.cell_value(r, c)).strip() for c in range(sh.ncols)))
+    elif raw[:2] == b"PK" and fname_low.endswith(".xlsx"):
+        with zipfile.ZipFile(io.BytesIO(raw)) as zf:
+            shared: list[str] = []
+            if "xl/sharedStrings.xml" in zf.namelist():
+                root_ss = ET.fromstring(zf.read("xl/sharedStrings.xml"))
+                for si in root_ss.iter():
+                    if si.tag.endswith("}si") or si.tag == "si":
+                        shared.append("".join(t.text or "" for t in si.iter() if t.tag.endswith("}t") or t.tag == "t"))
+            sheets = sorted(n for n in zf.namelist() if n.startswith("xl/worksheets/sheet") and n.endswith(".xml"))
+            if sheets:
+                root_sh = ET.fromstring(zf.read(sheets[0]))
+                for row_el in root_sh.iter():
+                    if row_el.tag.endswith("}row") or row_el.tag == "row":
+                        vals = []
+                        for c_el in row_el:
+                            t_attr = c_el.attrib.get("t", "")
+                            v_txt = "".join(ch.text for ch in c_el.iter() if (ch.tag.endswith("}v") or ch.tag == "v" or ch.tag.endswith("}t") or ch.tag == "t") and ch.text)
+                            if t_attr == "s" and v_txt.isdigit() and int(v_txt) < len(shared):
+                                v_txt = shared[int(v_txt)]
+                            vals.append(v_txt.strip())
+                        if any(vals):
+                            linhas_texto.append(" | ".join(vals))
+    else:
+        txt = None
+        for enc in ("utf-8-sig", "utf-8", "latin-1", "cp1252"):
+            try:
+                txt = raw.decode(enc)
+                break
+            except UnicodeDecodeError:
+                continue
+        txt = txt or raw.decode("latin-1", errors="replace")
+        linhas_texto = txt.splitlines()
+
+    beneficiarios: list[dict] = []
+    for ln in linhas_texto:
+        ln_s = ln.strip()
+        if not ln_s or any(k in ln_s.upper() for k in ("TOTAL", "SUBTOTAL", "VALOR DO PEDIDO", "CNPJ", "PAGINA", "EMISSAO")):
+            continue
+        # Extrai valores monetários na linha
+        vals_br = re.findall(r"\b\d{1,3}(?:\.\d{3})*,\d{2}\b", ln_s)
+        vals_dot = re.findall(r"\b\d+\.\d{2}\b", ln_s) if not vals_br else []
+        valor = _parse_val_br(vals_br[-1] if vals_br else (vals_dot[-1] if vals_dot else "0"))
+        if valor <= 0:
+            continue
+
+        # Extrai CPF se houver
+        m_cpf = re.search(r"\b(\d{3}\.?\d{3}\.?\d{3}-?\d{2})\b", ln_s)
+        cpf_ln = limpar_documento(m_cpf.group(1)) if m_cpf else ""
+
+        # Tenta localizar colaborador cadastrado por CPF ou pelo nome normalizado
+        f_obj = forn_by_cpf.get(cpf_ln) if cpf_ln else None
+        if not f_obj:
+            ln_norm = _norm_n(ln_s)
+            for n_key, f_cand in forn_by_nome.items():
+                if len(n_key) >= 8 and n_key in ln_norm:
+                    f_obj = f_cand
+                    break
+
+        if f_obj:
+            nome_final = f_obj.razao_social
+            cpf_final = f_obj.cnpj_cpf or cpf_ln
+            db_final = f_obj.dados_banco or ""
+        else:
+            # Extrai maior sequência alfabética como nome candidato
+            m_nome = re.search(r"([A-ZÁÀÃÂÉÊÍÓÔÕÚÇ][A-ZÁÀÃÂÉÊÍÓÔÕÚÇa-záàãâéêíóôõúç\s]{6,60})", ln_s)
+            if not m_nome:
+                continue
+            nome_final = re.sub(r"\s+", " ", m_nome.group(1)).strip().upper()
+            cpf_final = cpf_ln
+            db_final = ""
+
+        fil_final = _inferir_filial_txt(ln_s) or "Boah - Matriz"
+        beneficiarios.append({
+            "nome": nome_final,
+            "cpf": cpf_final,
+            "filial": fil_final,
+            "valor": valor,
+            "dados_banco": db_final,
+        })
+
+    if not beneficiarios:
+        raise HTTPException(
+            status_code=422,
+            detail="Não encontrei linhas com Nome + Valor neste arquivo. Você pode incluir os beneficiários manualmente na tabela.",
+        )
+
+    return {"success": True, "beneficiarios": beneficiarios, "total": len(beneficiarios)}
