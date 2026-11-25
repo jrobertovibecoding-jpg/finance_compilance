@@ -2325,6 +2325,45 @@
       </div>
     </div>
 
+    <!-- MODAL POP-UP: ORÇAMENTO MENSAL / TETO POR CATEGORIA (BUDGET) -->
+    <div id="modal-orcamento-metas" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.65); z-index: 10015; align-items: center; justify-content: center; padding: 16px;">
+      <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; width: 100%; max-width: 680px; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 20px 45px rgba(15,23,42,0.35); overflow: hidden;">
+        <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 13.5px; font-weight: 800; color: #0f172a;">Metas &amp; Teto Orçamentário Mensal por Categoria</div>
+            <div style="font-size: 11px; color: #475569;">Defina o limite mensal para ativar os semáforos (Verde &lt;80%, Amarelo 80–99%, Vermelho ≥100%) no Raio-X.</div>
+          </div>
+          <button type="button" onclick="fecharModalOrcamentoMetas()" style="background: none; border: none; font-size: 18px; color: #64748b; cursor: pointer; padding: 2px 6px;">✕</button>
+        </div>
+
+        <div style="padding: 9px 16px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <button type="button" class="tool-btn" onclick="adicionarLinhaOrcamento()" style="font-size: 11px; padding: 4px 10px; border-color: #93c5fd; color: #1d4ed8; background: #eff6ff; font-weight: 700;">+ Adicionar Categoria</button>
+          <button type="button" class="tool-btn" onclick="carregarSugestoesOrcamento()" style="font-size: 11px; padding: 4px 10px;">Puxar Categorias do Período</button>
+        </div>
+
+        <div style="padding: 10px 16px; overflow-y: auto; flex: 1;">
+          <table class="tabela-dados" style="width: 100%; border-collapse: collapse; font-size: 11.5px;">
+            <thead>
+              <tr>
+                <th style="text-align: left;">Categoria / Plano de Contas *</th>
+                <th style="text-align: right; width: 150px;">Teto Mensal (R$) *</th>
+                <th style="text-align: center; width: 42px;"></th>
+              </tr>
+            </thead>
+            <tbody id="modal-orcamento-tbody"></tbody>
+          </table>
+        </div>
+
+        <div style="padding: 10px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+          <div id="modal-orcamento-total" style="font-size: 11.5px; font-weight: 700; color: #0f172a;">Total Orçado: R$ 0,00</div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="tool-btn" onclick="fecharModalOrcamentoMetas()" style="font-size: 11px;">Cancelar</button>
+            <button type="button" class="tool-btn primary" onclick="salvarOrcamentoMetas()" style="font-size: 11.5px; padding: 6px 14px;">✓ Salvar Metas</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ==================== ABA 7: CENTRAL DE RELATÓRIOS OFICIAIS (PADRÃO BIMER / JR SOLUTIONS) ==================== -->
     <div id="aba-relatorios" class="tab-content">
       
@@ -2429,6 +2468,7 @@
                   <button type="button" class="tool-btn raiox-zoom-btn" data-zoom="PRODUCAO" onclick="definirZoomRaioX('PRODUCAO')" style="padding: 4px 9px; font-size: 10.5px;">Produção (Tecidos/Facção)</button>
                   <button type="button" class="tool-btn raiox-zoom-btn" data-zoom="OCUPACAO" onclick="definirZoomRaioX('OCUPACAO')" style="padding: 4px 9px; font-size: 10.5px;">Ocupação (Aluguel/Luz/Net)</button>
                   <button type="button" class="tool-btn raiox-zoom-btn" data-zoom="FRETES" onclick="definirZoomRaioX('FRETES')" style="padding: 4px 9px; font-size: 10.5px;">Fretes &amp; Logística</button>
+                  <button type="button" class="tool-btn" onclick="abrirModalOrcamentoMetas()" style="padding: 4px 9px; font-size: 10.5px; border-color: #059669; color: #065f46; background: #ecfdf5; font-weight: 700;">Metas / Orçamento</button>
                 </div>
               </div>
             </div>
@@ -13716,6 +13756,119 @@
     return html;
   }
 
+  // ==================== ORÇAMENTO MENSAL / METAS POR CATEGORIA (BUDGET) ====================
+  let _orcamentoRascunho = [];
+
+  function _chaveStorageOrcamento() {
+    const ws = localStorage.getItem('jrfincloud_workspace_id') || 'default';
+    return `jr_fincloud_orcamento_v1_${ws}`;
+  }
+
+  function _obterMapaOrcamento() {
+    try {
+      const raw = localStorage.getItem(_chaveStorageOrcamento());
+      const arr = raw ? JSON.parse(raw) : [];
+      const map = {};
+      if (Array.isArray(arr)) {
+        arr.forEach(item => {
+          if (item && item.categoria && Number(item.teto) > 0) {
+            map[String(item.categoria).trim()] = Number(item.teto);
+          }
+        });
+      }
+      return map;
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function abrirModalOrcamentoMetas() {
+    if (typeof inicializarDatalistCategorias === 'function') inicializarDatalistCategorias();
+    const map = _obterMapaOrcamento();
+    _orcamentoRascunho = Object.entries(map).map(([categoria, teto]) => ({ categoria, teto }));
+    if (_orcamentoRascunho.length === 0) {
+      _orcamentoRascunho.push({ categoria: '', teto: 0 });
+    }
+    renderizarTabelaOrcamento();
+    const modal = document.getElementById('modal-orcamento-metas');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function fecharModalOrcamentoMetas() {
+    const modal = document.getElementById('modal-orcamento-metas');
+    if (modal) modal.style.display = 'none';
+  }
+
+  function renderizarTabelaOrcamento() {
+    const tbody = document.getElementById('modal-orcamento-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    _orcamentoRascunho.forEach((item, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="padding: 5px 4px;">
+          <input type="text" list="lista-categorias-oficiais" value="${escapeHtml(item.categoria || '')}" oninput="_orcamentoRascunho[${idx}].categoria = this.value" placeholder="Selecione a categoria..." style="width: 100%; font-size: 11px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 4px;">
+        </td>
+        <td style="padding: 5px 4px;">
+          <input type="number" step="0.01" min="0" value="${item.teto > 0 ? Number(item.teto).toFixed(2) : ''}" oninput="_orcamentoRascunho[${idx}].teto = parseFloat(this.value) || 0; atualizarTotalOrcamentoModal();" placeholder="0.00" style="width: 100%; text-align: right; font-family: monospace; font-weight: 700; font-size: 11px; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 4px;">
+        </td>
+        <td style="padding: 5px 4px; text-align: center;">
+          <button type="button" onclick="removerLinhaOrcamento(${idx})" style="background: none; border: none; color: #dc2626; cursor: pointer; font-weight: 800; font-size: 13px;">✕</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+    atualizarTotalOrcamentoModal();
+  }
+
+  function atualizarTotalOrcamentoModal() {
+    const tot = _orcamentoRascunho.reduce((acc, r) => acc + (parseFloat(r.teto) || 0), 0);
+    const el = document.getElementById('modal-orcamento-total');
+    if (el) el.innerText = `Total Orçado Mensal: ${formatarMoeda(tot)}`;
+  }
+
+  function adicionarLinhaOrcamento() {
+    _orcamentoRascunho.push({ categoria: '', teto: 0 });
+    renderizarTabelaOrcamento();
+  }
+
+  function removerLinhaOrcamento(idx) {
+    _orcamentoRascunho.splice(idx, 1);
+    renderizarTabelaOrcamento();
+  }
+
+  function carregarSugestoesOrcamento() {
+    const { dataIni, dataFim } = obterFiltrosRelatorio();
+    const existentes = new Set(_orcamentoRascunho.map(r => (r.categoria || '').trim()).filter(Boolean));
+    const porCat = {};
+    (titulos || []).forEach(t => {
+      if (t.tipo === 'IMPOSTO' || String(t.id || '').startsWith('IMP_')) return;
+      const dt = (t.vencimento || t.data_emissao || '').slice(0, 10);
+      if (dt && (dt < dataIni || dt > dataFim)) return;
+      const cc = (t.ccusto || '').trim();
+      if (!cc) return;
+      porCat[cc] = (porCat[cc] || 0) + Number(t.valor || 0);
+    });
+    _orcamentoRascunho = _orcamentoRascunho.filter(r => r.categoria && r.categoria.trim());
+    Object.entries(porCat).sort((a, b) => b[1] - a[1]).forEach(([cat, val]) => {
+      if (!existentes.has(cat)) {
+        const tetoSugerido = Math.ceil((val * 1.1) / 50) * 50;
+        _orcamentoRascunho.push({ categoria: cat, teto: tetoSugerido });
+      }
+    });
+    if (_orcamentoRascunho.length === 0) _orcamentoRascunho.push({ categoria: '', teto: 0 });
+    renderizarTabelaOrcamento();
+  }
+
+  function salvarOrcamentoMetas() {
+    const validos = _orcamentoRascunho
+      .map(r => ({ categoria: (r.categoria || '').trim(), teto: Number((parseFloat(r.teto) || 0).toFixed(2)) }))
+      .filter(r => r.categoria && r.teto > 0);
+    localStorage.setItem(_chaveStorageOrcamento(), JSON.stringify(validos));
+    fecharModalOrcamentoMetas();
+    renderizarRelatorioAtual();
+  }
+
   let _raioxZoomAtual = 'TODOS';
 
   function definirZoomRaioX(modo) {
@@ -13862,18 +14015,35 @@
       </div>`;
     }).join('');
 
-    // Barras Estilo "Uso de Bateria do Celular"
+    // Barras Estilo "Uso de Bateria do Celular" + Semáforo de Orçamento
+    const mapaOrc = _obterMapaOrcamento();
     const maxCat = listaCats[0]?.total || 1;
     const barrasBateria = listaCats.slice(0, 12).map((c, idx) => {
       const pctTotal = totalGeral > 0 ? ((c.total / totalGeral) * 100) : 0;
       const larguraBarra = Math.max(3, (c.total / maxCat) * 100);
-      const corBarra = cores[idx % cores.length];
+      const teto = mapaOrc[c.nome] || 0;
+      let corBarra = cores[idx % cores.length];
+      let badgeMeta = '';
+      if (teto > 0) {
+        const usoPct = (c.total / teto) * 100;
+        if (usoPct >= 100) {
+          corBarra = '#dc2626';
+          badgeMeta = `<span style="background:#fee2e2;color:#991b1b;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800;margin-left:5px;">ESTOURADO (${usoPct.toFixed(0)}% do teto ${formatarMoeda(teto)})</span>`;
+        } else if (usoPct >= 80) {
+          corBarra = '#d97706';
+          badgeMeta = `<span style="background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:800;margin-left:5px;">ATENÇÃO (${usoPct.toFixed(0)}% de ${formatarMoeda(teto)})</span>`;
+        } else {
+          corBarra = '#059669';
+          badgeMeta = `<span style="background:#dcfce7;color:#166534;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700;margin-left:5px;">OK (${usoPct.toFixed(0)}% de ${formatarMoeda(teto)})</span>`;
+        }
+      }
       return `
         <div style="margin-bottom: 8px;">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:10.5px;margin-bottom:2px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:10.5px;margin-bottom:2px;gap:6px;flex-wrap:wrap;">
             <div>
               <strong style="color:#0f172a;">${idx + 1}. ${escapeHtml(c.nome)}</strong>
               <span style="font-size:9.5px;color:#64748b;margin-left:5px;">(${c.qtd}x)</span>
+              ${badgeMeta}
             </div>
             <div style="font-family:monospace;white-space:nowrap;">
               <strong style="color:#0f172a;">${formatarMoeda(c.total)}</strong>
@@ -13886,6 +14056,62 @@
         </div>
       `;
     }).join('');
+
+    // Tabela Orçado vs. Realizado (se houver metas configuradas)
+    const metasAtivas = Object.entries(mapaOrc);
+    let blocoOrcamentoHtml = '';
+    if (metasAtivas.length > 0) {
+      let totOrc = 0, totRealOrc = 0;
+      const linhasOrc = metasAtivas.map(([cat, teto], idx) => {
+        const real = mapCat[cat]?.total || 0;
+        const desvio = teto - real;
+        const pct = teto > 0 ? (real / teto) * 100 : 0;
+        totOrc += teto;
+        totRealOrc += real;
+        const semBadge = pct >= 100
+          ? '<span style="background:#fee2e2;color:#991b1b;padding:1px 6px;border-radius:3px;font-weight:800;font-size:9px;">Estourado</span>'
+          : (pct >= 80
+            ? '<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:3px;font-weight:800;font-size:9px;">Atenção</span>'
+            : '<span style="background:#dcfce7;color:#166534;padding:1px 6px;border-radius:3px;font-weight:700;font-size:9px;">No Teto</span>');
+        return `<tr style="${idx % 2 === 1 ? 'background:#f8fafc;' : 'background:#ffffff;'}">
+          <td style="padding:5px 6px;font-weight:700;color:#0f172a;">${escapeHtml(cat)}</td>
+          <td style="padding:5px 6px;text-align:right;font-family:monospace;">${formatarMoeda(teto)}</td>
+          <td style="padding:5px 6px;text-align:right;font-family:monospace;font-weight:800;">${formatarMoeda(real)}</td>
+          <td style="padding:5px 6px;text-align:right;font-family:monospace;font-weight:700;color:${desvio >= 0 ? '#059669' : '#dc2626'};">${desvio >= 0 ? '+' : ''}${formatarMoeda(desvio)}</td>
+          <td style="padding:5px 6px;text-align:center;font-weight:700;">${pct.toFixed(1)}%</td>
+          <td style="padding:5px 6px;text-align:center;">${semBadge}</td>
+        </tr>`;
+      }).join('');
+      const desvioTot = totOrc - totRealOrc;
+      blocoOrcamentoHtml = `
+        <div style="font-weight: 800; font-size: 11px; color: #065f46; text-transform: uppercase; margin-bottom: 6px;">Controle Orçamentário (Teto Mensal vs. Realizado)</div>
+        <table class="alterdata-grid" style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 18px;">
+          <thead>
+            <tr style="background: #0f172a; color: white;">
+              <th style="padding: 5px 6px; text-align: left;">Categoria Orçada</th>
+              <th style="padding: 5px 6px; text-align: right; width: 105px;">Teto Mensal</th>
+              <th style="padding: 5px 6px; text-align: right; width: 105px;">Realizado</th>
+              <th style="padding: 5px 6px; text-align: right; width: 105px;">Saldo / Desvio</th>
+              <th style="padding: 5px 6px; text-align: center; width: 65px;">% Uso</th>
+              <th style="padding: 5px 6px; text-align: center; width: 85px;">Semáforo</th>
+            </tr>
+          </thead>
+          <tbody>${linhasOrc}</tbody>
+          <tfoot>
+            <tr style="background: #0f172a; color: white; font-weight: 800;">
+              <td style="padding: 6px;">TOTAL ORÇADO</td>
+              <td style="padding: 6px; text-align: right; font-family: monospace;">${formatarMoeda(totOrc)}</td>
+              <td style="padding: 6px; text-align: right; font-family: monospace;">${formatarMoeda(totRealOrc)}</td>
+              <td style="padding: 6px; text-align: right; font-family: monospace; color: ${desvioTot >= 0 ? '#86efac' : '#fca5a5'};">${desvioTot >= 0 ? '+' : ''}${formatarMoeda(desvioTot)}</td>
+              <td style="padding: 6px; text-align: center;">${totOrc > 0 ? ((totRealOrc / totOrc) * 100).toFixed(1) : '0.0'}%</td>
+              <td style="padding: 6px; text-align: center;">-</td>
+            </tr>
+          </tfoot>
+        </table>
+      `;
+    }
+
+    html += blocoOrcamentoHtml;
 
     html += `
       <div style="display: grid; grid-template-columns: 290px 1fr; gap: 16px; margin-bottom: 18px; align-items: start;">
