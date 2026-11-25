@@ -10589,6 +10589,7 @@
           <button type="button" class="tool-btn" onclick="fecharModalDetalhesTitulo(); abrirModalEdicaoTitulo('${item.id}')">${bimerIcon('pencil', 'bimer-svg-xs')} Editar</button>
           <button type="button" class="tool-btn" onclick="fecharModalDetalhesTitulo(); repetirLancamentoTitulo('${item.id}')">${bimerIcon('refresh', 'bimer-svg-xs')} Repetir / Clonar</button>
           <button type="button" class="tool-btn" onclick="fecharModalDetalhesTitulo(); abrirFolhaRostoTitulo('${item.id}')">${bimerIcon('printer', 'bimer-svg-xs')} Folha de Rosto</button>
+          <button type="button" class="tool-btn" style="border-color: #0284c7; color: #0369a1; background: #e0f2fe; font-weight: 700;" onclick="abrirModalAnexosTitulo('${item.id}', 'Doc: ${escapeHtml(item.numero_doc || '-').replace(/'/g, '')} • ${escapeHtml(item.favorecido || '-').replace(/'/g, '')}')">Dossiê / Anexos${item.anexos_count > 0 ? ` (${item.anexos_count})` : ''}</button>
         </div>
         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
           <button type="button" class="tool-btn primary" style="background: ${isPago ? '#b45309' : '#16a34a'}; border-color: ${isPago ? '#92400e' : '#15803d'};" onclick="fecharModalDetalhesTitulo(); alternarBaixa('${item.id}')">
