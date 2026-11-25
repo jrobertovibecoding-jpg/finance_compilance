@@ -2251,6 +2251,8 @@ def _carregar_candidatos_remessa(
         raw_ids = []
         for tid in titulo_ids:
             _, raw_id = _strip_ref_id(tid)
+            if raw_id.startswith("NF_"):
+                raw_id = raw_id[3:].strip()
             raw_ids.append(raw_id)
         q = q.filter(Titulo.id.in_(raw_ids))
     elif data_pagamento and not todos_pendentes:
@@ -2272,7 +2274,7 @@ def _carregar_candidatos_remessa(
     for t in titulos_db:
         pix_final = (t.pix_chave or "").strip() or forn_pix_map.get(t.fornecedor_id or "", "")
         candidatos.append({
-            "id": f"NF_{t.id}",
+            "id": t.id,
             "db_id": t.id,
             "numero_nf": t.numero_documento,
             "numero_doc": t.numero_documento,
