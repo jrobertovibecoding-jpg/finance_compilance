@@ -2300,7 +2300,8 @@ def _carregar_candidatos_remessa(
     candidatos = []
     for t in titulos_db:
         itens_colab = folha_itens_map.get(t.id, [])
-        if itens_colab:
+        eh_lote_folha_cc = bool(itens_colab) and not (t.cod_barras or "").strip() and "FOLHA" in (t.forma_pgto or "").upper()
+        if eh_lote_folha_cc:
             for it in itens_colab:
                 cpf_it = limpar_documento(it.codigo_produto or "")
                 nome_it = (it.descricao or "").strip()
@@ -2857,6 +2858,7 @@ async def compat_importar_favorecidos_itau(
 class PessoalColaboradorItem(BaseModel):
     nome: str
     cpf: Optional[str] = ""
+    filial: Optional[str] = ""
     valor: float
     dados_banco: Optional[str] = ""
 
@@ -2865,13 +2867,17 @@ class PessoalLoteEntrada(BaseModel):
     filial: str
     ccusto: Optional[str] = ""
     categoria: str = "12201 - Salários"
+    favorecido: Optional[str] = ""
+    cnpj_favorecido: Optional[str] = ""
+    linha_dig: Optional[str] = ""
     numero_doc: str
     vencimento: str
     competencia: Optional[str] = ""
     forma_pgto: Optional[str] = "FOLHA ITAÚ (C/C)"
     cnpj_empresa: Optional[str] = ""
     eh_solar: bool = False
-    colaboradores: List[PessoalColaboradorItem]
+    valor_total: Optional[float] = 0.0
+    colaboradores: List[PessoalColaboradorItem] = []
 
 
 class PessoalGravarLotesRequest(BaseModel):
@@ -2946,18 +2952,24 @@ def compat_gravar_lotes_pessoal(
     criados = []
     for lote in req.lotes:
         colabs_validos = [c for c in lote.colaboradores if c.valor and c.valor > 0]
-        if not colabs_validos:
+        if colabs_validos:
+            total_dec = sum((to_dec(c.valor) for c in colabs_validos), Decimal("0.00"))
+        elif lote.valor_total and lote.valor_total > 0:
+            total_dec = to_dec(lote.valor_total)
+        else:
             continue
 
         emp_alvo = emp_solar if (lote.eh_solar and emp_solar) else emp_padrao
-        total_dec = sum((to_dec(c.valor) for c in colabs_validos), Decimal("0.00"))
         dt_venc = _parse_date(lote.vencimento, date.today())
         cat_label = (lote.ccusto or lote.categoria or "Geral").strip()
         cc_obj, pc_obj = _resolver_plano_e_ccusto(db, ctx.tenant_id, emp_alvo.id, lote.categoria)
         if not cc_obj and cat_label:
             cc_obj, _ = _resolver_plano_e_ccusto(db, ctx.tenant_id, emp_alvo.id, cat_label)
 
-        fav_nome = f"{lote.categoria.split(' - ')[-1].strip()} — {lote.filial}".strip()[:200]
+        fav_nome = (
+            (lote.favorecido or "").strip()[:200]
+            or f"{lote.categoria.split(' - ')[-1].strip()} — {lote.filial}".strip()[:200]
+        )
         num_tx = f"DP-{uuid.uuid4().hex[:8].upper()}"
 
         titulo = Titulo(
@@ -2970,23 +2982,27 @@ def compat_gravar_lotes_pessoal(
             numero_tx=num_tx,
             numero_documento=lote.numero_doc.strip()[:60] or num_tx,
             favorecido_nome=fav_nome,
-            favorecido_doc=limpar_documento(lote.cnpj_empresa or "") or emp_alvo.cnpj,
+            favorecido_doc=limpar_documento(lote.cnpj_favorecido or lote.cnpj_empresa or "") or emp_alvo.cnpj,
             dt_emissao=date.today(),
             dt_vencimento=dt_venc,
             valor_bruto=total_dec,
             valor_liquido=total_dec,
             status="PENDENTE",
             forma_pgto=(lote.forma_pgto or "FOLHA ITAÚ (C/C)").strip().upper()[:30],
-            descricao=f"{lote.categoria} | {lote.filial}" + (f" ({lote.competencia})" if lote.competencia else "") + f" — {len(colabs_validos)} colaborador(es)",
-            observacao=f"Lote Pessoal: {lote.ccusto or lote.filial} | {len(colabs_validos)} colaboradores",
+            cod_barras=(lote.linha_dig or "").strip()[:80] or None,
+            descricao=f"{lote.categoria} | {lote.filial}" + (f" ({lote.competencia})" if lote.competencia else "") + f" — {len(colabs_validos)} beneficiário(s)",
+            observacao=f"Lote Pessoal: {lote.ccusto or lote.filial} | {len(colabs_validos)} beneficiários",
             solicitante="RH",
             conciliado=False,
         )
         db.add(titulo)
         db.flush()
 
+        rateio_por_filial: dict[str, Decimal] = {}
         for idx, c in enumerate(colabs_validos, start=1):
             val_c = to_dec(c.valor)
+            fil_c = (c.filial or lote.filial or "Geral").strip()
+            rateio_por_filial[fil_c] = rateio_por_filial.get(fil_c, Decimal("0.00")) + val_c
             db.add(
                 TituloItem(
                     tenant_id=ctx.tenant_id,
@@ -2994,7 +3010,7 @@ def compat_gravar_lotes_pessoal(
                     numero_item=idx,
                     codigo_produto=limpar_documento(c.cpf or "")[:60],
                     descricao=c.nome.strip().upper()[:300],
-                    ncm=(lote.filial or "")[:16],
+                    ncm=fil_c[:16],
                     unidade="FOLHA_COLAB",
                     quantidade=Decimal("1.0000"),
                     valor_unitario=val_c,
@@ -3004,6 +3020,24 @@ def compat_gravar_lotes_pessoal(
                     dt_emissao=date.today(),
                 )
             )
+
+        # Grava o rateio automático por filial (Matriz, Barra, Paseo, Horto, SDB, Vilas, Solar)
+        if total_dec > Decimal("0.00"):
+            for fil_nome, val_fil in rateio_por_filial.items():
+                cc_r, pc_r = _resolver_plano_e_ccusto(db, ctx.tenant_id, emp_alvo.id, fil_nome)
+                pct_r = ((val_fil / total_dec) * Decimal("100.00")).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+                db.add(
+                    TituloRateio(
+                        tenant_id=ctx.tenant_id,
+                        titulo_id=titulo.id,
+                        centro_custo_id=cc_r.id if cc_r else None,
+                        plano_conta_id=pc_r.id if pc_r else (pc_obj.id if pc_obj else None),
+                        rubrica=lote.categoria[:60],
+                        valor=val_fil,
+                        percentual=pct_r,
+                        observacao=f"Rateio Beneficiários ({fil_nome})",
+                    )
+                )
 
         criados.append({
             "id": titulo.id,
