@@ -16604,7 +16604,7 @@
       if (!resp.ok) throw new Error(data.detail || 'Erro ao gravar lotes');
       alert(`✅ ${data.lotes_criados} lançamento(s) de Folha gravado(s) no Contas a Pagar!\n\nCada filial ficou em 1 linha limpa com todos os colaboradores detalhados dentro.`);
       fecharModalDespesasPessoal();
-      await carregarTitulosDoServidor();
+      await carregarDadosIniciais();
     } catch (e) {
       alert('Erro ao gravar lotes: ' + e.message);
     } finally {
@@ -16716,7 +16716,7 @@
       renderizarTabelaManualPessoal();
       alert(`✅ Lote único "${doc}" gravado no Contas a Pagar!`);
       fecharModalDespesasPessoal();
-      await carregarTitulosDoServidor();
+      await carregarDadosIniciais();
     } catch (e) {
       alert('Erro ao gravar lote: ' + e.message);
     } finally {
