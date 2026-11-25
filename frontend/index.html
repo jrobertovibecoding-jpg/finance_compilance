@@ -909,6 +909,7 @@
 
     <div class="toolbar-actions">
       <button class="tool-btn primary" onclick="gravarDocumento()" title="Gravar lançamento atual (F10)"><svg class="bimer-svg" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg> Gravar (F10)</button>
+      <button type="button" class="tool-btn" onclick="gravarDocumento(true)" style="background: #0284c7; border-color: #0369a1; color: #ffffff; font-weight: 700;" title="Grava este lançamento, mantém Favorecido/Categoria/Forma/Vencimento e limpa só Nº Documento e Valor para lançar o próximo em sequência">🔁 Gravar e Repetir</button>
       <button class="tool-btn" onclick="novoDocumento()" title="Iniciar novo lançamento em branco"><svg class="bimer-svg" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Novo</button>
       <button class="tool-btn" onclick="limparCamposFormulario()" title="Limpar campos do formulário atual sem apagar dados gravados"><svg class="bimer-svg" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg> Limpar</button>
       <button class="tool-btn" onclick="abrirModalFolhaRostoDiaria()" title="Visualizar / Imprimir Folha de Rosto Resumida do Movimento do Dia (Borderô)"><svg class="bimer-svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg> Folha do Dia</button>
@@ -10318,7 +10319,24 @@
     fecharModalRateio();
   }
 
-  async function gravarDocumento() {
+  function prepararProximoLancamentoRepetido() {
+    const camposLimpar = ['numero_doc', 'valor_bruto', 'linha_dig', 'num_pedido_contrato', 'ret_iss', 'ret_irrf', 'ret_pis', 'ret_cofins', 'ret_csll'];
+    camposLimpar.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    const dupEl = document.getElementById('duplicity-modal');
+    if (dupEl) dupEl.style.display = 'none';
+    if (typeof recalcularValores === 'function') recalcularValores();
+    if (typeof atualizarHistoricoDinamico === 'function') atualizarHistoricoDinamico();
+    const docEl = document.getElementById('numero_doc');
+    if (docEl) {
+      docEl.focus();
+      docEl.select();
+    }
+  }
+
+  async function gravarDocumento(manterParaRepetir = false) {
     if (checarDuplicidadeLive()) {
       alert('BLOQUEIO DE SEGURANÇA:\nNão é permitido cadastrar o mesmo número de documento para o mesmo Favorecido/CNPJ.');
       return;
@@ -10456,7 +10474,11 @@
         const msgRateio = (resData.rateios_gravados && resData.rateios_gravados > 0) ? `\n• ${resData.rateios_gravados} linha(s) de rateio gravadas` : '';
         alert(`[SUCESSO] GRAVAÇÃO REALIZADA!\nDocumento ${numero_doc} e ${resData.impostos_gravados} guias fiscais gravados no JR FinCloud.${msgParc}${msgItens}${msgRateio}`);
         await carregarDadosIniciais();
-        trocarAba('aba-financeiro');
+        if (manterParaRepetir) {
+          prepararProximoLancamentoRepetido();
+        } else {
+          trocarAba('aba-financeiro');
+        }
         return;
       } catch (e) {
         console.error('Falha ao enviar ao backend:', e);
