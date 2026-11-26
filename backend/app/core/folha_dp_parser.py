@@ -168,35 +168,86 @@ def parse_relatorio_liquidos_pdf(pdf_bytes: bytes, filename: str = "") -> dict[s
     filial_label, ccusto = _inferir_filial_nome_arquivo(filename, cnpj)
     eh_solar = "solar" in filial_label.lower()
 
-    colaboradores: list[dict[str, Any]] = []
-    for ln in texto_full.splitlines():
-        ln_s = ln.strip()
-        if not ln_s:
-            continue
-        up_s = ln_s.upper()
-        if any(k in up_s for k in ("TOTAL DA EMPRESA", "EMPREGADOS:", "ESTAGIÁRIOS:", "ESTAGIARIOS:", "CONTRIBUINTES:", "RELAÇÃO GERAL", "RELACAO GERAL")):
-            continue
-        m_head = re.match(r"^\d{1,4}\s+([A-Za-zÁÀÃÂÉÊÍÓÔÕÚÇáàãâéêíóôõúç][A-Za-zÁÀÃÂÉÊÍÓÔÕÚÇáàãâéêíóôõúç\s\.\-]{3,}?)(?=\s+\d|\s+[A-Za-z0-9\.\-]*\d)", ln_s)
-        if not m_head:
-            continue
-        nome = re.sub(r"\s+", " ", m_head.group(1)).strip().upper()
-        if any(k in nome for k in ("TOTAL", "EMPREGADOS", "ESTAGIARIO", "CONTRIBUINTE")):
-            continue
-        resto = ln_s[m_head.end():]
-        vals_m = re.findall(r"(?<!\d)\d{1,3}(?:\.\d{3})*,\d{2}(?!\d)", resto)
-        if not vals_m:
-            continue
-        liq = _br_float(vals_m[-1])
-        if liq > 0:
-            colaboradores.append({
-                "nome": nome,
-                "cpf": "",
-                "filial": ccusto,
-                "proventos": liq,
-                "descontos": 0.0,
-                "liquido": liq,
-                "fgts": 0.0,
-            })
+    def _extrair_colabs_texto(txt: str) -> list[dict[str, Any]]:
+        lista: list[dict[str, Any]] = []
+        for ln in txt.splitlines():
+            ln_s = ln.strip()
+            if not ln_s:
+                continue
+            up_s = ln_s.upper()
+            if any(k in up_s for k in ("TOTAL DA EMPRESA", "EMPREGADOS:", "ESTAGIÁRIOS:", "ESTAGIARIOS:", "CONTRIBUINTES:", "RELAÇÃO GERAL", "RELACAO GERAL")):
+                continue
+            m_head = re.match(
+                r"^\d{1,4}\s+([A-Za-zÁÀÃÂÉÊÍÓÔÕÚÇáàãâéêíóôõúç][A-Za-zÁÀÃÂÉÊÍÓÔÕÚÇáàãâéêíóôõúç\s\.\-\']{3,}?)(?=\s+\d|\s+[A-Za-z0-9\.\-]*\d)",
+                ln_s,
+            )
+            if not m_head:
+                continue
+            nome = re.sub(r"\s+", " ", m_head.group(1)).strip().upper()
+            if any(k in nome for k in ("TOTAL", "EMPREGADOS", "ESTAGIARIO", "CONTRIBUINTE")):
+                continue
+            resto = ln_s[m_head.end():]
+            vals_m = re.findall(r"(?<!\d)\d{1,3}(?:\.\d{3})*,\d{2}(?!\d)", resto)
+            if not vals_m:
+                continue
+            liq = _br_float(vals_m[-1])
+            if liq > 0:
+                lista.append({
+                    "nome": nome,
+                    "cpf": "",
+                    "filial": ccusto,
+                    "proventos": liq,
+                    "descontos": 0.0,
+                    "liquido": liq,
+                    "fgts": 0.0,
+                })
+        return lista
+
+    colaboradores = _extrair_colabs_texto(texto_full)
+    if not colaboradores:
+        try:
+            texto_layout = "\n".join((p.extract_text(extraction_mode="layout") or "") for p in reader.pages)
+            colaboradores = _extrair_colabs_texto(texto_layout)
+        except Exception:
+            pass
+
+    if not colaboradores:
+        # Fallback multi-linha caso o PDF separe código, nome e valor em linhas distintas
+        em_bloco = False
+        nome_pend = ""
+        for ln in texto_full.splitlines():
+            ln_s = ln.strip()
+            if not ln_s:
+                continue
+            up_s = ln_s.upper()
+            if up_s == "EMPREGADOS":
+                em_bloco = True
+                continue
+            if any(k in up_s for k in ("TOTAL DA EMPRESA", "EMPREGADOS:", "SALVADOR,", "LAURO DE FREITAS,")):
+                em_bloco = False
+                nome_pend = ""
+                continue
+            if not em_bloco:
+                continue
+            m_nome_so = re.match(r"^(?:\d{1,4}\s+)?([A-Za-zÁÀÃÂÉÊÍÓÔÕÚÇáàãâéêíóôõúç][A-Za-zÁÀÃÂÉÊÍÓÔÕÚÇáàãâéêíóôõúç\s\.\-\']{5,})$", ln_s)
+            if m_nome_so and not any(k in up_s for k in ("CODIGO", "NOME", "IDENTIDADE", "VALOR", "DATA")):
+                nome_pend = re.sub(r"\s+", " ", m_nome_so.group(1)).strip().upper()
+                continue
+            if nome_pend:
+                vals_m = re.findall(r"(?<!\d)\d{1,3}(?:\.\d{3})*,\d{2}(?!\d)", ln_s)
+                if vals_m:
+                    liq = _br_float(vals_m[-1])
+                    if liq > 0:
+                        colaboradores.append({
+                            "nome": nome_pend,
+                            "cpf": "",
+                            "filial": ccusto,
+                            "proventos": liq,
+                            "descontos": 0.0,
+                            "liquido": liq,
+                            "fgts": 0.0,
+                        })
+                    nome_pend = ""
 
     res_out = {
         "arquivo": filename,
