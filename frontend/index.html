@@ -2380,35 +2380,32 @@
       <fieldset style="background: #ffffff; border: 1px solid #cbd5e1; margin-bottom: 10px; padding: 10px 14px;">
         <legend style="color: #4338ca; font-weight: 700; font-size: 11px;"><svg class="bimer-svg" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Central de Relatórios Oficiais Bimer & BI (Módulo Contas a Pagar / Gestão Financeira)</legend>
 
-        <!-- SUB-BARRA DE SELEÇÃO DOS 4 RELATÓRIOS OFICIAIS -->
-        <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
-          <button class="btn-filtro-rapido active" id="btn-rel-vencimento" onclick="selecionarRelatorioBimer('vencimento')" style="padding: 6px 12px; font-weight: 700; font-size: 11px;">
-            <svg class="bimer-svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg> A) Títulos por Vencimento (Posição Analítica)
-          </button>
-          <button class="btn-filtro-rapido" id="btn-rel-retencoes" onclick="selecionarRelatorioBimer('retencoes')" style="padding: 6px 12px; font-weight: 700; font-size: 11px;">
-            <svg class="bimer-svg" viewBox="0 0 24 24"><line x1="3" y1="21" x2="21" y2="21"></line><line x1="3" y1="10" x2="21" y2="10"></line><polyline points="5 10 5 21"></polyline><polyline points="19 10 19 21"></polyline><polygon points="12 2 2 7 22 7 12 2"></polygon></svg> B) Retenções Tributárias na Fonte (Fiscal / EFD-Reinf)
-          </button>
-          <button class="btn-filtro-rapido" id="btn-rel-ccusto" onclick="selecionarRelatorioBimer('ccusto')" style="padding: 6px 12px; font-weight: 700; font-size: 11px;">
-            <svg class="bimer-svg" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="9" y1="22" x2="9" y2="18"></line><line x1="15" y1="22" x2="15" y2="18"></line></svg> C) Por Categoria Financeira (DRE &amp; Pareto 80/20)
-          </button>
-          <button class="btn-filtro-rapido" id="btn-rel-fluxo" onclick="selecionarRelatorioBimer('fluxo')" style="padding: 6px 12px; font-weight: 700; font-size: 11px;">
-            <svg class="bimer-svg" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg> D) Fluxo de Caixa (Realizado vs. Previsto)
-          </button>
-          <button class="btn-filtro-rapido" id="btn-rel-itens" onclick="selecionarRelatorioBimer('itens')" style="padding: 6px 12px; font-weight: 700; font-size: 11px;">
-            <svg class="bimer-svg" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg> E) Itens &amp; Compras (NF-e)
-          </button>
-          <button class="btn-filtro-rapido" id="btn-rel-faccao" onclick="selecionarRelatorioBimer('faccao')" style="padding: 6px 12px; font-weight: 700; font-size: 11px;">
-            <svg class="bimer-svg" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg> F) Facção &amp; Produção (CMV)
-          </button>
-          <button class="btn-filtro-rapido" id="btn-rel-raiox" onclick="selecionarRelatorioBimer('raiox')" style="padding: 6px 12px; font-weight: 700; font-size: 11px;">
-            <svg class="bimer-svg" viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg> G) Raio-X de Consumo &amp; Ofensores
-          </button>
-          <button class="btn-filtro-rapido" id="btn-rel-evolucao" onclick="selecionarRelatorioBimer('evolucao')" style="padding: 6px 12px; font-weight: 700; font-size: 11px;">
-            <svg class="bimer-svg" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> H) Evolução Mensal (MoM) &amp; Inflação
-          </button>
-          <button class="btn-filtro-rapido" id="btn-rel-pessoal" onclick="selecionarRelatorioBimer('pessoal')" style="padding: 6px 12px; font-weight: 700; font-size: 11px;">
-            <svg class="bimer-svg" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> I) Despesas com Pessoal
-          </button>
+        <!-- SELETOR ÚNICO DE RELATÓRIO (LISTA ORGANIZADA POR ÁREA) -->
+        <div style="display: flex; gap: 12px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 280px;">
+            <label for="rel-seletor-tipo" style="font-size: 11px; font-weight: 800; color: #004b87; white-space: nowrap; display: flex; align-items: center; gap: 5px;">
+              <svg class="bimer-svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+              Escolher Relatório:
+            </label>
+            <select id="rel-seletor-tipo" onchange="selecionarRelatorioBimer(this.value)" style="flex: 1; max-width: 440px; padding: 6px 10px; font-size: 12px; font-weight: 700; color: #0f172a; background: #f8fafc; border: 1.5px solid #004b87; border-radius: 5px; cursor: pointer;">
+              <optgroup label="Financeiro &amp; Caixa">
+                <option value="vencimento" selected>Contas a Pagar por Vencimento</option>
+                <option value="fluxo">Fluxo de Caixa (Previsto vs. Pago)</option>
+                <option value="ccusto">Despesas por Categoria (DRE &amp; Pareto)</option>
+              </optgroup>
+              <optgroup label="Pessoal &amp; Produção">
+                <option value="pessoal">Despesas com Pessoal (Filiais &amp; Colaboradores)</option>
+                <option value="faccao">Facção &amp; Produção (Oficinas e Romaneios)</option>
+                <option value="itens">Compras &amp; Itens de Nota Fiscal (NF-e)</option>
+              </optgroup>
+              <optgroup label="Fiscal &amp; Análise (BI)">
+                <option value="retencoes">Impostos Retidos na Fonte (EFD-Reinf)</option>
+                <option value="raiox">Raio-X de Gastos &amp; Maiores Ofensores</option>
+                <option value="evolucao">Comparativo Mensal &amp; Variação de Preços</option>
+              </optgroup>
+            </select>
+          </div>
+          <span style="font-size: 10.5px; color: #64748b; font-weight: 600;">Dica: nos relatórios com beneficiários, clique na linha do lançamento para abrir ou fechar os nomes antes de imprimir.</span>
         </div>
 
         <!-- BARRA DE FILTROS ESPECÍFICOS & BOTÕES DE AÇÃO -->
@@ -13489,20 +13486,8 @@
 
   function selecionarRelatorioBimer(tipo) {
     relatorioAtivo = tipo;
-    document.querySelectorAll('#aba-relatorios .btn-filtro-rapido').forEach(btn => btn.classList.remove('active'));
-    const btnMap = {
-      'vencimento': 'btn-rel-vencimento',
-      'retencoes': 'btn-rel-retencoes',
-      'ccusto': 'btn-rel-ccusto',
-      'fluxo': 'btn-rel-fluxo',
-      'itens': 'btn-rel-itens',
-      'faccao': 'btn-rel-faccao',
-      'raiox': 'btn-rel-raiox',
-      'evolucao': 'btn-rel-evolucao',
-      'pessoal': 'btn-rel-pessoal'
-    };
-    const activeBtn = document.getElementById(btnMap[tipo]);
-    if (activeBtn) activeBtn.classList.add('active');
+    const sel = document.getElementById('rel-seletor-tipo');
+    if (sel && sel.value !== tipo) sel.value = tipo;
 
     // Visibilidade dos filtros contextuais
     const boxStatus = document.getElementById('rel-filtro-status-box');
