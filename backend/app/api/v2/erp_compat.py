@@ -51,7 +51,7 @@ from ...db.models import (
 )
 from ...db.session import get_db
 from .auth_workspaces import LoginV2Request, login_v2
-from .deps import extrair_ip, registrar_audit_v2, slugify, to_dec
+from .deps import extrair_ip, garantir_seed_plano_contas_padrao, registrar_audit_v2, slugify, to_dec
 
 router = APIRouter(tags=["JR FinCloud v2 - Ponte Compatibilidade ERP"])
 
@@ -679,6 +679,7 @@ def compat_listar_titulos(
         ):
             anexos_count[tid] = cnt
 
+    garantir_seed_plano_contas_padrao(db, ctx.tenant_id)
     cc_map = {
         c.id: c.nome
         for c in db.query(CentroCusto).filter(CentroCusto.tenant_id == ctx.tenant_id).all()
@@ -1268,6 +1269,7 @@ def compat_listar_previsoes(
         .order_by(DespesaRecorrente.dia_vencimento.asc())
         .all()
     )
+    garantir_seed_plano_contas_padrao(db, ctx.tenant_id)
     cc_map = {c.id: c.nome for c in db.query(CentroCusto).filter(CentroCusto.tenant_id == ctx.tenant_id).all()}
     hoje = date.today()
     previsoes = []
@@ -1353,6 +1355,7 @@ def compat_listar_adiantamentos(
     for c in comps:
         comps_map.setdefault(c.adiantamento_id, []).append(c)
 
+    garantir_seed_plano_contas_padrao(db, ctx.tenant_id)
     cc_map = {c.id: c.nome for c in db.query(CentroCusto).filter(CentroCusto.tenant_id == ctx.tenant_id).all()}
     lista = []
     for a in ads:

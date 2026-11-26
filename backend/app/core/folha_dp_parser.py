@@ -192,14 +192,14 @@ def parse_relatorio_liquidos_pdf(pdf_bytes: bytes, filename: str = "") -> dict[s
 
 
 BENEFICIARIOS_DP_CONHECIDOS = [
-    ("TICKET SERVICOS", "TICKET SERVICOS SA", "47866934000174", "12204 - Alimentação"),
-    ("CONSORCIO SALVADOR", "CONSORCIO SALVADOR TRANSCARD", "22267284000110", "12203 - Transportes"),
-    ("SALVADOR TRANSCARD", "CONSORCIO SALVADOR TRANSCARD", "22267284000110", "12203 - Transportes"),
-    ("METROPASSE", "CONSORCIO METROPASSE", "31872549000108", "12203 - Transportes"),
-    ("SST MAIS", "SST MAIS SAUDE E SEGURANCA", "48618124000161", "12209 - Exames Clínicos (Dem/Adm/Per)"),
-    ("BEM MAIS", "BEM MAIS GESTORA DE BENEFICIOS", "", "12212 - Sindicatos"),
-    ("SINDECOLF", "BEM MAIS GESTORA / SINDECOLF", "", "12212 - Sindicatos"),
-    ("CAIXA ECONOMICA", "CAIXA ECONOMICA FEDERAL (FGTS)", "00360305000104", "12205 - FGTS"),
+    ("TICKET SERVICOS", "TICKET SERVICOS SA", "47866934000174", "21405 - Alimentação"),
+    ("CONSORCIO SALVADOR", "CONSORCIO SALVADOR TRANSCARD", "22267284000110", "21404 - Vale Transporte"),
+    ("SALVADOR TRANSCARD", "CONSORCIO SALVADOR TRANSCARD", "22267284000110", "21404 - Vale Transporte"),
+    ("METROPASSE", "CONSORCIO METROPASSE", "31872549000108", "21404 - Vale Transporte"),
+    ("SST MAIS", "SST MAIS SAUDE E SEGURANCA", "48618124000161", "21414 - Exames Clínicos (Dem/Adm/Per)"),
+    ("BEM MAIS", "BEM MAIS GESTORA DE BENEFICIOS", "", "21417 - Sindicatos"),
+    ("SINDECOLF", "BEM MAIS GESTORA / SINDECOLF", "", "21417 - Sindicatos"),
+    ("CAIXA ECONOMICA", "CAIXA ECONOMICA FEDERAL (FGTS)", "00360305000104", "21406 - FGTS"),
 ]
 
 
@@ -237,7 +237,7 @@ def parse_boleto_dp_pdf(pdf_bytes: bytes, filename: str = "") -> dict[str, Any] 
     # 2. Favorecido, CNPJ e Categoria
     favorecido = ""
     cnpj_fav = ""
-    categoria = "12213 - Extras"
+    categoria = "21418 - Extras"
     for chave, nome_std, cnpj_std, cat_std in BENEFICIARIOS_DP_CONHECIDOS:
         if chave in texto_up:
             favorecido = nome_std

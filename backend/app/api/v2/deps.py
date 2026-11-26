@@ -104,16 +104,18 @@ def obter_titulo_tenant(db: Session, tenant_id: str, titulo_id: str) -> Titulo:
 
 
 def garantir_seed_plano_contas_padrao(db: Session, tenant_id: str) -> int:
-    """Popula o plano de contas padrão do workspace caso ainda esteja vazio."""
-    if db.query(PlanoConta).filter(PlanoConta.tenant_id == tenant_id).count() > 0:
-        return 0
+    """Popula e mantém atualizadas as contas padrão do workspace."""
+    existentes = {
+        p.codigo
+        for p in db.query(PlanoConta.codigo).filter(PlanoConta.tenant_id == tenant_id).all()
+    }
 
     caminho_json = Path(__file__).resolve().parent.parent.parent / "core" / "grupos_categorias.json"
     if not caminho_json.exists():
         return 0
 
     itens = json.loads(caminho_json.read_text(encoding="utf-8"))
-    codigos_vistos: set[str] = set()
+    codigos_vistos: set[str] = set(existentes)
     criados = 0
     for item in itens:
         codigo = str(item.get("codigo") or "").strip()
