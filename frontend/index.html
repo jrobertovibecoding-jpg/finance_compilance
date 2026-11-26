@@ -11951,24 +11951,39 @@
     return { ehLaluaBoah, nomeEmpresa: nome || 'Empresa Atual', nomeCurto };
   }
 
-  function atualizarLabelsWorkspaceAutorizacao() {
+  async function atualizarLabelsWorkspaceAutorizacao() {
     const ctx = obterContextoContaAutorizacao();
     const setTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+    let contaPrincipal = null;
+    try {
+      const resp = await apiFetch(`${API_BASE}/contas-bancarias`);
+      if (resp && resp.ok) {
+        const data = await resp.json();
+        const contas = data.contas || [];
+        if (contas.length > 0) contaPrincipal = contas[0];
+      }
+    } catch (_) {}
+
+    const ccFmt = contaPrincipal ? `${contaPrincipal.conta}${contaPrincipal.dac ? '-' + contaPrincipal.dac : ''}` : '';
+    window._autContaPrincipalDig = ccFmt ? ccFmt.replace(/\D/g, '') : '';
+
     if (ctx.ehLaluaBoah) {
-      setTxt('aut-lbl-saldo-principal', 'Saldo Matriz (98775-7):');
+      const ccTxt = ccFmt || '98775-7';
+      setTxt('aut-lbl-saldo-principal', `Saldo Matriz (${ccTxt}):`);
       setTxt('aut-lbl-filiais', 'Total Filiais (R$):');
       setTxt('aut-btn-ofx', 'Importar OFX (Matriz & Filiais)');
-      setTxt('aut-card1-titulo', '1. Saldo Matriz (98775-7)');
-      setTxt('aut-card1-sub', 'Conta principal Itaú');
+      setTxt('aut-card1-titulo', `1. Saldo Matriz (${ccTxt})`);
+      setTxt('aut-card1-sub', contaPrincipal ? `${contaPrincipal.banco_nome || 'Banco'} · Ag ${contaPrincipal.agencia || '-'}` : 'Conta principal Itaú');
       setTxt('aut-card2-titulo', '2. + Total Filiais');
       setTxt('aut-card2-sub', 'Contas das Lojas (OFX)');
       setTxt('aut-card3-sub', 'Matriz + Filiais');
     } else {
-      setTxt('aut-lbl-saldo-principal', `Saldo Conta (${ctx.nomeCurto}):`);
+      const ccTxt = ccFmt ? ccFmt : `${ctx.nomeCurto} · Sem conta`;
+      setTxt('aut-lbl-saldo-principal', `Saldo Conta (${ccTxt}):`);
       setTxt('aut-lbl-filiais', 'Outras Contas (R$):');
       setTxt('aut-btn-ofx', `Importar OFX (${ctx.nomeCurto})`);
-      setTxt('aut-card1-titulo', `1. Saldo Conta (${ctx.nomeCurto})`);
-      setTxt('aut-card1-sub', `Conta principal ${ctx.nomeCurto}`);
+      setTxt('aut-card1-titulo', `1. Saldo Conta (${ccTxt})`);
+      setTxt('aut-card1-sub', contaPrincipal ? `${contaPrincipal.banco_nome || 'Banco'} · Ag ${contaPrincipal.agencia || '-'}` : `Cadastre em Remessa Bancária`);
       setTxt('aut-card2-titulo', '2. + Outras Contas');
       setTxt('aut-card2-sub', 'Contas / Aplicações (OFX)');
       setTxt('aut-card3-sub', 'Saldo Total Disponível');
@@ -12134,7 +12149,8 @@
       const acctMatch = texto.match(/<ACCTID>([^<\r\n]+)/i);
       const conta = acctMatch ? acctMatch[1].trim() : file.name;
       const contaDig = (conta + ' ' + file.name).replace(/\D/g, '');
-      const ehPrincipal = ctx.ehLaluaBoah ? contaDig.includes('987757') : !encontrouPrincipal;
+      const digAlvo = window._autContaPrincipalDig || (ctx.ehLaluaBoah ? '987757' : '');
+      const ehPrincipal = digAlvo ? contaDig.includes(digAlvo) : !encontrouPrincipal;
 
       const balMatch = texto.match(/<LEDGERBAL>[\s\S]*?<BALAMT>([^<\r\n]+)/i) || texto.match(/<BALAMT>([^<\r\n]+)/i);
       const saldoConta = balMatch ? (parseFloat(balMatch[1].replace(',', '.')) || 0) : 0;
@@ -12142,6 +12158,12 @@
       if (ehPrincipal) {
         saldoPrincipal += saldoConta;
         encontrouPrincipal = true;
+        if (!ctx.ehLaluaBoah && conta) {
+          const elLbl = document.getElementById('aut-lbl-saldo-principal');
+          const elTit = document.getElementById('aut-card1-titulo');
+          if (elLbl) elLbl.textContent = `Saldo Conta (${conta}):`;
+          if (elTit) elTit.textContent = `1. Saldo Conta (${conta})`;
+        }
         detalhes.push(`• ${ctx.ehLaluaBoah ? 'MATRIZ' : ctx.nomeCurto.toUpperCase()} (${conta}): Saldo ${formatarMoeda(saldoConta)}`);
       } else {
         somaOutras += saldoConta;
