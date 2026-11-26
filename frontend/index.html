@@ -15911,125 +15911,142 @@
   window._relTransferenciasOFX = { arquivos: [], movimentos: [], totalBrutoOFX: 0 };
 
   async function importarOFXTransferenciasMatriz(event) {
-    const files = Array.from(event?.target?.files || []);
-    if (files.length === 0) return;
+    try {
+      const files = Array.from(event?.target?.files || []);
+      if (files.length === 0) return;
 
-    const extrairTag = (bloco, tag) => {
-      const m = bloco.match(new RegExp(`<${tag}>([^<\\r\\n]+)`, 'i'));
-      return m ? m[1].trim() : '';
-    };
+      const extrairTag = (bloco, tag) => {
+        const m = bloco.match(new RegExp(`<${tag}>([^<\\r\\n]+)`, 'i'));
+        return m ? m[1].trim() : '';
+      };
 
-    const detectarNomeFilialOFX = (nomeArq, acctId) => {
-      const acctDig = String(acctId || '').replace(/\D/g, '');
-      if (acctDig.includes('987757')) return { nome: 'Matriz (98775-7)', ehMatriz: true };
-      const base = `${nomeArq} ${acctId}`.toUpperCase();
-      if (base.includes('BARRA')) return { nome: `Boah - Barra (${acctId || '-'})`, ehMatriz: false };
-      if (base.includes('PASEO')) return { nome: `Boah - Paseo (${acctId || '-'})`, ehMatriz: false };
-      if (base.includes('HORTO')) return { nome: `Boah - Horto (${acctId || '-'})`, ehMatriz: false };
-      if (base.includes('SDB') || base.includes('SHOPPING DA BAHIA')) return { nome: `Boah - SDB (${acctId || '-'})`, ehMatriz: false };
-      if (base.includes('VILAS')) return { nome: `Boah - Vilas (${acctId || '-'})`, ehMatriz: false };
-      if (base.includes('SOLAR')) return { nome: `Solar (${acctId || '-'})`, ehMatriz: false };
-      const limpo = nomeArq.replace(/\.ofx$/i, '').replace(/[_-]+/g, ' ').trim();
-      return { nome: `${limpo || 'Filial'} (${acctId || '-'})`, ehMatriz: false };
-    };
-
-    const lerTextoArquivo = (file, enc) => new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(String(e.target?.result || ''));
-      reader.onerror = () => resolve('');
-      reader.readAsText(file, enc);
-    });
-
-    const arquivos = [];
-    const movimentos = [];
-    let totalBrutoOFX = 0;
-    let minData = '';
-    let maxData = '';
-
-    for (const file of files) {
-      let texto = await lerTextoArquivo(file, 'ISO-8859-1');
-      if (!texto || !/<STMTTRN>/i.test(texto)) {
-        const textoUtf8 = await lerTextoArquivo(file, 'UTF-8');
-        if (textoUtf8 && /<STMTTRN>/i.test(textoUtf8)) texto = textoUtf8;
-      }
-      if (!texto) continue;
-
-      const acctId = extrairTag(texto, 'ACCTID') || file.name;
-      const infoConta = detectarNomeFilialOFX(file.name, acctId);
-      const balMatch = texto.match(/<LEDGERBAL>[\s\S]*?<BALAMT>([^<\r\n]+)/i) || texto.match(/<BALAMT>([^<\r\n]+)/i);
-      const saldoFinal = balMatch ? (parseFloat(balMatch[1].replace(',', '.')) || 0) : 0;
-
-      const blocos = texto.split(/<STMTTRN>/i).slice(1);
-      totalBrutoOFX += blocos.length;
-      arquivos.push({ arquivo: file.name, conta: acctId, filial: infoConta.nome, ehMatriz: infoConta.ehMatriz, saldoFinal, qtdLanc: blocos.length });
-
-      for (const rawBloco of blocos) {
-        const b = rawBloco.split(/<\/STMTTRN>/i)[0];
-        const rawDt = extrairTag(b, 'DTPOSTED').replace(/\D/g, '');
-        const dataIso = rawDt.length >= 8 ? `${rawDt.slice(0, 4)}-${rawDt.slice(4, 6)}-${rawDt.slice(6, 8)}` : '';
-        if (dataIso) {
-          if (!minData || dataIso < minData) minData = dataIso;
-          if (!maxData || dataIso > maxData) maxData = dataIso;
+      const parseValorOFX = (raw) => {
+        let s = String(raw || '').trim().replace(/\s+/g, '');
+        if (!s) return 0;
+        if (s.includes(',') && s.includes('.')) {
+          if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
+            s = s.replace(/\./g, '').replace(',', '.');
+          } else {
+            s = s.replace(/,/g, '');
+          }
+        } else if (s.includes(',')) {
+          s = s.replace(',', '.');
         }
-        const rawAmt = extrairTag(b, 'TRNAMT').replace(/\s+/g, '').replace(',', '.');
-        const valor = parseFloat(rawAmt) || 0;
-        const trnType = extrairTag(b, 'TRNTYPE').toUpperCase();
-        const memo = extrairTag(b, 'MEMO') || extrairTag(b, 'NAME') || '-';
-        const memoUp = memo.toUpperCase();
+        return parseFloat(s) || 0;
+      };
 
-        const ehTransfKeyword = /TRANSF|PIX|TED|DOC|TEF|SISPAG|ENTRE\s*CONTAS|MESMA\s*TIT|ENVIO|REMESSA|98775|LALUA|BOAH|MATRIZ|CRED|PAG|MOV/.test(memoUp) || trnType === 'XFER';
-        const ehMatrizKeyword = /98775|LALUA|BOAH|MATRIZ|MESMA\s*TIT|ENTRE\s*CONTAS|TEF\s+ENTRE/.test(memoUp);
+      const detectarNomeFilialOFX = (nomeArq, acctId) => {
+        const acctDig = String(acctId || '').replace(/\D/g, '');
+        if (acctDig.includes('987757')) return { nome: 'Matriz (98775-7)', ehMatriz: true };
+        const base = `${nomeArq} ${acctId}`.toUpperCase();
+        if (base.includes('BARRA')) return { nome: `Boah - Barra (${acctId || '-'})`, ehMatriz: false };
+        if (base.includes('PASEO')) return { nome: `Boah - Paseo (${acctId || '-'})`, ehMatriz: false };
+        if (base.includes('HORTO')) return { nome: `Boah - Horto (${acctId || '-'})`, ehMatriz: false };
+        if (base.includes('SDB') || base.includes('SHOPPING DA BAHIA')) return { nome: `Boah - SDB (${acctId || '-'})`, ehMatriz: false };
+        if (base.includes('VILAS')) return { nome: `Boah - Vilas (${acctId || '-'})`, ehMatriz: false };
+        if (base.includes('SOLAR')) return { nome: `Solar (${acctId || '-'})`, ehMatriz: false };
+        const limpo = nomeArq.replace(/\.ofx$/i, '').replace(/[_-]+/g, ' ').trim();
+        return { nome: `${limpo || 'Filial'} (${acctId || '-'})`, ehMatriz: false };
+      };
 
-        if (infoConta.ehMatriz) {
-          if (valor > 0) {
+      const lerTextoArquivo = (file, enc) => new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(String(e.target?.result || ''));
+        reader.onerror = () => resolve('');
+        reader.readAsText(file, enc);
+      });
+
+      const arquivos = [];
+      const movimentos = [];
+      let totalBrutoOFX = 0;
+      let minData = '';
+      let maxData = '';
+
+      for (const file of files) {
+        let texto = await lerTextoArquivo(file, 'ISO-8859-1');
+        if (!texto || !/<STMTTRN>/i.test(texto)) {
+          const textoUtf8 = await lerTextoArquivo(file, 'UTF-8');
+          if (textoUtf8 && /<STMTTRN>/i.test(textoUtf8)) texto = textoUtf8;
+        }
+        if (!texto) continue;
+
+        const acctId = extrairTag(texto, 'ACCTID') || file.name;
+        const infoConta = detectarNomeFilialOFX(file.name, acctId);
+        const balMatch = texto.match(/<LEDGERBAL>[\s\S]*?<BALAMT>([^<\r\n]+)/i) || texto.match(/<BALAMT>([^<\r\n]+)/i);
+        const saldoFinal = balMatch ? parseValorOFX(balMatch[1]) : 0;
+
+        const blocos = texto.split(/<STMTTRN>/i).slice(1);
+        totalBrutoOFX += blocos.length;
+        arquivos.push({ arquivo: file.name, conta: acctId, filial: infoConta.nome, ehMatriz: infoConta.ehMatriz, saldoFinal, qtdLanc: blocos.length });
+
+        for (const rawBloco of blocos) {
+          const b = rawBloco.split(/<\/STMTTRN>/i)[0];
+          const rawDt = extrairTag(b, 'DTPOSTED').replace(/\D/g, '');
+          const dataIso = rawDt.length >= 8 ? `${rawDt.slice(0, 4)}-${rawDt.slice(4, 6)}-${rawDt.slice(6, 8)}` : '';
+          if (dataIso) {
+            if (!minData || dataIso < minData) minData = dataIso;
+            if (!maxData || dataIso > maxData) maxData = dataIso;
+          }
+          const valor = parseValorOFX(extrairTag(b, 'TRNAMT'));
+          const trnType = extrairTag(b, 'TRNTYPE').toUpperCase();
+          const memo = extrairTag(b, 'MEMO') || extrairTag(b, 'NAME') || '-';
+          const memoUp = memo.toUpperCase();
+
+          const ehTransfKeyword = /TRANSF|PIX|TED|DOC|TEF|SISPAG|ENTRE\s*CONTAS|MESMA\s*TIT|ENVIO|REMESSA|98775|LALUA|BOAH|MATRIZ|CRED|PAG|MOV/.test(memoUp) || trnType === 'XFER';
+          const ehMatrizKeyword = /98775|LALUA|BOAH|MATRIZ|MESMA\s*TIT|ENTRE\s*CONTAS|TEF\s+ENTRE/.test(memoUp);
+
+          if (infoConta.ehMatriz) {
+            if (valor > 0) {
+              movimentos.push({
+                direcao: 'ENTRADA_MATRIZ',
+                filial: infoConta.nome,
+                conta: acctId,
+                data: dataIso,
+                memo,
+                trnType,
+                valor: Math.abs(valor),
+                ehProvavelMatriz: ehTransfKeyword
+              });
+            }
+          } else if (valor < 0) {
             movimentos.push({
-              direcao: 'ENTRADA_MATRIZ',
+              direcao: 'SAIDA_FILIAL',
               filial: infoConta.nome,
               conta: acctId,
               data: dataIso,
               memo,
               trnType,
               valor: Math.abs(valor),
-              ehProvavelMatriz: ehTransfKeyword
+              ehProvavelMatriz: ehMatrizKeyword,
+              ehTransfKeyword
             });
           }
-        } else if (valor < 0) {
-          movimentos.push({
-            direcao: 'SAIDA_FILIAL',
-            filial: infoConta.nome,
-            conta: acctId,
-            data: dataIso,
-            memo,
-            trnType,
-            valor: Math.abs(valor),
-            ehProvavelMatriz: ehMatrizKeyword,
-            ehTransfKeyword
-          });
         }
       }
-    }
 
-    // Ajusta automaticamente o período do relatório para as datas reais encontradas nos OFX
-    if (minData && maxData) {
-      const elIni = document.getElementById('rel-data-ini');
-      const elFim = document.getElementById('rel-data-fim');
-      if (elIni) elIni.value = minData;
-      if (elFim) elFim.value = maxData;
-    }
+      if (minData && maxData) {
+        const elIni = document.getElementById('rel-data-ini');
+        const elFim = document.getElementById('rel-data-fim');
+        if (elIni) elIni.value = minData;
+        if (elFim) elFim.value = maxData;
+      }
 
-    // Se nenhuma saída citou explicitamente "Lalua/Matriz/98775", exibe todas as saídas automaticamente
-    const temMatrizExplicita = movimentos.some(m => m.direcao === 'SAIDA_FILIAL' && m.ehProvavelMatriz);
-    const chkTodas = document.getElementById('rel-filtro-transf-todas');
-    if (chkTodas && !temMatrizExplicita && movimentos.some(m => m.direcao === 'SAIDA_FILIAL')) {
-      chkTodas.checked = true;
-    }
+      const temMatrizExplicita = movimentos.some(m => m.direcao === 'SAIDA_FILIAL' && m.ehProvavelMatriz);
+      const chkTodas = document.getElementById('rel-filtro-transf-todas');
+      if (chkTodas && !temMatrizExplicita && movimentos.some(m => m.direcao === 'SAIDA_FILIAL')) {
+        chkTodas.checked = true;
+      }
 
-    window._relTransferenciasOFX = { arquivos, movimentos, totalBrutoOFX };
-    if (event?.target) event.target.value = '';
-    if (arquivos.length === 0 || totalBrutoOFX === 0) {
-      alert(`Atenção: ${files.length} arquivo(s) selecionado(s), mas nenhum lançamento <STMTTRN> foi encontrado dentro do OFX.`);
+      window._relTransferenciasOFX = { arquivos, movimentos, totalBrutoOFX };
+      if (event?.target) event.target.value = '';
+      if (arquivos.length === 0 || totalBrutoOFX === 0) {
+        alert(`Atenção: ${files.length} arquivo(s) selecionado(s), mas nenhum lançamento <STMTTRN> foi encontrado dentro do OFX.`);
+      }
+      renderizarRelatorioAtual();
+    } catch (err) {
+      console.error('Erro importarOFXTransferenciasMatriz:', err);
+      alert('Erro ao ler os arquivos OFX: ' + (err?.message || err));
     }
-    renderizarRelatorioAtual();
   }
 
   function gerarHtmlRelatorioTransferencias() {
