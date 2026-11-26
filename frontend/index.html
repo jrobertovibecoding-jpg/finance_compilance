@@ -1025,6 +1025,9 @@
               <option value="FACCAO_ROMANEIO">Romaneio de Facção (Mão de Obra sem NF)</option>
               <option value="DOMINGO_FERIADO">Domingo / Feriado Trabalhado (Individual Vendedora)</option>
               <option value="FOLHA">Folha de Pagamento / Salários (Total Consolidado)</option>
+              <option value="FERIAS">Férias (Colaborador)</option>
+              <option value="RESCISAO">Rescisão Trabalhista</option>
+              <option value="PESSOAL_DP">Transporte / Alimentação / Adiantamento / Extras (Pessoal)</option>
               <option value="RECIBO">Recibo / RPA (Sem Documento Fiscal)</option>
               <option value="CONTRATO">Contrato / Locação / Aluguel Mensal</option>
               <option value="FATURA">Fatura de Concessionária (Luz, Água, Internet)</option>
@@ -9304,6 +9307,51 @@
         inputHist.value = 'Folha de pagamento de salários consolidada - Mês Ref. ' + new Date().toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' });
       }
       alternarVisibilidadeRetencoes(false);
+    } else if (tipo === 'FERIAS') {
+      lblNum.innerText = 'Ref. / Recibo de Férias *';
+      const mesRef = new Date().toISOString().slice(0, 7);
+      if (!inputNum.value || /^(ROM-|DOM-|FOL-|REC-|LOC-|SOL-|RES-|DP-)/i.test(inputNum.value)) {
+        inputNum.value = 'FER-' + mesRef;
+      }
+      sugerirCFOPPorDocumento('Sem Documento Fiscal - Remuneração de Pessoal');
+      if (selForma) selForma.value = 'Folha Itaú (C/C)';
+      if (inputCat) {
+        inputCat.value = '12206 - Férias';
+        if (typeof autocompletarCategoriaLive === 'function') autocompletarCategoriaLive(inputCat);
+      }
+      if (inputHist && (!inputHist.value || inputHist.value.includes('Aquisição') || inputHist.value.includes('Prestação'))) {
+        inputHist.value = 'Pagamento de Férias - Colaborador';
+      }
+      alternarVisibilidadeRetencoes(false);
+    } else if (tipo === 'RESCISAO') {
+      lblNum.innerText = 'Ref. / TRCT Rescisão *';
+      const mesRef = new Date().toISOString().slice(0, 7);
+      if (!inputNum.value || /^(ROM-|DOM-|FOL-|REC-|LOC-|SOL-|FER-|DP-)/i.test(inputNum.value)) {
+        inputNum.value = 'RES-' + mesRef;
+      }
+      sugerirCFOPPorDocumento('Sem Documento Fiscal - Remuneração de Pessoal');
+      if (selForma) selForma.value = 'Folha Itaú (C/C)';
+      if (inputCat) {
+        inputCat.value = '12207 - Rescisão';
+        if (typeof autocompletarCategoriaLive === 'function') autocompletarCategoriaLive(inputCat);
+      }
+      if (inputHist && (!inputHist.value || inputHist.value.includes('Aquisição') || inputHist.value.includes('Prestação'))) {
+        inputHist.value = 'Pagamento de Rescisão Trabalhista (TRCT)';
+      }
+      alternarVisibilidadeRetencoes(false);
+    } else if (tipo === 'PESSOAL_DP') {
+      lblNum.innerText = 'Ref. Despesa com Pessoal *';
+      const mesRef = new Date().toISOString().slice(0, 7);
+      if (!inputNum.value || /^(ROM-|DOM-|FOL-|REC-|LOC-|SOL-|FER-|RES-)/i.test(inputNum.value)) {
+        inputNum.value = 'DP-' + mesRef;
+      }
+      sugerirCFOPPorDocumento('Sem Documento Fiscal - Remuneração de Pessoal');
+      if (selForma) selForma.value = 'Folha Itaú (C/C)';
+      if (inputCat) {
+        inputCat.value = '12213 - Extras';
+        if (typeof autocompletarCategoriaLive === 'function') autocompletarCategoriaLive(inputCat);
+      }
+      alternarVisibilidadeRetencoes(false);
     } else if (tipo === 'RECIBO') {
       lblNum.innerText = 'Nº do Recibo / Identificador Interno *';
       if (!inputNum.value || inputNum.value.startsWith('DOM-') || inputNum.value.startsWith('FOL-') || inputNum.value.startsWith('ROM-')) inputNum.value = 'REC-' + new Date().getFullYear() + '-' + Math.floor(100 + Math.random() * 900);
@@ -10873,25 +10921,32 @@
         const formaUpper = String(item.forma_pgto || '').toUpperCase();
         const solicUpper = String(item.solicitante || '').toUpperCase();
         const tudoPessoal = `${tipoDocUpper} ${categoriaUpper} ${descUpper} ${histUpper} ${numDocUpper}`;
+        const ehFrete = tipoDocUpper === 'CTE' || categoriaUpper.includes('12112') || descUpper.includes('FRETE CT-E');
 
         const termosPessoal = [
           'DOMINGO', 'FERIADO', 'FOLHA', 'SALARIO', 'SALÁRIO', 'RESCISAO', 'RESCISÃO',
-          'FERIAS', 'FÉRIAS', 'TRANSPORTE', 'SALVADORCARD', 'TRANSCARD', 'METROPASSE',
-          'ALIMENTACAO', 'ALIMENTAÇÃO', 'TICKET', 'FGTS', 'INSS', 'PROLABORE', 'ADIANTAMENTO',
-          '13º', 'ESTAGIO', 'ESTÁGIO', 'SINDICATO', 'SINDECOLF', 'SST MAIS', 'EXAMES',
+          'FERIAS', 'FÉRIAS', 'VALE TRANSPORTE', 'SALVADORCARD', 'TRANSCARD', 'METROPASSE',
+          'ALIMENTACAO', 'ALIMENTAÇÃO', 'TICKET SERVICOS', 'FGTS', 'INSS', 'PROLABORE', 'ADIANTAMENTO',
+          '13º', 'ESTAGIO', 'ESTÁGIO', 'SINDICATO', 'SINDECOLF', 'SST MAIS', 'EXAMES CLINICOS', 'EXAMES CLÍNICOS',
           '12201', '12202', '12203', '12204', '12205', '12206', '12207', '12208',
           '12209', '12210', '12211', '12212', '12213', '12214', '12215', '21412'
         ];
 
-        const isFolhaOuFeriado =
+        const isFolhaOuFeriado = !ehFrete && (
           item.tipo_doc === 'FOLHA' ||
           item.tipo_doc === 'FOLHA_LOTE' ||
           item.tipo_doc === 'DOMINGO_FERIADO' ||
+          item.tipo_doc === 'FERIAS' ||
+          item.tipo_doc === 'RESCISAO' ||
+          item.tipo_doc === 'PESSOAL_DP' ||
           formaUpper.includes('FOLHA') ||
           solicUpper === 'RH' ||
           numDocUpper.startsWith('DOM-') ||
           numDocUpper.startsWith('FOL-') ||
-          termosPessoal.some(termo => tudoPessoal.includes(termo));
+          numDocUpper.startsWith('FER-') ||
+          numDocUpper.startsWith('RES-') ||
+          termosPessoal.some(termo => tudoPessoal.includes(termo))
+        );
 
         if (!isFolhaOuFeriado) return false;
       } else if (filtroTipoTituloAtual === 'imposto') {
