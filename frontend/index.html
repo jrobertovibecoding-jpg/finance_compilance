@@ -13727,8 +13727,13 @@
           ? `<span style="display:inline-block;white-space:nowrap;background:#dcfce7;color:#166534;padding:2px 6px;border-radius:3px;font-weight:700;font-size:9px;border:1px solid #86efac;">✓ Baixado</span>`
           : `<span style="display:inline-block;white-space:nowrap;background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:3px;font-weight:700;font-size:9px;border:1px solid #fde68a;">Em Aberto</span>`;
 
+        const benefs = Array.isArray(item.itens) ? item.itens.filter(it => String(it.unidade || '').toUpperCase() === 'FOLHA_COLAB') : [];
+        const uid = String(item.id || idx).replace(/[^a-zA-Z0-9_-]/g, '_');
+        const clickAttr = benefs.length > 0 ? ` onclick="alternarBeneficiariosRelatorio('venc-ben-${uid}', 'venc-ico-${uid}')" title="Clique para abrir/fechar os beneficiários deste lançamento"` : '';
+        const rowCursor = benefs.length > 0 ? 'cursor: pointer;' : '';
+
         html += `
-          <tr style="${idx % 2 === 1 ? 'background: #f8fafc;' : 'background: #ffffff;'}">
+          <tr${clickAttr} style="${idx % 2 === 1 ? 'background: #f8fafc;' : 'background: #ffffff;'} ${rowCursor}">
             <td style="padding: 4px 6px; line-height: 1.25;">
               <strong style="color: #004b87;">${escapeHtml(item.numero_doc || '-')}</strong>
               <div style="font-size: 8.5px; font-family: monospace; color: #334155;">${escapeHtml(item.numero_id || '-')}</div>
@@ -13741,6 +13746,7 @@
             </td>
             <td style="padding: 4px 6px; font-size: 9.5px; color: #0f172a; line-height: 1.25;">
               ${limparHistoricoRedundante(item.descricao || item.historico || '-')}
+              ${benefs.length > 0 ? `<div style="margin-top:3px;"><span style="display:inline-block;background:#f5f3ff;color:#5b21b6;border:1px solid #ddd6fe;border-radius:3px;padding:1px 6px;font-size:8.5px;font-weight:700;"><span id="venc-ico-${uid}">▶</span> ${benefs.length} beneficiário(s) — clique para abrir</span></div>` : ''}
             </td>
             <td style="padding: 4px 6px; text-align: center; font-size: 9px; font-weight: 600; color: #334155; white-space: nowrap;">${escapeHtml(item.forma_pgto || 'BOLETO')}</td>
             <td style="padding: 4px 6px; text-align: right; color: #1e293b; white-space: nowrap; font-family: monospace;">${formatarMoeda(vB)}</td>
@@ -13753,6 +13759,34 @@
             <td style="padding: 4px 6px; text-align: center; white-space: nowrap;">${sitBadge}</td>
           </tr>
         `;
+        if (benefs.length > 0) {
+          html += `
+            <tr id="venc-ben-${uid}" style="display: none; background: #faf5ff;">
+              <td colspan="8" style="padding: 6px 12px 10px 18px; border-bottom: 2px solid #ddd6fe;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 9.5px; background: #ffffff; border: 1px solid #e9d5ff;">
+                  <thead>
+                    <tr style="background: #ede9fe; color: #4c1d95;">
+                      <th style="padding: 3px 6px; text-align: left;">Beneficiário / Colaborador</th>
+                      <th style="padding: 3px 6px; text-align: left; width: 110px;">CPF</th>
+                      <th style="padding: 3px 6px; text-align: left; width: 120px;">Filial</th>
+                      <th style="padding: 3px 6px; text-align: right; width: 95px;">Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${benefs.map(b => `
+                      <tr style="border-top: 1px solid #f3e8ff;">
+                        <td style="padding: 3px 6px; font-weight: 600; color: #1e293b;">${escapeHtml(b.descricao || '-')}</td>
+                        <td style="padding: 3px 6px; font-family: monospace; color: #475569;">${escapeHtml(b.codigo || '-')}</td>
+                        <td style="padding: 3px 6px; font-weight: 700; color: #0369a1;">${escapeHtml(b.ncm || '-')}</td>
+                        <td style="padding: 3px 6px; text-align: right; font-family: monospace; font-weight: 700;">${formatarMoeda(Number(b.valor_total || 0))}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          `;
+        }
       });
     });
 
@@ -15418,6 +15452,15 @@
     return html;
   }
 
+  function alternarBeneficiariosRelatorio(rowId, iconId) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+    const aberto = row.style.display !== 'none';
+    row.style.display = aberto ? 'none' : 'table-row';
+    const ico = iconId ? document.getElementById(iconId) : null;
+    if (ico) ico.textContent = aberto ? '▶' : '▼';
+  }
+
   function gerarHtmlRelatorioPessoal() {
     const { dataIni, dataFim, status } = obterFiltrosRelatorio();
     const filialFiltro = (document.getElementById('rel-filtro-pes-filial')?.value || 'TODAS').trim();
@@ -15480,7 +15523,7 @@
       return true;
     });
 
-    const porFornecedor = {};
+    const lancamentosFiltrados = [];
     const porFilial = {};
     const porBeneficiario = {};
     let totalTitulosValor = 0;
@@ -15528,7 +15571,7 @@
       const itensColab = Array.isArray(t.itens) ? t.itens.filter(it => String(it.unidade || '').toUpperCase() === 'FOLHA_COLAB') : [];
 
       let somaTituloFiltrado = 0;
-      let matchedColab = false;
+      const benefsDoLanc = [];
 
       if (itensColab.length > 0) {
         itensColab.forEach(it => {
@@ -15540,8 +15583,8 @@
           if (filialFiltro !== 'TODAS' && filColab !== filialFiltro) return;
           if (buscaFiltro && !nomeColab.toUpperCase().includes(buscaFiltro) && !favNome.toUpperCase().includes(buscaFiltro) && !catLabel.toUpperCase().includes(buscaFiltro)) return;
 
-          matchedColab = true;
           somaTituloFiltrado += valItem;
+          benefsDoLanc.push({ nome: nomeColab, cpf: cpfColab || '-', filial: filColab, valor: valItem });
           addFilialBucket(filColab, nat, valItem);
           addBenef(nomeColab, cpfColab, filColab, nat, valItem);
         });
@@ -15550,7 +15593,6 @@
         if (filialFiltro !== 'TODAS' && filTit !== filialFiltro) return;
         if (buscaFiltro && !favNome.toUpperCase().includes(buscaFiltro) && !catLabel.toUpperCase().includes(buscaFiltro) && !String(t.descricao || '').toUpperCase().includes(buscaFiltro)) return;
 
-        matchedColab = true;
         somaTituloFiltrado = valTitulo;
         addFilialBucket(filTit, nat, valTitulo);
         if (['FOLHA', 'DOMINGO_FERIADO', 'FERIAS', 'RESCISAO'].includes(String(t.tipo_doc || '').toUpperCase())) {
@@ -15558,33 +15600,33 @@
         }
       }
 
-      if (!matchedColab) return;
+      if (itensColab.length > 0 && benefsDoLanc.length === 0) return;
 
-      const valorExibirForn = (filialFiltro === 'TODAS' && !buscaFiltro) ? valTitulo : somaTituloFiltrado;
-      totalTitulosValor += valorExibirForn;
-      if (isPago) totalPagoValor += valorExibirForn;
-      else totalAbertoValor += valorExibirForn;
+      const valorExibir = (filialFiltro === 'TODAS' && !buscaFiltro) ? valTitulo : somaTituloFiltrado;
+      totalTitulosValor += valorExibir;
+      if (isPago) totalPagoValor += valorExibir;
+      else totalAbertoValor += valorExibir;
       qtdLancamentos += 1;
 
-      const fk = `${favNome.toUpperCase()}|${catLabel}`;
-      if (!porFornecedor[fk]) {
-        porFornecedor[fk] = { fornecedor: favNome, categoria: catLabel, qtd: 0, benefCount: 0, pago: 0, aberto: 0, total: 0 };
-      }
-      porFornecedor[fk].qtd += 1;
-      porFornecedor[fk].benefCount += (itensColab.length > 0 ? itensColab.length : 1);
-      if (isPago) porFornecedor[fk].pago += valorExibirForn;
-      else porFornecedor[fk].aberto += valorExibirForn;
-      porFornecedor[fk].total += valorExibirForn;
+      lancamentosFiltrados.push({
+        uid: String(t.id || qtdLancamentos).replace(/[^a-zA-Z0-9_-]/g, '_'),
+        doc: t.numero_doc || t.numero_id || '-',
+        vencimento: t.vencimento || '',
+        fornecedor: favNome,
+        categoria: catLabel,
+        isPago,
+        valor: valorExibir,
+        benefs: benefsDoLanc
+      });
     });
 
-    const listaFornecedores = Object.values(porFornecedor).sort((a, b) => b.total - a.total);
     const listaFiliais = Object.values(porFilial).sort((a, b) => b.total - a.total);
     const listaBeneficiarios = Object.values(porBeneficiario).sort((a, b) => b.total - a.total);
 
-    const periodLabel = (dataIni || dataFim) ? `${formatarDataBR(dataIni) || 'Início'} até ${formatarDataBR(dataFim) || 'Hoje'}` : 'Todo o Período';
+    const periodLabel = (dataIni || dataFim) ? `${dataIni ? formatarData(dataIni) : 'Início'} até ${dataFim ? formatarData(dataFim) : 'Hoje'}` : 'Todo o Período';
     const subtitulo = `Período: ${periodLabel} • Filial: ${filialFiltro} • Natureza: ${catFiltro}${buscaFiltro ? ` • Busca: "${escapeHtml(buscaFiltro)}"` : ''}`;
 
-    let html = gerarCabecalhoOficialRelatorio('RELATÓRIO I — DESPESAS COM PESSOAL (FORNECEDORES, FILIAIS & BENEFICIÁRIOS)', subtitulo);
+    let html = gerarCabecalhoRelatorio('Relatório I — Despesas com Pessoal (Fornecedores, Filiais & Beneficiários)', subtitulo);
 
     html += `
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
@@ -15647,35 +15689,73 @@
     `;
 
     html += `
-      <div style="font-weight:800;font-size:11px;color:#004b87;text-transform:uppercase;margin-bottom:6px;">2. Resumo por Fornecedor / Operadora &amp; Categoria Contábil</div>
+      <div style="font-weight:800;font-size:11px;color:#004b87;text-transform:uppercase;margin-bottom:6px;">2. Lançamentos por Fornecedor / Operadora <span style="font-weight:600;color:#64748b;text-transform:none;">(clique no lançamento para abrir ou fechar os beneficiários antes de imprimir)</span></div>
       <table class="alterdata-grid" style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:16px;">
         <thead>
           <tr style="background:#1e3a8a;color:white;">
-            <th style="padding:5px 6px;text-align:left;">Fornecedor / Operadora / Favorecido</th>
+            <th style="padding:5px 6px;text-align:left;">Fornecedor / Operadora / Documento</th>
             <th style="padding:5px 6px;text-align:left;">Categoria (214xx)</th>
-            <th style="padding:5px 6px;text-align:center;width:65px;">Lanç.</th>
-            <th style="padding:5px 6px;text-align:right;width:100px;">Pago</th>
-            <th style="padding:5px 6px;text-align:right;width:100px;">Em Aberto</th>
-            <th style="padding:5px 6px;text-align:right;width:105px;">Total</th>
+            <th style="padding:5px 6px;text-align:center;width:82px;">Vencimento</th>
+            <th style="padding:5px 6px;text-align:center;width:110px;">Beneficiários</th>
+            <th style="padding:5px 6px;text-align:center;width:80px;">Situação</th>
+            <th style="padding:5px 6px;text-align:right;width:105px;">Valor</th>
           </tr>
         </thead>
         <tbody>
-          ${listaFornecedores.map((r, idx) => `
-            <tr style="${idx % 2 === 1 ? 'background:#f8fafc;' : 'background:#ffffff;'}">
-              <td style="padding:5px 6px;font-weight:700;color:#0f172a;">${escapeHtml(r.fornecedor)}</td>
-              <td style="padding:5px 6px;color:#475569;">${escapeHtml(r.categoria)}</td>
-              <td style="padding:5px 6px;text-align:center;">${r.qtd}</td>
-              <td style="padding:5px 6px;text-align:right;font-family:monospace;color:#059669;">${formatarMoeda(r.pago)}</td>
-              <td style="padding:5px 6px;text-align:right;font-family:monospace;color:#b45309;">${formatarMoeda(r.aberto)}</td>
-              <td style="padding:5px 6px;text-align:right;font-family:monospace;font-weight:800;">${formatarMoeda(r.total)}</td>
-            </tr>
-          `).join('')}
+          ${lancamentosFiltrados.map((l, idx) => {
+            const temBen = l.benefs.length > 0;
+            const sitBadge = l.isPago
+              ? '<span style="background:#dcfce7;color:#166534;padding:1px 6px;border-radius:3px;font-weight:700;font-size:9px;">Pago</span>'
+              : '<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:3px;font-weight:700;font-size:9px;">Em Aberto</span>';
+            let rowHtml = `
+              <tr ${temBen ? `onclick="alternarBeneficiariosRelatorio('pes-ben-${l.uid}', 'pes-ico-${l.uid}')" title="Clique para abrir/fechar os beneficiários"` : ''} style="${idx % 2 === 1 ? 'background:#f8fafc;' : 'background:#ffffff;'} ${temBen ? 'cursor:pointer;' : ''}">
+                <td style="padding:5px 6px;font-weight:700;color:#0f172a;">
+                  ${temBen ? `<span id="pes-ico-${l.uid}" style="color:#5b21b6;margin-right:4px;">▶</span>` : ''}${escapeHtml(l.fornecedor)}
+                  <div style="font-size:8.5px;font-weight:500;color:#64748b;">Doc: ${escapeHtml(l.doc)}</div>
+                </td>
+                <td style="padding:5px 6px;color:#475569;">${escapeHtml(l.categoria)}</td>
+                <td style="padding:5px 6px;text-align:center;font-family:monospace;">${l.vencimento ? formatarData(l.vencimento) : '-'}</td>
+                <td style="padding:5px 6px;text-align:center;">${temBen ? `<span style="background:#f5f3ff;color:#5b21b6;border:1px solid #ddd6fe;padding:1px 6px;border-radius:3px;font-weight:700;font-size:9px;">${l.benefs.length} colab.</span>` : '-'}</td>
+                <td style="padding:5px 6px;text-align:center;">${sitBadge}</td>
+                <td style="padding:5px 6px;text-align:right;font-family:monospace;font-weight:800;">${formatarMoeda(l.valor)}</td>
+              </tr>
+            `;
+            if (temBen) {
+              rowHtml += `
+                <tr id="pes-ben-${l.uid}" style="display:none;background:#faf5ff;">
+                  <td colspan="6" style="padding:6px 12px 10px 20px;border-bottom:2px solid #ddd6fe;">
+                    <table style="width:100%;border-collapse:collapse;font-size:9.5px;background:#ffffff;border:1px solid #e9d5ff;">
+                      <thead>
+                        <tr style="background:#ede9fe;color:#4c1d95;">
+                          <th style="padding:3px 6px;text-align:left;">Beneficiário / Colaborador</th>
+                          <th style="padding:3px 6px;text-align:left;width:110px;">CPF</th>
+                          <th style="padding:3px 6px;text-align:left;width:120px;">Filial</th>
+                          <th style="padding:3px 6px;text-align:right;width:95px;">Valor</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${l.benefs.map(b => `
+                          <tr style="border-top:1px solid #f3e8ff;">
+                            <td style="padding:3px 6px;font-weight:600;color:#1e293b;">${escapeHtml(b.nome)}</td>
+                            <td style="padding:3px 6px;font-family:monospace;color:#475569;">${escapeHtml(b.cpf)}</td>
+                            <td style="padding:3px 6px;font-weight:700;color:#0369a1;">${escapeHtml(b.filial)}</td>
+                            <td style="padding:3px 6px;text-align:right;font-family:monospace;font-weight:700;">${formatarMoeda(b.valor)}</td>
+                          </tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              `;
+            }
+            return rowHtml;
+          }).join('')}
         </tbody>
       </table>
     `;
 
     html += `
-      <div style="font-weight:800;font-size:11px;color:#5b21b6;text-transform:uppercase;margin-bottom:6px;">3. Extrato Individual por Beneficiário / Colaborador (${listaBeneficiarios.length})</div>
+      <div style="font-weight:800;font-size:11px;color:#5b21b6;text-transform:uppercase;margin-bottom:6px;">3. Consolidado Individual por Beneficiário / Colaborador (${listaBeneficiarios.length})</div>
       <table class="alterdata-grid" style="width:100%;border-collapse:collapse;font-size:10px;">
         <thead>
           <tr style="background:#4c1d95;color:white;">
