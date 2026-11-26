@@ -2954,16 +2954,16 @@
           <input type="date" id="aut-data-lote" onchange="renderizarRelatorioAutorizacao()" style="padding: 4px 8px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 600;">
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
-          <label style="font-size: 11px; font-weight: 700; color: #1e293b;">Saldo Matriz (98775-7):</label>
+          <label id="aut-lbl-saldo-principal" style="font-size: 11px; font-weight: 700; color: #1e293b;">Saldo Matriz (98775-7):</label>
           <input type="number" step="0.01" id="aut-saldo-inicial" value="0.00" autocomplete="off" oninput="recalcularFluxoAutorizacao()" style="width: 105px; padding: 4px 6px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 700;">
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
-          <label style="font-size: 11px; font-weight: 700; color: #065f46;">Total Filiais (R$):</label>
+          <label id="aut-lbl-filiais" style="font-size: 11px; font-weight: 700; color: #065f46;">Total Filiais (R$):</label>
           <input type="number" step="0.01" id="aut-entradas-lojas" value="0.00" autocomplete="off" oninput="recalcularFluxoAutorizacao()" style="width: 110px; padding: 4px 6px; font-size: 11.5px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 700; color: #065f46;">
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
           <input type="file" id="aut-ofx-lojas-input" accept=".ofx" multiple style="display: none;" onchange="importarOFXLojasAutorizacao(event)">
-          <button type="button" class="tool-btn" onclick="document.getElementById('aut-ofx-lojas-input').click()" style="border-color: #0284c7; color: #0369a1; background: #e0f2fe; font-weight: 700; padding: 4px 9px; font-size: 11px;" title="Selecione os arquivos .OFX da Matriz (98775-7) e/ou Filiais para preencher os saldos reais automaticamente">
+          <button type="button" id="aut-btn-ofx" class="tool-btn" onclick="document.getElementById('aut-ofx-lojas-input').click()" style="border-color: #0284c7; color: #0369a1; background: #e0f2fe; font-weight: 700; padding: 4px 9px; font-size: 11px;" title="Selecione os arquivos .OFX para preencher os saldos reais automaticamente">
             Importar OFX (Matriz &amp; Filiais)
           </button>
           <span id="aut-ofx-lojas-resumo" style="display: none; font-size: 10px; font-weight: 700; color: #065f46; background: #dcfce7; padding: 2px 7px; border-radius: 4px;"></span>
@@ -3005,19 +3005,19 @@
       <!-- DASHBOARD DE FLUXO DE CAIXA CONSOLIDADO -->
       <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px;">
         <div style="padding: 10px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; border-left: 4px solid #64748b;">
-          <div style="font-size: 9px; text-transform: uppercase; font-weight: 800; color: #334155; margin-bottom: 3px;">1. Saldo Matriz (98775-7)</div>
+          <div id="aut-card1-titulo" style="font-size: 9px; text-transform: uppercase; font-weight: 800; color: #334155; margin-bottom: 3px;">1. Saldo Matriz (98775-7)</div>
           <div style="font-size: 15.5px; font-weight: 800; color: #0f172a;" id="aut-card-saldo-inicial">R$ 0,00</div>
-          <div style="font-size: 9px; color: #475569; margin-top: 3px;">Conta principal Itaú</div>
+          <div id="aut-card1-sub" style="font-size: 9px; color: #475569; margin-top: 3px;">Conta principal Itaú</div>
         </div>
         <div style="padding: 10px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f0fdf4; border-left: 4px solid #10b981;">
-          <div style="font-size: 9px; text-transform: uppercase; font-weight: 800; color: #065f46; margin-bottom: 3px;">2. + Total Filiais</div>
+          <div id="aut-card2-titulo" style="font-size: 9px; text-transform: uppercase; font-weight: 800; color: #065f46; margin-bottom: 3px;">2. + Total Filiais</div>
           <div style="font-size: 15.5px; font-weight: 800; color: #059669;" id="aut-card-entradas">+ R$ 0,00</div>
-          <div style="font-size: 9px; color: #047857; margin-top: 3px;">Contas das Lojas (OFX)</div>
+          <div id="aut-card2-sub" style="font-size: 9px; color: #047857; margin-top: 3px;">Contas das Lojas (OFX)</div>
         </div>
         <div style="padding: 10px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f0f9ff; border-left: 4px solid #0284c7;">
           <div style="font-size: 9px; text-transform: uppercase; font-weight: 800; color: #0369a1; margin-bottom: 3px;">3. = Soma Disponível</div>
           <div style="font-size: 15.5px; font-weight: 800; color: #0284c7;" id="aut-card-soma-disponivel">R$ 0,00</div>
-          <div style="font-size: 9px; color: #0369a1; margin-top: 3px;">Matriz + Filiais</div>
+          <div id="aut-card3-sub" style="font-size: 9px; color: #0369a1; margin-top: 3px;">Matriz + Filiais</div>
         </div>
         <div style="padding: 10px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fef2f2; border-left: 4px solid #ef4444;">
           <div style="font-size: 9px; text-transform: uppercase; font-weight: 800; color: #991b1b; margin-bottom: 3px;">4. − Despesas / Lote</div>
@@ -11941,7 +11941,42 @@
 
   let totalSaidasAtualAutorizacao = 0;
 
+  function obterContextoContaAutorizacao() {
+    let t = {};
+    try { t = JSON.parse(localStorage.getItem(AUTH_STORAGE_TENANT) || '{}'); } catch (_) {}
+    const nome = String(t.nome || t.nome_fantasia || t.razao_social || '').trim();
+    const up = nome.toUpperCase();
+    const ehLaluaBoah = !up || up.includes('LALUA') || up.includes('BOAH');
+    const nomeCurto = nome ? nome.split(' ').slice(0, 2).join(' ') : 'Empresa';
+    return { ehLaluaBoah, nomeEmpresa: nome || 'Empresa Atual', nomeCurto };
+  }
+
+  function atualizarLabelsWorkspaceAutorizacao() {
+    const ctx = obterContextoContaAutorizacao();
+    const setTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+    if (ctx.ehLaluaBoah) {
+      setTxt('aut-lbl-saldo-principal', 'Saldo Matriz (98775-7):');
+      setTxt('aut-lbl-filiais', 'Total Filiais (R$):');
+      setTxt('aut-btn-ofx', 'Importar OFX (Matriz & Filiais)');
+      setTxt('aut-card1-titulo', '1. Saldo Matriz (98775-7)');
+      setTxt('aut-card1-sub', 'Conta principal Itaú');
+      setTxt('aut-card2-titulo', '2. + Total Filiais');
+      setTxt('aut-card2-sub', 'Contas das Lojas (OFX)');
+      setTxt('aut-card3-sub', 'Matriz + Filiais');
+    } else {
+      setTxt('aut-lbl-saldo-principal', `Saldo Conta (${ctx.nomeCurto}):`);
+      setTxt('aut-lbl-filiais', 'Outras Contas (R$):');
+      setTxt('aut-btn-ofx', `Importar OFX (${ctx.nomeCurto})`);
+      setTxt('aut-card1-titulo', `1. Saldo Conta (${ctx.nomeCurto})`);
+      setTxt('aut-card1-sub', `Conta principal ${ctx.nomeCurto}`);
+      setTxt('aut-card2-titulo', '2. + Outras Contas');
+      setTxt('aut-card2-sub', 'Contas / Aplicações (OFX)');
+      setTxt('aut-card3-sub', 'Saldo Total Disponível');
+    }
+  }
+
   function abrirModalAutorizacao() {
+    atualizarLabelsWorkspaceAutorizacao();
     const inputData = document.getElementById('aut-data-lote');
     if (inputData) {
       inputData.value = obterDataPadraoParaRelatorios();
@@ -12080,10 +12115,11 @@
     const files = Array.from(event?.target?.files || []);
     if (files.length === 0) return;
 
-    let saldoMatriz = 0;
-    let encontrouMatriz = false;
-    let somaFiliais = 0;
-    let qtdFiliais = 0;
+    const ctx = obterContextoContaAutorizacao();
+    let saldoPrincipal = 0;
+    let encontrouPrincipal = false;
+    let somaOutras = 0;
+    let qtdOutras = 0;
     const detalhes = [];
 
     for (const file of files) {
@@ -12098,39 +12134,41 @@
       const acctMatch = texto.match(/<ACCTID>([^<\r\n]+)/i);
       const conta = acctMatch ? acctMatch[1].trim() : file.name;
       const contaDig = (conta + ' ' + file.name).replace(/\D/g, '');
-      const ehMatriz = contaDig.includes('987757');
+      const ehPrincipal = ctx.ehLaluaBoah ? contaDig.includes('987757') : !encontrouPrincipal;
 
       const balMatch = texto.match(/<LEDGERBAL>[\s\S]*?<BALAMT>([^<\r\n]+)/i) || texto.match(/<BALAMT>([^<\r\n]+)/i);
       const saldoConta = balMatch ? (parseFloat(balMatch[1].replace(',', '.')) || 0) : 0;
 
-      if (ehMatriz) {
-        saldoMatriz += saldoConta;
-        encontrouMatriz = true;
-        detalhes.push(`• MATRIZ (${conta}): Saldo ${formatarMoeda(saldoConta)}`);
+      if (ehPrincipal) {
+        saldoPrincipal += saldoConta;
+        encontrouPrincipal = true;
+        detalhes.push(`• ${ctx.ehLaluaBoah ? 'MATRIZ' : ctx.nomeCurto.toUpperCase()} (${conta}): Saldo ${formatarMoeda(saldoConta)}`);
       } else {
-        somaFiliais += saldoConta;
-        qtdFiliais += 1;
-        detalhes.push(`• FILIAL (${conta}): Saldo ${formatarMoeda(saldoConta)}`);
+        somaOutras += saldoConta;
+        qtdOutras += 1;
+        detalhes.push(`• ${ctx.ehLaluaBoah ? 'FILIAL' : 'OUTRA CONTA'} (${conta}): Saldo ${formatarMoeda(saldoConta)}`);
       }
     }
 
     const elSaldo = document.getElementById('aut-saldo-inicial');
     const elEnt = document.getElementById('aut-entradas-lojas');
-    if (elSaldo && encontrouMatriz) elSaldo.value = saldoMatriz.toFixed(2);
-    if (elEnt && qtdFiliais > 0) elEnt.value = somaFiliais.toFixed(2);
+    if (elSaldo && encontrouPrincipal) elSaldo.value = saldoPrincipal.toFixed(2);
+    if (elEnt && qtdOutras > 0) elEnt.value = somaOutras.toFixed(2);
     recalcularFluxoAutorizacao();
 
-    const valMatrizAtual = parseFloat(elSaldo?.value) || 0;
-    const valFiliaisAtual = parseFloat(elEnt?.value) || 0;
-    const somaDisp = valMatrizAtual + valFiliaisAtual;
+    const valPrincipalAtual = parseFloat(elSaldo?.value) || 0;
+    const valOutrasAtual = parseFloat(elEnt?.value) || 0;
+    const somaDisp = valPrincipalAtual + valOutrasAtual;
 
+    const labelP = ctx.ehLaluaBoah ? 'Matriz' : ctx.nomeCurto;
+    const labelO = ctx.ehLaluaBoah ? 'Filiais' : 'Outras';
     const resumo = document.getElementById('aut-ofx-lojas-resumo');
     if (resumo) {
       resumo.style.display = 'inline-block';
-      resumo.innerText = `Matriz: ${formatarMoeda(valMatrizAtual)} + Filiais (${qtdFiliais}): ${formatarMoeda(valFiliaisAtual)} = ${formatarMoeda(somaDisp)}`;
+      resumo.innerText = `${labelP}: ${formatarMoeda(valPrincipalAtual)} + ${labelO} (${qtdOutras}): ${formatarMoeda(valOutrasAtual)} = ${formatarMoeda(somaDisp)}`;
     }
     if (event?.target) event.target.value = '';
-    alert(`OFX importado (${files.length} conta(s)):\n\n${detalhes.join('\n')}\n\nSaldo Matriz (98775-7): ${formatarMoeda(valMatrizAtual)}\nTotal Filiais: ${formatarMoeda(valFiliaisAtual)}\nSoma Disponível: ${formatarMoeda(somaDisp)}`);
+    alert(`OFX importado (${files.length} conta(s)):\n\n${detalhes.join('\n')}\n\nSaldo ${labelP}: ${formatarMoeda(valPrincipalAtual)}\n${labelO}: ${formatarMoeda(valOutrasAtual)}\nSoma Disponível: ${formatarMoeda(somaDisp)}`);
   }
 
   function recalcularFluxoAutorizacao() {
