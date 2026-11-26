@@ -203,13 +203,15 @@ def parse_relatorio_liquidos_pdf(pdf_bytes: bytes, filename: str = "") -> dict[s
                 })
         return lista
 
-    colaboradores = _extrair_colabs_texto(texto_full)
+    colaboradores: list[dict[str, Any]] = []
+    try:
+        texto_layout = "\n".join((p.extract_text(extraction_mode="layout") or "") for p in reader.pages)
+        colaboradores = _extrair_colabs_texto(texto_layout)
+    except Exception:
+        pass
+
     if not colaboradores:
-        try:
-            texto_layout = "\n".join((p.extract_text(extraction_mode="layout") or "") for p in reader.pages)
-            colaboradores = _extrair_colabs_texto(texto_layout)
-        except Exception:
-            pass
+        colaboradores = _extrair_colabs_texto(texto_full)
 
     if not colaboradores:
         # Fallback multi-linha caso o PDF separe código, nome e valor em linhas distintas
