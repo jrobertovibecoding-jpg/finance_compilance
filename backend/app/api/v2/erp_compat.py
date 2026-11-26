@@ -2952,10 +2952,10 @@ def compat_gravar_lotes_pessoal(
     criados = []
     for lote in req.lotes:
         colabs_validos = [c for c in lote.colaboradores if c.valor and c.valor > 0]
-        if colabs_validos:
-            total_dec = sum((to_dec(c.valor) for c in colabs_validos), Decimal("0.00"))
-        elif lote.valor_total and lote.valor_total > 0:
+        if lote.valor_total and lote.valor_total > 0:
             total_dec = to_dec(lote.valor_total)
+        elif colabs_validos:
+            total_dec = sum((to_dec(c.valor) for c in colabs_validos), Decimal("0.00"))
         else:
             continue
 

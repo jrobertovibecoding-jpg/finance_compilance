@@ -314,13 +314,115 @@ def parse_boleto_dp_pdf(pdf_bytes: bytes, filename: str = "") -> dict[str, Any] 
     }
 
 
+def parse_relatorio_beneficios_pdf(pdf_bytes: bytes, filename: str = "") -> dict[str, Any] | None:
+    """
+    Lê relatórios de apoio do DP (sem boleto/linha digitável) que trazem a lista de funcionários:
+      - Ticket Serviços S.A. ('Relatório de Pedidos')
+      - Consórcio Salvador / Metropasse ('VT Funcionário' / 'Pedido de Carga')
+    """
+    reader = PdfReader(io.BytesIO(pdf_bytes))
+    texto = "\n".join((p.extract_text() or "") for p in reader.pages)
+    texto_up = texto.upper()
+
+    eh_ticket = "TICKET SERVI" in texto_up and "RELATÓRIO DE PEDIDOS" in texto_up or ("COLABORADORES (" in texto_up and "TICKET" in texto_up)
+    eh_vt = "VT FUNCION" in texto_up or "CARTÃO VT" in texto_up or "CARTAO VT" in texto_up
+    if not (eh_ticket or eh_vt):
+        return None
+
+    cnpjs = [re.sub(r"\D", "", c) for c in re.findall(r"\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}", texto)]
+    cnpjs_pag = [c for c in cnpjs if c != "47866934000174"]
+    cnpj_pagador = next((c for c in cnpjs_pag if c in FILIAL_POR_CNPJ), cnpjs_pag[0] if cnpjs_pag else "")
+    eh_solar = cnpj_pagador.startswith("26607445") or "SOLAR" in texto_up or "SOLAR" in filename.upper()
+
+    colaboradores: list[dict[str, Any]] = []
+    if eh_ticket:
+        for ln in texto.splitlines():
+            m = re.match(
+                r"^\s*([A-ZÁÀÃÂÉÊÍÓÔÕÚÇ][A-ZÁÀÃÂÉÊÍÓÔÕÚÇ\s\.\-]+?)\s+\d+\s+(\d{3}\.?\d{3}\.?\d{3}-?\d{2})\s+\d+\s+R\$\s*(\d{1,3}(?:\.\d{3})*,\d{2})\s*$",
+                ln.strip(),
+            )
+            if m:
+                v = _br_float(m.group(3))
+                if v > 0:
+                    colaboradores.append({
+                        "nome": re.sub(r"\s+", " ", m.group(1)).strip().upper(),
+                        "cpf": re.sub(r"\D", "", m.group(2)),
+                        "proventos": v,
+                        "descontos": 0.0,
+                        "liquido": v,
+                        "fgts": 0.0,
+                    })
+        m_ped = re.search(r"N[ºo°]\s*do\s*Pedido:\s*(\d+)", texto, re.IGNORECASE)
+        m_tot = re.search(r"Valor total:\s*R\$\s*(\d{1,3}(?:\.\d{3})*,\d{2})", texto, re.IGNORECASE)
+        tipo_serv = "TICKET"
+    else:
+        # Salvadorcard / Metropasse: blocos iniciam com nº de cartão (12-16 dígitos)
+        linhas = [ln.strip() for ln in texto.splitlines() if ln.strip()]
+        i = 0
+        while i < len(linhas):
+            if re.fullmatch(r"\d{10,18}", linhas[i]):
+                # Próxima(s) linhas: matrícula, nome (pode quebrar), tipo utilização, valor
+                bloco_vals: list[str] = []
+                j = i + 1
+                while j < len(linhas) and not re.fullmatch(r"\d{10,18}", linhas[j]) and not linhas[j].lower().startswith("total:"):
+                    bloco_vals.append(linhas[j])
+                    if re.fullmatch(r"\d{1,3}(?:\.\d{3})*,\d{2}", linhas[j]):
+                        break
+                    j += 1
+                if bloco_vals and re.fullmatch(r"\d{1,3}(?:\.\d{3})*,\d{2}", bloco_vals[-1]):
+                    v = _br_float(bloco_vals[-1])
+                    # Extrai matrícula/CPF se houver e junta linhas de nome antes de 'VT'
+                    cpf_b = ""
+                    nome_partes: list[str] = []
+                    for tok in bloco_vals[:-1]:
+                        tok_up = tok.upper()
+                        if re.fullmatch(r"[\d\.\-]{3,16}", tok) or re.fullmatch(r"T\s*\d+", tok_up) or re.fullmatch(r"\d{1,2}", tok):
+                            digs = re.sub(r"\D", "", tok)
+                            if len(digs) >= 9:
+                                cpf_b = (cpf_b + digs)[-11:]
+                            continue
+                        if tok_up in ("VT", "FUNCION", "ÁRIO", "ARIO", "FUNCIONÁRIO", "FUNCIONARIO", "VT FUNCIONÁRIO", "VT FUNCIONARIO"):
+                            continue
+                        nome_partes.append(tok)
+                    nome_b = re.sub(r"\s+", " ", " ".join(nome_partes)).strip().upper()
+                    if nome_b and v > 0:
+                        colaboradores.append({
+                            "nome": nome_b,
+                            "cpf": cpf_b if len(cpf_b) == 11 else "",
+                            "proventos": v,
+                            "descontos": 0.0,
+                            "liquido": v,
+                            "fgts": 0.0,
+                        })
+                i = j + 1
+            else:
+                i += 1
+        m_ped = re.search(r"Pedido\s*[:\n\r\s]+(\d+)", texto, re.IGNORECASE)
+        m_tot = re.search(r"Valor\s*[:\n\r\s]+(\d{1,3}(?:\.\d{3})*,\d{2})", texto, re.IGNORECASE)
+        tipo_serv = "METROPASSE" if "METROPASSE" in texto_up or "METROPASSE" in filename.upper() else "SALVADORCARD"
+
+    if not colaboradores:
+        return None
+
+    return {
+        "arquivo": filename,
+        "tipo_serv": tipo_serv,
+        "eh_solar": eh_solar,
+        "pedido": m_ped.group(1) if m_ped else "",
+        "total": _br_float(m_tot.group(1)) if m_tot else round(sum(c["liquido"] for c in colaboradores), 2),
+        "colaboradores": colaboradores,
+    }
+
+
 def parse_pacote_folha_dp(raw_bytes: bytes, filename: str) -> list[dict[str, Any]]:
     """
-    Recebe um .ZIP (com PDFs de Folha OU Boletos de Transporte/Alimentação/SST) ou um único .PDF.
+    Recebe um .ZIP (com PDFs de Folha OU Boletos + Relatórios de Transporte/Alimentação) ou um único .PDF.
+    Associa automaticamente relatórios de beneficiários aos respectivos boletos (sem duplicar lançamentos).
     """
     extratos: dict[str, dict[str, Any]] = {}
     liquidos_fb: dict[str, dict[str, Any]] = {}
     boletos_dp: list[dict[str, Any]] = []
+    relatorios_apoio: list[dict[str, Any]] = []
 
     def _processar_pdf(b: bytes, fname: str):
         low = fname.lower()
@@ -334,7 +436,7 @@ def parse_pacote_folha_dp(raw_bytes: bytes, filename: str) -> list[dict[str, Any
             if res["colaboradores"]:
                 liquidos_fb[res["filial"]] = res
                 return
-        # Tenta Extrato / Líquidos primeiro; se não tiver colaboradores, tenta Boleto DP
+        # Tenta Extrato / Líquidos primeiro
         res = parse_extrato_mensal_pdf(b, fname)
         if res["colaboradores"]:
             extratos[res["filial"]] = res
@@ -342,6 +444,11 @@ def parse_pacote_folha_dp(raw_bytes: bytes, filename: str) -> list[dict[str, Any
         res2 = parse_relatorio_liquidos_pdf(b, fname)
         if res2["colaboradores"]:
             liquidos_fb[res2["filial"]] = res2
+            return
+        # Verifica se é relatório de apoio (Ticket / Salvadorcard / Metropasse) antes de tratar como boleto
+        rel = parse_relatorio_beneficios_pdf(b, fname)
+        if rel:
+            relatorios_apoio.append(rel)
             return
         bol = parse_boleto_dp_pdf(b, fname)
         if bol:
@@ -354,6 +461,31 @@ def parse_pacote_folha_dp(raw_bytes: bytes, filename: str) -> list[dict[str, Any
                     _processar_pdf(zf.read(nome), nome)
     else:
         _processar_pdf(raw_bytes, filename)
+
+    # Casa cada relatório de apoio (lista de beneficiários) ao boleto correspondente
+    for rel in relatorios_apoio:
+        melhor_bol = None
+        for bol in boletos_dp:
+            if bol["eh_solar"] != rel["eh_solar"]:
+                continue
+            fav_up = (bol.get("favorecido") or "").upper()
+            mesmo_serv = (
+                (rel["tipo_serv"] == "TICKET" and "TICKET" in fav_up)
+                or (rel["tipo_serv"] == "METROPASSE" and "METROPASSE" in fav_up)
+                or (rel["tipo_serv"] == "SALVADORCARD" and ("SALVADOR" in fav_up or "TRANSCARD" in fav_up))
+            )
+            if not mesmo_serv:
+                continue
+            if rel["pedido"] and rel["pedido"] in bol["arquivo"]:
+                melhor_bol = bol
+                break
+            if abs(bol["total_liquido"] - rel["total"]) < 0.10:
+                melhor_bol = bol
+                break
+            if melhor_bol is None:
+                melhor_bol = bol
+        if melhor_bol is not None and not melhor_bol["colaboradores"]:
+            melhor_bol["colaboradores"] = rel["colaboradores"]
 
     resultado = list(extratos.values())
     for fil, res in liquidos_fb.items():
