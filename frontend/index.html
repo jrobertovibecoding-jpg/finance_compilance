@@ -2273,7 +2273,7 @@
     </div>
 
     <!-- MODAL POP-UP: DADOS DE PRODUÇÃO / FACÇÃO (GERENCIAL — SEM DUPLICAR CONTAS A PAGAR) -->
-    <div id="modal-dados-faccao" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.65); z-index: 10015; align-items: center; justify-content: center; padding: 16px;">
+    <div id="modal-dados-faccao" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.65); z-index: 100075; align-items: center; justify-content: center; padding: 16px;">
       <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; width: 100%; max-width: 620px; box-shadow: 0 20px 45px rgba(15,23,42,0.35); overflow: hidden;">
         <div style="background: #f5f3ff; border-bottom: 1px solid #ddd6fe; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
           <div>
@@ -9746,8 +9746,30 @@
     }
   }
 
+  let _faccaoTituloIdAlvo = null;
+
   function abrirModalFaccao() {
+    _faccaoTituloIdAlvo = null;
     const d = window.dadosFaccaoAtual || {};
+    _preencherCamposModalFaccao(d);
+  }
+
+  function abrirModalFaccaoParaTitulo(idTitulo) {
+    const item = (titulos || []).find(t => String(t.id) === String(idTitulo));
+    if (!item) return;
+    _faccaoTituloIdAlvo = item.id;
+    const tagExist = _extrairTagFaccao(item.historico || item.descricao || '');
+    const d = tagExist || {
+      modelo: (item.descricao || item.historico || '').replace(/\[FACCAO\|[^\]]+\]/g, '').trim(),
+      qtd: 0,
+      vlr_peca: 0,
+      remessa: '',
+      mp: 0,
+    };
+    _preencherCamposModalFaccao(d);
+  }
+
+  function _preencherCamposModalFaccao(d) {
     const elMod = document.getElementById('fac-modelo');
     const elQtd = document.getElementById('fac-qtd');
     const elVlr = document.getElementById('fac-vlr-peca');
@@ -9764,6 +9786,7 @@
   }
 
   function fecharModalFaccao() {
+    _faccaoTituloIdAlvo = null;
     const modal = document.getElementById('modal-dados-faccao');
     if (modal) modal.style.display = 'none';
   }
@@ -9788,7 +9811,7 @@
     fecharModalFaccao();
   }
 
-  function confirmarModalFaccao() {
+  async function confirmarModalFaccao() {
     const modelo = (document.getElementById('fac-modelo')?.value || '').trim();
     const qtd = parseFloat(document.getElementById('fac-qtd')?.value) || 0;
     const vlr_peca = parseFloat(document.getElementById('fac-vlr-peca')?.value) || 0;
@@ -9796,7 +9819,46 @@
     const mp = parseFloat(document.getElementById('fac-vlr-mp')?.value) || 0;
     const atualizarBruto = Boolean(document.getElementById('fac-atualizar-bruto')?.checked);
 
-    window.dadosFaccaoAtual = { modelo, qtd, vlr_peca, remessa, mp };
+    const dadosFac = { modelo, qtd, vlr_peca, remessa, mp };
+
+    if (_faccaoTituloIdAlvo) {
+      const idAlvo = _faccaoTituloIdAlvo;
+      const item = (titulos || []).find(t => String(t.id) === String(idAlvo));
+      if (!item) { fecharModalFaccao(); return; }
+      const tagNova = _formatarTagFaccao(dadosFac);
+      const histLimpo = String(item.historico || '').replace(/\[FACCAO\|[^\]]+\]/g, '').trim();
+      const novoHist = [histLimpo, tagNova].filter(Boolean).join(' ');
+      const descFac = modelo
+        ? `Facção: ${modelo}${qtd > 0 ? ` (${qtd} pçs` + (vlr_peca > 0 ? ` × R$ ${vlr_peca.toFixed(2)}` : '') + ')' : ''}${remessa ? ` • Ref. Remessa NF ${remessa}` : ''}`
+        : (item.descricao || '');
+      const novoValor = (atualizarBruto && qtd > 0 && vlr_peca > 0)
+        ? Number((qtd * vlr_peca).toFixed(2))
+        : Number(item.valor || item.valor_bruto || 0);
+
+      try {
+        const resp = await apiFetch(`${API_BASE}/titulos/${encodeURIComponent(idAlvo)}/editar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            historico: novoHist,
+            descricao: descFac,
+            valor: novoValor,
+          }),
+        });
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({ detail: 'Erro ao salvar dados de facção' }));
+          throw new Error(err.detail || 'Erro ao salvar dados de facção');
+        }
+        fecharModalFaccao();
+        await carregarDadosIniciais();
+        abrirModalDetalhesTitulo(idAlvo);
+      } catch (e) {
+        alert('Erro ao salvar dados da facção: ' + e.message);
+      }
+      return;
+    }
+
+    window.dadosFaccaoAtual = dadosFac;
     atualizarBadgeFaccaoBtn();
 
     if (atualizarBruto && qtd > 0 && vlr_peca > 0) {
@@ -11325,6 +11387,7 @@
           <button type="button" class="tool-btn" onclick="fecharModalDetalhesTitulo(); abrirFolhaRostoTitulo('${item.id}')">${bimerIcon('printer', 'bimer-svg-xs')} Folha de Rosto</button>
           <button type="button" class="tool-btn" style="border-color: #0284c7; color: #0369a1; background: #e0f2fe; font-weight: 700;" onclick="abrirModalAnexosTitulo('${item.id}', 'Doc: ${escapeHtml(item.numero_doc || '-').replace(/'/g, '')} • ${escapeHtml(item.favorecido || '-').replace(/'/g, '')}')">Dossiê / Anexos${item.anexos_count > 0 ? ` (${item.anexos_count})` : ''}</button>
           <button type="button" class="tool-btn" style="border-color: #7c3aed; color: #5b21b6; background: #f5f3ff; font-weight: 700;" onclick="abrirModalBeneficiariosTitulo('${item.id}')">👥 Beneficiários / Rateio${(item.itens && item.itens.some(x => x.unidade === 'FOLHA_COLAB')) ? ` (${item.itens.filter(x => x.unidade === 'FOLHA_COLAB').length})` : ''}</button>
+          <button type="button" class="tool-btn" style="border-color: #c084fc; color: #6b21a8; background: #faf5ff; font-weight: 700;" onclick="abrirModalFaccaoParaTitulo('${item.id}')" title="Informar ou editar Modelo, Peças, NF Remessa 5901 e Matéria-Prima deste lançamento">🧵 Facção / Romaneio</button>
         </div>
         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
           <button type="button" class="tool-btn primary" style="background: ${isPago ? '#b45309' : '#16a34a'}; border-color: ${isPago ? '#92400e' : '#15803d'};" onclick="fecharModalDetalhesTitulo(); alternarBaixa('${item.id}')">
