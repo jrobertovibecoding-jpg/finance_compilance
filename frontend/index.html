@@ -16129,6 +16129,34 @@
       </div>
     `;
 
+    if (saidasFiliais.length === 0 && entradasMatriz.length === 0 && (dados.todosBrutos || []).length > 0) {
+      html += `
+        <div style="font-weight:800;font-size:11px;color:#92400e;text-transform:uppercase;margin:8px 0 6px;">Movimentos Encontrados nos Arquivos OFX (${dados.todosBrutos.length})</div>
+        <table class="alterdata-grid" style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:16px;">
+          <thead>
+            <tr style="background:#78350f;color:white;">
+              <th style="padding:5px 6px;text-align:center;width:85px;">Data</th>
+              <th style="padding:5px 6px;text-align:left;width:190px;">Conta / Arquivo</th>
+              <th style="padding:5px 6px;text-align:left;">Histórico (MEMO)</th>
+              <th style="padding:5px 6px;text-align:center;width:75px;">TRNTYPE</th>
+              <th style="padding:5px 6px;text-align:right;width:100px;">TRNAMT</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${dados.todosBrutos.map((x, idx) => `
+              <tr style="${idx % 2 === 1 ? 'background:#fffbeb;' : 'background:#ffffff;'}">
+                <td style="padding:4px 6px;text-align:center;font-family:monospace;">${x.data ? formatarData(x.data) : '-'}</td>
+                <td style="padding:4px 6px;font-weight:700;">${escapeHtml(x.filial)}</td>
+                <td style="padding:4px 6px;">${escapeHtml(x.memo)}</td>
+                <td style="padding:4px 6px;text-align:center;font-family:monospace;">${escapeHtml(x.trnType)}</td>
+                <td style="padding:4px 6px;text-align:right;font-family:monospace;font-weight:700;">${escapeHtml(x.rawAmt)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
     html += `
       <div style="font-weight:800;font-size:11px;color:#004b87;text-transform:uppercase;margin-bottom:6px;">1. Resumo de Transferências por Filial de Origem</div>
       <table class="alterdata-grid" style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:16px;">
@@ -16178,34 +16206,6 @@
         </tbody>
       </table>
     `;
-
-    if (saidasFiliais.length === 0 && entradasMatriz.length === 0 && (dados.todosBrutos || []).length > 0) {
-      html += `
-        <div style="font-weight:800;font-size:11px;color:#92400e;text-transform:uppercase;margin:12px 0 6px;">Movimentos Encontrados nos Arquivos OFX (${dados.todosBrutos.length})</div>
-        <table class="alterdata-grid" style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:16px;">
-          <thead>
-            <tr style="background:#78350f;color:white;">
-              <th style="padding:5px 6px;text-align:center;width:85px;">Data</th>
-              <th style="padding:5px 6px;text-align:left;width:190px;">Conta / Arquivo</th>
-              <th style="padding:5px 6px;text-align:left;">Histórico (MEMO)</th>
-              <th style="padding:5px 6px;text-align:center;width:75px;">TRNTYPE</th>
-              <th style="padding:5px 6px;text-align:right;width:100px;">TRNAMT</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${dados.todosBrutos.map((x, idx) => `
-              <tr style="${idx % 2 === 1 ? 'background:#fffbeb;' : 'background:#ffffff;'}">
-                <td style="padding:4px 6px;text-align:center;font-family:monospace;">${x.data ? formatarData(x.data) : '-'}</td>
-                <td style="padding:4px 6px;font-weight:700;">${escapeHtml(x.filial)}</td>
-                <td style="padding:4px 6px;">${escapeHtml(x.memo)}</td>
-                <td style="padding:4px 6px;text-align:center;font-family:monospace;">${escapeHtml(x.trnType)}</td>
-                <td style="padding:4px 6px;text-align:right;font-family:monospace;font-weight:700;">${escapeHtml(x.rawAmt)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-    }
 
     if (entradasMatriz.length > 0) {
       html += `
