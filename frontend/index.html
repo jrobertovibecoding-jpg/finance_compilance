@@ -8050,10 +8050,19 @@
       `;
     }
     else if (abaAtivaAtual === 'aba-relatorios') {
-      const nomeRel = relatorioAtivo === 'vencimento' ? 'A) Títulos por Vencimento' :
-                      relatorioAtivo === 'retencoes' ? 'B) Retenções Tributárias' :
-                      relatorioAtivo === 'ccusto' ? 'C) Realizado Centro de Custo' :
-                      'D) Fluxo de Caixa (Realizado vs Previsto)';
+      const mapaNomeRel = {
+        vencimento: 'Contas a Pagar por Vencimento',
+        fluxo: 'Fluxo de Caixa (Previsto vs. Pago)',
+        ccusto: 'Despesas por Categoria (DRE & Pareto)',
+        transferencias: 'Transferências Filiais → Matriz (OFX)',
+        pessoal: 'Despesas com Pessoal (Filiais & Colaboradores)',
+        faccao: 'Facção & Produção (Oficinas e Romaneios)',
+        itens: 'Compras & Itens de Nota Fiscal (NF-e)',
+        retencoes: 'Impostos Retidos na Fonte (EFD-Reinf)',
+        raiox: 'Raio-X de Gastos & Maiores Ofensores',
+        evolucao: 'Comparativo Mensal & Variação de Preços'
+      };
+      const nomeRel = mapaNomeRel[relatorioAtivo] || 'Relatório Gerencial';
 
       deck.innerHTML = `
         <div class="total-box indigo">
@@ -13716,7 +13725,7 @@
       const dt = t.vencimento;
       if (dt && (dt < dataIni || dt > dataFim)) return false;
       const isConc = t.situacao === 'CONCILIADO' || t.status === 'CONCILIADO';
-      if (status === 'ABERTO' && isConc) return false;
+      if ((status === 'ABERTO' || status === 'EM_ABERTO') && isConc) return false;
       if (status === 'CONCILIADO' && !isConc) return false;
       if (ccusto !== 'TODOS' && t.ccusto !== ccusto) return false;
       return true;
@@ -14060,11 +14069,16 @@
     let totalGeral = 0, totalAberto = 0, totalPago = 0;
 
     const _buscarMacroCategoria = (ccNome) => {
+      const ccStr = String(ccNome || '');
+      const prefix = ccStr.split('-')[0].trim();
       if (typeof TABELA_GRUPOS_CATEGORIAS !== 'undefined' && Array.isArray(TABELA_GRUPOS_CATEGORIAS)) {
-        const prefix = String(ccNome || '').split('-')[0].trim();
         const found = TABELA_GRUPOS_CATEGORIAS.find(c => c.rotulo === ccNome || String(c.codigo) === prefix);
         if (found) return { macro: found.macro || 'Outros', grupo: found.grupo || '-' };
       }
+      if (/^122\d{2}$/.test(prefix)) return { macro: '1 - FIXOS', grupo: '214 - Despesa Fixa - Pessoal' };
+      if (/^223\d{2}$/.test(prefix)) return { macro: '3 - IMPOSTOS', grupo: '223 - Despesa Variável - Impostos' };
+      if (/^(11|21)\d{3}$/.test(prefix)) return { macro: '1 - FIXOS', grupo: 'Despesa Fixa' };
+      if (/^(12|22)\d{3}$/.test(prefix)) return { macro: '2 - VARIÁVEIS', grupo: 'Despesa Variável' };
       return { macro: 'Outros / Geral', grupo: '-' };
     };
 
@@ -14575,18 +14589,22 @@
 
     (titulos || []).forEach(t => {
       if (t.tipo === 'IMPOSTO' || String(t.id || '').startsWith('IMP_')) return;
-      const dtRef = (t.data_emissao || t.vencimento || '').slice(0, 10);
+      const dtRef = (t.vencimento || t.data_emissao || '').slice(0, 10);
       if (dtRef && (dtRef < dataIni || dtRef > dataFim)) return;
 
       const meta = _extrairTagFaccao(t.historico || t.observacao || '');
       const cfopDig = String(t.cod_operacao || '').replace(/\D/g, '');
+      const ccLow = String(t.ccusto || '').toLowerCase();
+      const ccCod = String(t.ccusto || '').split('-')[0].trim();
       const ehFaccao = Boolean(
         meta
         || t.tipo_doc === 'FACCAO_ROMANEIO'
         || cfopDig.startsWith('1124')
         || cfopDig.startsWith('2124')
-        || String(t.ccusto || '').toLowerCase().includes('faccionista')
-        || String(t.ccusto || '').startsWith('12111')
+        || ccLow.includes('faccionista')
+        || ccLow.includes('facção')
+        || ccLow.includes('faccao')
+        || ['12109', '12110', '12111', '12113'].includes(ccCod)
       );
       if (!ehFaccao) return;
 
@@ -14645,7 +14663,7 @@
     }
 
     const registros = todosFaccao.filter(r => {
-      if (status === 'ABERTO' && r.isConc) return false;
+      if ((status === 'ABERTO' || status === 'EM_ABERTO') && r.isConc) return false;
       if (status === 'CONCILIADO' && !r.isConc) return false;
       if (filtroOficina !== 'TODAS' && r.favorecido !== filtroOficina) return false;
       if (filtroRegime === 'COM_NF' && !r.comNF) return false;
@@ -14948,7 +14966,7 @@
       const dt = (t.vencimento || t.data_emissao || '').slice(0, 10);
       if (dt && (dt < dataIni || dt > dataFim)) return false;
       const isConc = t.situacao === 'CONCILIADO' || t.status === 'CONCILIADO';
-      if (status === 'ABERTO' && isConc) return false;
+      if ((status === 'ABERTO' || status === 'EM_ABERTO') && isConc) return false;
       if (status === 'CONCILIADO' && !isConc) return false;
       if (_raioxZoomAtual !== 'TODOS' && _classificarZoomRaioX(t) !== _raioxZoomAtual) return false;
       return true;
@@ -16044,20 +16062,13 @@
         });
       }
 
-      if (minData && maxData) {
-        const elIni = document.getElementById('rel-data-ini');
-        const elFim = document.getElementById('rel-data-fim');
-        if (elIni) elIni.value = minData;
-        if (elFim) elFim.value = maxData;
-      }
-
       const temMatrizExplicita = movimentos.some(m => m.direcao === 'SAIDA_FILIAL' && m.ehProvavelMatriz);
       const chkTodas = document.getElementById('rel-filtro-transf-todas');
       if (chkTodas && !temMatrizExplicita && movimentos.some(m => m.direcao === 'SAIDA_FILIAL')) {
         chkTodas.checked = true;
       }
 
-      window._relTransferenciasOFX = { arquivos, movimentos, todosBrutos, totalBrutoOFX };
+      window._relTransferenciasOFX = { arquivos, movimentos, todosBrutos, totalBrutoOFX, minData, maxData };
       if (event?.target) event.target.value = '';
       if (arquivos.length === 0 || totalBrutoOFX === 0) {
         alert(`Atenção: ${files.length} arquivo(s) selecionado(s), mas nenhum lançamento <STMTTRN> foi encontrado dentro do OFX.`);
@@ -16070,15 +16081,16 @@
   }
 
   function gerarHtmlRelatorioTransferencias() {
-    const { dataIni, dataFim } = obterFiltrosRelatorio();
     const busca = (document.getElementById('rel-filtro-transf-busca')?.value || '').trim().toUpperCase();
     const mostrarTodasSaidas = Boolean(document.getElementById('rel-filtro-transf-todas')?.checked);
     const dados = window._relTransferenciasOFX || { arquivos: [], movimentos: [] };
+    const minData = dados.minData || '';
+    const maxData = dados.maxData || '';
 
-    const periodLabel = (dataIni || dataFim) ? `${dataIni ? formatarData(dataIni) : 'Início'} até ${dataFim ? formatarData(dataFim) : 'Hoje'}` : 'Todo o Período dos OFX';
+    const periodLabel = (minData || maxData) ? `${minData ? formatarData(minData) : 'Início'} até ${maxData ? formatarData(maxData) : 'Hoje'}` : 'Arquivos OFX';
     let html = gerarCabecalhoRelatorio(
       'Relatório de Transferências Bancárias (Filiais → Matriz)',
-      `Conciliação de Repasses via OFX • Período: ${periodLabel}${busca ? ` • Busca: "${escapeHtml(busca)}"` : ''}`
+      `Conciliação de Repasses via OFX • Data dos Extratos: ${periodLabel}${busca ? ` • Busca: "${escapeHtml(busca)}"` : ''}`
     );
 
     if (!dados.arquivos || dados.arquivos.length === 0) {
@@ -16093,8 +16105,6 @@
     }
 
     const movFiltrados = (dados.movimentos || []).filter(m => {
-      if (dataIni && m.data && m.data < dataIni) return false;
-      if (dataFim && m.data && m.data > dataFim) return false;
       if (m.direcao === 'SAIDA_FILIAL' && !mostrarTodasSaidas && !m.ehProvavelMatriz) return false;
       if (busca && !m.filial.toUpperCase().includes(busca) && !m.memo.toUpperCase().includes(busca) && !String(m.valor).includes(busca)) return false;
       return true;
@@ -16242,6 +16252,7 @@
 
   function exportarRelatorioCSV() {
     const { dataIni, dataFim, status, ccusto } = obterFiltrosRelatorio();
+    const hoje = new Date().toISOString().slice(0, 10);
     let csv = '';
 
     if (relatorioAtivo === 'vencimento') {
@@ -16274,6 +16285,30 @@
         t.itens.forEach(it => {
           csv += `"${dtRef}";"${t.numero_doc || ''}";"${(t.favorecido || '').replace(/"/g, '""')}";"${it.codigo || ''}";"${(it.descricao || '').replace(/"/g, '""')}";"${it.ncm || ''}";"${it.unidade || 'UN'}";"${Number(it.quantidade || 0).toFixed(4)}";"${Number(it.valor_unitario || 0).toFixed(4)}";"${Number(it.valor_total || 0).toFixed(2)}"\n`;
         });
+      });
+    } else if (relatorioAtivo === 'transferencias') {
+      csv = 'Filial_Conta;Arquivo;Lancamentos;Entradas;Saidas;Saldo_Final\n';
+      ((window._relTransferenciasOFX && window._relTransferenciasOFX.arquivos) || []).forEach(a => {
+        csv += `"${(a.filial || '').replace(/"/g, '""')}";"${(a.arquivo || '').replace(/"/g, '""')}";"${a.qtdLanc || 0}";"${Number(a.entradas || 0).toFixed(2)}";"${Number(a.saidas || 0).toFixed(2)}";"${Number(a.saldoFinal || 0).toFixed(2)}"\n`;
+      });
+    } else if (relatorioAtivo === 'pessoal') {
+      csv = 'Vencimento;Documento;Fornecedor;Categoria;Colaborador;CPF;Filial;Valor\n';
+      (titulos || []).forEach(t => {
+        const cc = String(t.ccusto || '');
+        const td = String(t.tipo_doc || '').toUpperCase();
+        const ehPessoal = /^(214|122)\d{2}/.test(cc) || ['FOLHA', 'FOLHA_LOTE', 'DOMINGO_FERIADO', 'FERIAS', 'RESCISAO', 'PESSOAL_DP'].includes(td);
+        if (!ehPessoal) return;
+        const dt = t.vencimento || '';
+        if (dataIni && dt < dataIni) return;
+        if (dataFim && dt > dataFim) return;
+        const itensCol = (t.itens || []).filter(it => String(it.unidade || '').toUpperCase() === 'FOLHA_COLAB');
+        if (itensCol.length > 0) {
+          itensCol.forEach(it => {
+            csv += `"${dt}";"${t.numero_doc || ''}";"${(t.favorecido || '').replace(/"/g, '""')}";"${cc}";"${(it.descricao || '').replace(/"/g, '""')}";"${it.codigo || ''}";"${it.ncm || ''}";"${Number(it.valor_total || 0).toFixed(2)}"\n`;
+          });
+        } else {
+          csv += `"${dt}";"${t.numero_doc || ''}";"${(t.favorecido || '').replace(/"/g, '""')}";"${cc}";"-";"-";"Geral";"${Number(t.valor || 0).toFixed(2)}"\n`;
+        }
       });
     } else {
       csv = 'Categoria;Favorecido;Dia_Vencimento;Valor_Previsto\n';
