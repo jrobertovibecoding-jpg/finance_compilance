@@ -361,34 +361,35 @@ def parse_relatorio_beneficios_pdf(pdf_bytes: bytes, filename: str = "") -> dict
         i = 0
         while i < len(linhas):
             if re.fullmatch(r"\d{10,18}", linhas[i]):
-                # Próxima(s) linhas: matrícula, nome (pode quebrar), tipo utilização, valor
                 bloco_vals: list[str] = []
                 j = i + 1
-                while j < len(linhas) and not re.fullmatch(r"\d{10,18}", linhas[j]) and not linhas[j].lower().startswith("total:"):
+                while j < len(linhas) and not re.fullmatch(r"\d{10,18}", linhas[j]):
+                    if linhas[j].lower().startswith(("total:", "pedido de carga")):
+                        break
                     bloco_vals.append(linhas[j])
                     if re.fullmatch(r"\d{1,3}(?:\.\d{3})*,\d{2}", linhas[j]):
                         break
                     j += 1
                 if bloco_vals and re.fullmatch(r"\d{1,3}(?:\.\d{3})*,\d{2}", bloco_vals[-1]):
                     v = _br_float(bloco_vals[-1])
-                    # Extrai matrícula/CPF se houver e junta linhas de nome antes de 'VT'
-                    cpf_b = ""
+                    cpf_parts: list[str] = []
                     nome_partes: list[str] = []
                     for tok in bloco_vals[:-1]:
-                        tok_up = tok.upper()
-                        if re.fullmatch(r"[\d\.\-]{3,16}", tok) or re.fullmatch(r"T\s*\d+", tok_up) or re.fullmatch(r"\d{1,2}", tok):
-                            digs = re.sub(r"\D", "", tok)
-                            if len(digs) >= 9:
-                                cpf_b = (cpf_b + digs)[-11:]
-                            continue
-                        if tok_up in ("VT", "FUNCION", "ÁRIO", "ARIO", "FUNCIONÁRIO", "FUNCIONARIO", "VT FUNCIONÁRIO", "VT FUNCIONARIO"):
+                        if re.fullmatch(r"[\d\.\-\s]{2,16}", tok) or re.fullmatch(r"T\s*\d+", tok.upper()):
+                            cpf_parts.append(re.sub(r"\D", "", tok))
                             continue
                         nome_partes.append(tok)
-                    nome_b = re.sub(r"\s+", " ", " ".join(nome_partes)).strip().upper()
+                    cpf_joined = "".join(cpf_parts)
+                    cpf_b = cpf_joined[-11:] if len(cpf_joined) >= 11 else ""
+                    nome_raw = " ".join(nome_partes)
+                    # Remove "VT Funcionário" mesmo quando quebrado pelo pypdf ("VT Funcion á rio")
+                    nome_raw = re.sub(r"\bVT\s*FUNCION\s*[ÁA]?\s*RIO\b", "", nome_raw, flags=re.IGNORECASE)
+                    nome_raw = re.sub(r"\s*([ÃÁÉÍÓÚ])\s+", r"\1", nome_raw)  # junta acento solto ex: "PAIX Ã O" -> "PAIXÃO"
+                    nome_b = re.sub(r"\s+", " ", nome_raw).strip().upper()
                     if nome_b and v > 0:
                         colaboradores.append({
                             "nome": nome_b,
-                            "cpf": cpf_b if len(cpf_b) == 11 else "",
+                            "cpf": cpf_b,
                             "proventos": v,
                             "descontos": 0.0,
                             "liquido": v,
