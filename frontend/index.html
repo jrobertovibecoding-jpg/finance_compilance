@@ -15942,11 +15942,11 @@
         const ccFmt = acctDig.length >= 10
           ? `Ag ${acctDig.slice(0, 4)} • Cc ${acctDig.slice(4, -1)}-${acctDig.slice(-1)}`
           : (acctId || '-');
-        if (base.includes('BARRA')) return { nome: `Boah - Barra (${ccFmt})`, ehMatriz: false };
-        if (base.includes('PASEO')) return { nome: `Boah - Paseo (${ccFmt})`, ehMatriz: false };
-        if (base.includes('HORTO')) return { nome: `Boah - Horto (${ccFmt})`, ehMatriz: false };
-        if (base.includes('SDB') || base.includes('SHOPPING DA BAHIA')) return { nome: `Boah - SDB (${ccFmt})`, ehMatriz: false };
-        if (base.includes('VILAS')) return { nome: `Boah - Vilas (${ccFmt})`, ehMatriz: false };
+        if (acctDig.includes('987708') || acctDig.includes('98770') || base.includes('HORTO')) return { nome: `Boah - Horto (${ccFmt})`, ehMatriz: false };
+        if (acctDig.includes('987716') || acctDig.includes('98771') || base.includes('SDB') || base.includes('SHOPPING DA BAHIA')) return { nome: `Boah - SDB (${ccFmt})`, ehMatriz: false };
+        if (acctDig.includes('987724') || acctDig.includes('98772') || base.includes('VILAS')) return { nome: `Boah - Vilas (${ccFmt})`, ehMatriz: false };
+        if (acctDig.includes('987732') || acctDig.includes('98773') || base.includes('PASEO')) return { nome: `Boah - Paseo (${ccFmt})`, ehMatriz: false };
+        if (acctDig.includes('987740') || acctDig.includes('98774') || base.includes('BARRA')) return { nome: `Boah - Barra (${ccFmt})`, ehMatriz: false };
         if (base.includes('SOLAR')) return { nome: `Solar (${ccFmt})`, ehMatriz: false };
         return { nome: `Filial Itaú (${ccFmt})`, ehMatriz: false };
       };
