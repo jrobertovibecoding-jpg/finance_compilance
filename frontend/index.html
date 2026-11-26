@@ -15921,7 +15921,7 @@
       };
 
       const parseValorOFX = (raw) => {
-        let s = String(raw || '').trim().replace(/\s+/g, '');
+        let s = String(raw || '').trim().replace(/[^\d.,-]/g, '');
         if (!s) return 0;
         if (s.includes(',') && s.includes('.')) {
           if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
@@ -15958,6 +15958,7 @@
 
       const arquivos = [];
       const movimentos = [];
+      const todosBrutos = [];
       let totalBrutoOFX = 0;
       let minData = '';
       let maxData = '';
@@ -15987,10 +15988,12 @@
             if (!minData || dataIso < minData) minData = dataIso;
             if (!maxData || dataIso > maxData) maxData = dataIso;
           }
-          const valor = parseValorOFX(extrairTag(b, 'TRNAMT'));
+          const rawAmtTxt = extrairTag(b, 'TRNAMT');
+          const valor = parseValorOFX(rawAmtTxt);
           const trnType = extrairTag(b, 'TRNTYPE').toUpperCase();
           const memo = extrairTag(b, 'MEMO') || extrairTag(b, 'NAME') || '-';
           const memoUp = memo.toUpperCase();
+          todosBrutos.push({ filial: infoConta.nome, data: dataIso, trnType: trnType || '-', memo, rawAmt: rawAmtTxt || '-', valor });
 
           const ehTransfKeyword = /TRANSF|PIX|TED|DOC|TEF|SISPAG|ENTRE\s*CONTAS|MESMA\s*TIT|ENVIO|REMESSA|98775|LALUA|BOAH|MATRIZ|CRED|PAG|MOV/.test(memoUp) || trnType === 'XFER';
           const ehMatrizKeyword = /98775|LALUA|BOAH|MATRIZ|MESMA\s*TIT|ENTRE\s*CONTAS|TEF\s+ENTRE/.test(memoUp);
@@ -16038,7 +16041,7 @@
         chkTodas.checked = true;
       }
 
-      window._relTransferenciasOFX = { arquivos, movimentos, totalBrutoOFX };
+      window._relTransferenciasOFX = { arquivos, movimentos, todosBrutos, totalBrutoOFX };
       if (event?.target) event.target.value = '';
       if (arquivos.length === 0 || totalBrutoOFX === 0) {
         alert(`Atenção: ${files.length} arquivo(s) selecionado(s), mas nenhum lançamento <STMTTRN> foi encontrado dentro do OFX.`);
@@ -16175,6 +16178,34 @@
         </tbody>
       </table>
     `;
+
+    if (saidasFiliais.length === 0 && entradasMatriz.length === 0 && (dados.todosBrutos || []).length > 0) {
+      html += `
+        <div style="font-weight:800;font-size:11px;color:#92400e;text-transform:uppercase;margin:12px 0 6px;">Movimentos Encontrados nos Arquivos OFX (${dados.todosBrutos.length})</div>
+        <table class="alterdata-grid" style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:16px;">
+          <thead>
+            <tr style="background:#78350f;color:white;">
+              <th style="padding:5px 6px;text-align:center;width:85px;">Data</th>
+              <th style="padding:5px 6px;text-align:left;width:190px;">Conta / Arquivo</th>
+              <th style="padding:5px 6px;text-align:left;">Histórico (MEMO)</th>
+              <th style="padding:5px 6px;text-align:center;width:75px;">TRNTYPE</th>
+              <th style="padding:5px 6px;text-align:right;width:100px;">TRNAMT</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${dados.todosBrutos.map((x, idx) => `
+              <tr style="${idx % 2 === 1 ? 'background:#fffbeb;' : 'background:#ffffff;'}">
+                <td style="padding:4px 6px;text-align:center;font-family:monospace;">${x.data ? formatarData(x.data) : '-'}</td>
+                <td style="padding:4px 6px;font-weight:700;">${escapeHtml(x.filial)}</td>
+                <td style="padding:4px 6px;">${escapeHtml(x.memo)}</td>
+                <td style="padding:4px 6px;text-align:center;font-family:monospace;">${escapeHtml(x.trnType)}</td>
+                <td style="padding:4px 6px;text-align:right;font-family:monospace;font-weight:700;">${escapeHtml(x.rawAmt)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
 
     if (entradasMatriz.length > 0) {
       html += `
