@@ -170,25 +170,33 @@ def parse_relatorio_liquidos_pdf(pdf_bytes: bytes, filename: str = "") -> dict[s
 
     colaboradores: list[dict[str, Any]] = []
     for ln in texto_full.splitlines():
-        m = re.match(
-            r"^\s*\d{1,4}\s+([A-Za-zÁÀÃÂÉÊÍÓÔÕÚÇáàãâéêíóôõúç][A-Za-zÁÀÃÂÉÊÍÓÔÕÚÇáàãâéêíóôõúç\s\.\-]{3,}?)(?:\s+(?=[0-9A-Za-z\.\-]*\d)[0-9A-Za-z\.\-]{5,18})?\s+(\d{1,3}(?:\.\d{3})*,\d{2})(?:\s+\d{2}/\d{2}/\d{4})?\s*$",
-            ln.strip(),
-        )
-        if m:
-            nome = re.sub(r"\s+", " ", m.group(1)).strip().upper()
-            if any(k in nome for k in ("TOTAL", "EMPREGADOS", "ESTAGIARIO", "CONTRIBUINTE")):
-                continue
-            liq = _br_float(m.group(2))
-            if liq > 0:
-                colaboradores.append({
-                    "nome": nome,
-                    "cpf": "",
-                    "filial": ccusto,
-                    "proventos": liq,
-                    "descontos": 0.0,
-                    "liquido": liq,
-                    "fgts": 0.0,
-                })
+        ln_s = ln.strip()
+        if not ln_s:
+            continue
+        up_s = ln_s.upper()
+        if any(k in up_s for k in ("TOTAL DA EMPRESA", "EMPREGADOS:", "ESTAGIÁRIOS:", "ESTAGIARIOS:", "CONTRIBUINTES:", "RELAÇÃO GERAL", "RELACAO GERAL")):
+            continue
+        m_head = re.match(r"^\d{1,4}\s+([A-Za-zÁÀÃÂÉÊÍÓÔÕÚÇáàãâéêíóôõúç][A-Za-zÁÀÃÂÉÊÍÓÔÕÚÇáàãâéêíóôõúç\s\.\-]{3,}?)(?=\s+\d|\s+[A-Za-z0-9\.\-]*\d)", ln_s)
+        if not m_head:
+            continue
+        nome = re.sub(r"\s+", " ", m_head.group(1)).strip().upper()
+        if any(k in nome for k in ("TOTAL", "EMPREGADOS", "ESTAGIARIO", "CONTRIBUINTE")):
+            continue
+        resto = ln_s[m_head.end():]
+        vals_m = re.findall(r"(?<!\d)\d{1,3}(?:\.\d{3})*,\d{2}(?!\d)", resto)
+        if not vals_m:
+            continue
+        liq = _br_float(vals_m[-1])
+        if liq > 0:
+            colaboradores.append({
+                "nome": nome,
+                "cpf": "",
+                "filial": ccusto,
+                "proventos": liq,
+                "descontos": 0.0,
+                "liquido": liq,
+                "fgts": 0.0,
+            })
 
     res_out = {
         "arquivo": filename,
@@ -203,7 +211,7 @@ def parse_relatorio_liquidos_pdf(pdf_bytes: bytes, filename: str = "") -> dict[s
         "total_fgts": 0.0,
     }
     if eh_13:
-        res_out["categoria"] = "21409 - Décimo Terceiro (13º Salário)"
+        res_out["categoria"] = "21416 - 13º Salário"
     return res_out
 
 
@@ -262,6 +270,8 @@ def parse_boleto_dp_pdf(pdf_bytes: bytes, filename: str = "") -> dict[str, Any] 
             break
     if not favorecido:
         favorecido = re.sub(r"\.pdf$", "", filename, flags=re.IGNORECASE).replace("_", " ").strip()[:80]
+    if categoria == "21418 - Extras" and ("13O" in texto_up or "13º" in texto_up or "13°" in filename.upper() or "13º" in filename.upper()):
+        categoria = "21416 - 13º Salário"
 
     # 3. Empresa pagadora (LALUA Filial vs SOLAR)
     cnpjs_texto = [re.sub(r"\D", "", c) for c in re.findall(r"\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}", texto)]
