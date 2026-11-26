@@ -187,10 +187,20 @@ def parse_relatorio_liquidos_pdf(pdf_bytes: bytes, filename: str = "") -> dict[s
             if any(k in nome for k in ("TOTAL", "EMPREGADOS", "ESTAGIARIO", "CONTRIBUINTE")):
                 continue
             resto = ln_s[m_head.end():]
-            vals_m = re.findall(r"(?<!\d)\d{1,3}(?:\.\d{3})*,\d{2}(?!\d)", resto)
-            if not vals_m:
+            resto_sem_dt = re.sub(r"\s*\d{2}/\d{2}/\d{4}\s*$", "", resto).strip()
+            m_sp = re.search(r"(?:^|\s)(\d{1,3}(?:\.\d{3})*,\d{2})\s*$", resto_sem_dt)
+            if m_sp:
+                val_str = m_sp.group(1)
+            else:
+                m_dot = re.search(r"(\d\.\d{3},\d{2})\s*$", resto_sem_dt)
+                if m_dot:
+                    val_str = m_dot.group(1)
+                else:
+                    m_nodot = re.search(r"(\d{3},\d{2})\s*$", resto_sem_dt) or re.search(r"(\d{1,2},\d{2})\s*$", resto_sem_dt)
+                    val_str = m_nodot.group(1) if m_nodot else ""
+            if not val_str:
                 continue
-            liq = _br_float(vals_m[-1])
+            liq = _br_float(val_str)
             if liq > 0:
                 lista.append({
                     "nome": nome,
