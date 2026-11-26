@@ -9276,7 +9276,7 @@
       lblNum.innerText = 'Ref. / Identificador Feriado ou Domingo *';
       const d = new Date();
       const mesAbrev = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'][d.getMonth()];
-      if (!inputNum.value || inputNum.value.startsWith('REC-') || inputNum.value.startsWith('LOC-') || inputNum.value.startsWith('SOL-') || inputNum.value.startsWith('FOL-')) {
+      if (!inputNum.value || inputNum.value.startsWith('REC-') || inputNum.value.startsWith('LOC-') || inputNum.value.startsWith('SOL-') || inputNum.value.startsWith('FOL-') || inputNum.value.startsWith('ROM-')) {
         inputNum.value = 'DOM-' + String(d.getDate()).padStart(2, '0') + mesAbrev;
       }
       sugerirCFOPPorDocumento('Sem Documento Fiscal - Remuneração de Pessoal');
@@ -9291,11 +9291,11 @@
       alternarVisibilidadeRetencoes(false);
     } else if (tipo === 'FOLHA') {
       lblNum.innerText = 'Mês Ref. / Lote da Folha *';
-      if (!inputNum.value || inputNum.value.startsWith('REC-') || inputNum.value.startsWith('LOC-') || inputNum.value.startsWith('SOL-') || inputNum.value.startsWith('DOM-')) {
+      if (!inputNum.value || inputNum.value.startsWith('REC-') || inputNum.value.startsWith('LOC-') || inputNum.value.startsWith('SOL-') || inputNum.value.startsWith('DOM-') || inputNum.value.startsWith('ROM-')) {
         inputNum.value = 'FOL-' + new Date().toISOString().slice(0, 7);
       }
       sugerirCFOPPorDocumento('Folha de Pagamento - Salários e Encargos');
-      if (selForma) selForma.value = 'TED_DOC';
+      if (selForma) selForma.value = 'Folha Itaú (C/C)';
       if (inputCat) {
         inputCat.value = '12201 - Salários';
         if (typeof autocompletarCategoriaLive === 'function') autocompletarCategoriaLive(inputCat);
@@ -9306,17 +9306,17 @@
       alternarVisibilidadeRetencoes(false);
     } else if (tipo === 'RECIBO') {
       lblNum.innerText = 'Nº do Recibo / Identificador Interno *';
-      if (!inputNum.value || inputNum.value.startsWith('DOM-') || inputNum.value.startsWith('FOL-')) inputNum.value = 'REC-' + new Date().getFullYear() + '-' + Math.floor(100 + Math.random() * 900);
+      if (!inputNum.value || inputNum.value.startsWith('DOM-') || inputNum.value.startsWith('FOL-') || inputNum.value.startsWith('ROM-')) inputNum.value = 'REC-' + new Date().getFullYear() + '-' + Math.floor(100 + Math.random() * 900);
       sugerirCFOPPorDocumento('1949');
       verificarRecolhimentoRetencoes();
     } else if (tipo === 'CONTRATO') {
       lblNum.innerText = 'Nº do Contrato / Mês Ref. *';
-      if (!inputNum.value || inputNum.value.startsWith('DOM-') || inputNum.value.startsWith('FOL-')) inputNum.value = 'LOC-' + new Date().toISOString().slice(0,7);
+      if (!inputNum.value || inputNum.value.startsWith('DOM-') || inputNum.value.startsWith('FOL-') || inputNum.value.startsWith('ROM-')) inputNum.value = 'LOC-' + new Date().toISOString().slice(0,7);
       sugerirCFOPPorDocumento('1933');
       verificarRecolhimentoRetencoes();
     } else if (tipo === 'DESPESA_INTERNA') {
       lblNum.innerText = 'Nº do Adiantamento / Solicitação *';
-      if (!inputNum.value || inputNum.value.startsWith('DOM-') || inputNum.value.startsWith('FOL-')) inputNum.value = 'SOL-' + Date.now().toString().slice(-5);
+      if (!inputNum.value || inputNum.value.startsWith('DOM-') || inputNum.value.startsWith('FOL-') || inputNum.value.startsWith('ROM-')) inputNum.value = 'SOL-' + Date.now().toString().slice(-5);
       sugerirCFOPPorDocumento('1949');
       verificarRecolhimentoRetencoes();
     } else if (tipo === 'FACCAO_ROMANEIO') {
@@ -9332,10 +9332,12 @@
       alternarVisibilidadeRetencoes(false);
     } else if (tipo === 'FATURA') {
       lblNum.innerText = 'Nº da Fatura / Código de Débito *';
+      if (/^(ROM-|DOM-|FOL-|REC-|LOC-|SOL-)/i.test(inputNum.value)) inputNum.value = '';
       sugerirCFOPPorDocumento('1303');
       verificarRecolhimentoRetencoes();
     } else if (tipo === 'DAM' || tipo === 'DARF' || tipo === 'DAS' || tipo === 'DARE') {
       lblNum.innerText = `Nº da Guia ${tipo} / Inscrição / Ref. *`;
+      if (/^(ROM-|DOM-|FOL-|REC-|LOC-|SOL-)/i.test(inputNum.value)) inputNum.value = '';
       if (selForma) {
         if (tipo === 'DAM') selForma.value = 'Guia Municipal';
         else if (tipo === 'DARF' || tipo === 'DAS') selForma.value = 'DARF Federal';
@@ -9345,6 +9347,7 @@
       alternarVisibilidadeRetencoes(false);
     } else {
       lblNum.innerText = tipo === 'NFSE' ? 'Número da NFS-e *' : 'Número da NF-e / Documento *';
+      if (/^(ROM-|DOM-|FOL-|REC-|LOC-|SOL-)/i.test(inputNum.value)) inputNum.value = '';
       if (tipo === 'NFSE') {
         alternarVisibilidadeRetencoes(true);
         sugerirCFOPPorDocumento('1933');
@@ -10379,7 +10382,7 @@
   }
 
   function prepararProximoLancamentoRepetido(docAnterior = '', tipoDocAnterior = '') {
-    const camposLimpar = ['numero_doc', 'valor_bruto', 'linha_dig', 'num_pedido_contrato', 'ret_iss', 'ret_irrf', 'ret_pis', 'ret_cofins', 'ret_csll'];
+    const camposLimpar = ['numero_doc', 'valor_bruto', 'linha_digitavel', 'num_contrato_pedido', 'ret_iss', 'ret_irrf', 'ret_pis', 'ret_cofins', 'ret_csll'];
     camposLimpar.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
@@ -10390,9 +10393,11 @@
     const docEl = document.getElementById('numero_doc');
     const tipoAtual = tipoDocAnterior || document.getElementById('tipo_documento')?.value || '';
     if (docEl) {
-      if (tipoAtual === 'FACCAO_ROMANEIO' || /^ROM[-\s]?\d+/i.test(docAnterior)) {
+      if (tipoAtual === 'FACCAO_ROMANEIO') {
         docEl.value = sugerirProximoNumeroRomaneio(docAnterior);
-      } else if (docAnterior && /\d+$/.test(docAnterior)) {
+      } else if (tipoAtual === 'DOMINGO_FERIADO') {
+        docEl.value = docAnterior || ('DOM-' + String(new Date().getDate()).padStart(2, '0') + new Date().toLocaleString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase());
+      } else if (docAnterior && /\d+$/.test(docAnterior) && !/^ROM-/i.test(docAnterior)) {
         const prox = incrementarSequenciaDoc(docAnterior);
         if (prox) docEl.value = prox;
       }
@@ -10863,26 +10868,30 @@
         const descUpper = String(item.descricao || '').toUpperCase();
         const histUpper = String(item.historico || '').toUpperCase();
         const tipoDocUpper = String(item.tipo_doc || '').toUpperCase();
-        const categoriaUpper = String(item.categoria || '').toUpperCase();
+        const categoriaUpper = String(item.categoria || item.ccusto || '').toUpperCase();
         const numDocUpper = String(item.numero_doc || '').toUpperCase();
+        const formaUpper = String(item.forma_pgto || '').toUpperCase();
+        const solicUpper = String(item.solicitante || '').toUpperCase();
+        const tudoPessoal = `${tipoDocUpper} ${categoriaUpper} ${descUpper} ${histUpper} ${numDocUpper}`;
 
-        const isFolhaOuFeriado = 
-          item.tipo_doc === 'FOLHA' || 
-          item.tipo_doc === 'DOMINGO_FERIADO' || 
-          tipoDocUpper.includes('DOMINGO') || 
-          tipoDocUpper.includes('FERIADO') || 
-          tipoDocUpper.includes('FOLHA') || 
-          tipoDocUpper.includes('21412') || 
-          numDocUpper.startsWith('DOM-') || 
-          descUpper.includes('DOMINGO') || 
-          descUpper.includes('FERIADO') || 
-          descUpper.includes('SALARIO') || 
-          descUpper.includes('FOLHA') || 
-          histUpper.includes('DOMINGO') || 
-          histUpper.includes('FERIADO') || 
-          histUpper.includes('SALARIO') || 
-          histUpper.includes('FOLHA') || 
-          categoriaUpper.includes('21412');
+        const termosPessoal = [
+          'DOMINGO', 'FERIADO', 'FOLHA', 'SALARIO', 'SALÁRIO', 'RESCISAO', 'RESCISÃO',
+          'FERIAS', 'FÉRIAS', 'TRANSPORTE', 'SALVADORCARD', 'TRANSCARD', 'METROPASSE',
+          'ALIMENTACAO', 'ALIMENTAÇÃO', 'TICKET', 'FGTS', 'INSS', 'PROLABORE', 'ADIANTAMENTO',
+          '13º', 'ESTAGIO', 'ESTÁGIO', 'SINDICATO', 'SINDECOLF', 'SST MAIS', 'EXAMES',
+          '12201', '12202', '12203', '12204', '12205', '12206', '12207', '12208',
+          '12209', '12210', '12211', '12212', '12213', '12214', '12215', '21412'
+        ];
+
+        const isFolhaOuFeriado =
+          item.tipo_doc === 'FOLHA' ||
+          item.tipo_doc === 'FOLHA_LOTE' ||
+          item.tipo_doc === 'DOMINGO_FERIADO' ||
+          formaUpper.includes('FOLHA') ||
+          solicUpper === 'RH' ||
+          numDocUpper.startsWith('DOM-') ||
+          numDocUpper.startsWith('FOL-') ||
+          termosPessoal.some(termo => tudoPessoal.includes(termo));
 
         if (!isFolhaOuFeriado) return false;
       } else if (filtroTipoTituloAtual === 'imposto') {
