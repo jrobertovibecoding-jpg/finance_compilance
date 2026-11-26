@@ -160,15 +160,23 @@ def parse_relatorio_liquidos_pdf(pdf_bytes: bytes, filename: str = "") -> dict[s
     competencia = m_comp.group(1) if m_comp else ""
     m_cnpj = re.search(r"CNPJ:\s*(\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", texto_full)
     cnpj = m_cnpj.group(1) if m_cnpj else ""
+    m_calc = re.search(r"C[áa]lculo:\s*([^\r\n]+)", texto_full)
+    calculo = m_calc.group(1).strip() if m_calc else ""
+    eh_13 = "13" in calculo or "13" in filename
 
     filial_label, ccusto = _inferir_filial_nome_arquivo(filename, cnpj)
     eh_solar = "solar" in filial_label.lower()
 
     colaboradores: list[dict[str, Any]] = []
     for ln in texto_full.splitlines():
-        m = re.match(r"^\s*\d{1,4}\s+([A-ZÁÀÃÂÉÊÍÓÔÕÚÇ][A-ZÁÀÃÂÉÊÍÓÔÕÚÇ\s\.\-]+?)\s+(\d{1,3}(?:\.\d{3})*,\d{2})", ln.strip())
+        m = re.match(
+            r"^\s*\d{1,4}\s+([A-Za-zÁÀÃÂÉÊÍÓÔÕÚÇáàãâéêíóôõúç][A-Za-zÁÀÃÂÉÊÍÓÔÕÚÇáàãâéêíóôõúç\s\.\-]{3,}?)(?:\s+(?=[0-9A-Za-z\.\-]*\d)[0-9A-Za-z\.\-]{5,18})?\s+(\d{1,3}(?:\.\d{3})*,\d{2})(?:\s+\d{2}/\d{2}/\d{4})?\s*$",
+            ln.strip(),
+        )
         if m:
-            nome = re.sub(r"\s+", " ", m.group(1)).strip()
+            nome = re.sub(r"\s+", " ", m.group(1)).strip().upper()
+            if any(k in nome for k in ("TOTAL", "EMPREGADOS", "ESTAGIARIO", "CONTRIBUINTE")):
+                continue
             liq = _br_float(m.group(2))
             if liq > 0:
                 colaboradores.append({
@@ -181,7 +189,7 @@ def parse_relatorio_liquidos_pdf(pdf_bytes: bytes, filename: str = "") -> dict[s
                     "fgts": 0.0,
                 })
 
-    return {
+    res_out = {
         "arquivo": filename,
         "tipo_pdf": "RELATORIO_LIQUIDOS",
         "filial": filial_label,
@@ -193,6 +201,9 @@ def parse_relatorio_liquidos_pdf(pdf_bytes: bytes, filename: str = "") -> dict[s
         "total_liquido": round(sum(c["liquido"] for c in colaboradores), 2),
         "total_fgts": 0.0,
     }
+    if eh_13:
+        res_out["categoria"] = "21409 - Décimo Terceiro (13º Salário)"
+    return res_out
 
 
 BENEFICIARIOS_DP_CONHECIDOS = [
@@ -230,7 +241,7 @@ def parse_boleto_dp_pdf(pdf_bytes: bytes, filename: str = "") -> dict[str, Any] 
         if m_tot:
             valor = _br_float(m_tot.group(1))
         else:
-            vals = [_br_float(v) for v in re.findall(r"\d{1,3}(?:\.\d{3})*,\d{2}", texto)]
+            vals = [_br_float(v) for v in re.findall(r"(?<!\d)\d{1,3}(?:\.\d{3})*,\d{2}", texto)]
             vals = [v for v in vals if 1.0 <= v < 500000.0]
             if vals:
                 valor = max(vals)
