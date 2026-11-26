@@ -14398,37 +14398,66 @@
 
     const compras = [];
     const notasComItens = new Set();
+    const outrasNFs = [];
 
     (titulos || []).forEach(t => {
-      if (!t.itens || !t.itens.length) return;
-      if (['FOLHA', 'FOLHA_LOTE', 'DOMINGO_FERIADO', 'FERIAS', 'RESCISAO', 'PESSOAL_DP'].includes(String(t.tipo_doc || '').toUpperCase())) return;
-      const dtRef = (t.data_emissao || t.vencimento || '').slice(0, 10);
-      if (dtRef && (dtRef < dataIni || dtRef > dataFim)) return;
+      if (t.tipo === 'IMPOSTO' || String(t.id || '').startsWith('IMP_')) return;
+      const td = String(t.tipo_doc || '').toUpperCase();
+      const cc = String(t.ccusto || '');
+      if (['FOLHA', 'FOLHA_LOTE', 'DOMINGO_FERIADO', 'FERIAS', 'RESCISAO', 'PESSOAL_DP'].includes(td) || /^(214|122)\d{2}/.test(cc)) return;
 
-      t.itens.forEach(it => {
-        if (String(it.unidade || '').toUpperCase() === 'FOLHA_COLAB') return;
-        const desc = String(it.descricao || '').trim();
-        const cod = String(it.codigo || '').trim();
-        const ncm = String(it.ncm || '').trim();
+      const dtEm = (t.data_emissao || '').slice(0, 10);
+      const dtVenc = (t.vencimento || '').slice(0, 10);
+      const emNoPeriodo = dtEm && (!dataIni || dtEm >= dataIni) && (!dataFim || dtEm <= dataFim);
+      const vencNoPeriodo = dtVenc && (!dataIni || dtVenc >= dataIni) && (!dataFim || dtVenc <= dataFim);
+      if ((dtEm || dtVenc) && !emNoPeriodo && !vencNoPeriodo) return;
+
+      const dtRef = dtEm || dtVenc;
+      const itensProd = Array.isArray(t.itens) ? t.itens.filter(it => String(it.unidade || '').toUpperCase() !== 'FOLHA_COLAB') : [];
+
+      if (itensProd.length > 0) {
+        itensProd.forEach(it => {
+          const desc = String(it.descricao || '').trim();
+          const cod = String(it.codigo || '').trim();
+          const ncm = String(it.ncm || '').trim();
+          const forn = String(t.favorecido || '').trim();
+          if (termo) {
+            const match = desc.toLowerCase().includes(termo) || cod.toLowerCase().includes(termo) || ncm.toLowerCase().includes(termo) || forn.toLowerCase().includes(termo);
+            if (!match) return;
+          }
+          notasComItens.add(t.numero_doc || t.id);
+          compras.push({
+            data: dtRef || '-',
+            numero_nf: t.numero_doc || '-',
+            fornecedor: forn,
+            codigo: cod,
+            descricao: desc,
+            ncm: ncm || '-',
+            unidade: it.unidade || 'UN',
+            quantidade: Number(it.quantidade || 0),
+            valor_unitario: Number(it.valor_unitario || 0),
+            valor_total: Number(it.valor_total || 0),
+          });
+        });
+      } else {
         const forn = String(t.favorecido || '').trim();
+        const desc = String(t.descricao || t.historico || '').trim();
+        const numDoc = String(t.numero_doc || '-').trim();
         if (termo) {
-          const match = desc.toLowerCase().includes(termo) || cod.toLowerCase().includes(termo) || ncm.toLowerCase().includes(termo) || forn.toLowerCase().includes(termo);
+          const match = forn.toLowerCase().includes(termo) || desc.toLowerCase().includes(termo) || numDoc.toLowerCase().includes(termo) || cc.toLowerCase().includes(termo) || td.toLowerCase().includes(termo);
           if (!match) return;
         }
-        notasComItens.add(t.numero_doc || t.id);
-        compras.push({
-          data: dtRef || '-',
-          numero_nf: t.numero_doc || '-',
-          fornecedor: forn,
-          codigo: cod,
-          descricao: desc,
-          ncm: ncm || '-',
-          unidade: it.unidade || 'UN',
-          quantidade: Number(it.quantidade || 0),
-          valor_unitario: Number(it.valor_unitario || 0),
-          valor_total: Number(it.valor_total || 0),
+        outrasNFs.push({
+          emissao: dtEm || '-',
+          vencimento: dtVenc || '-',
+          tipo: td || 'DOC',
+          numero_nf: numDoc,
+          fornecedor: forn || '-',
+          categoria: cc || '-',
+          descricao: desc || '-',
+          valor: Number(t.valor_bruto || t.valor || 0),
         });
-      });
+      }
     });
 
     const totalGasto = compras.reduce((acc, c) => acc + c.valor_total, 0);
@@ -14472,12 +14501,15 @@
       `Período: ${formatarData(dataIni)} a ${formatarData(dataFim)}${termo ? ` • Filtro: "${escapeHtml(termo)}"` : ''}`
     );
 
-    if (compras.length === 0) {
+    const totalOutras = outrasNFs.reduce((acc, o) => acc + o.valor, 0);
+    outrasNFs.sort((a, b) => (b.emissao || b.vencimento).localeCompare(a.emissao || a.vencimento));
+
+    if (compras.length === 0 && outrasNFs.length === 0) {
       return `
         ${headerHtml}
         <div style="text-align: center; padding: 36px 20px; border: 1px dashed #cbd5e1; border-radius: 6px; background: #f8fafc; color: #334155;">
-          <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Nenhum item de NF-e encontrado no período selecionado</div>
-          <div style="font-size: 11px;">Importe arquivos XML de NF-e (Produtos) na Aba 1 para começar a acompanhar o ranking de itens e o histórico de preços unitários.</div>
+          <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Nenhuma NF / compra encontrada no período selecionado</div>
+          <div style="font-size: 11px;">Importe arquivos XML de NF-e, CT-e ou NFS-e na Aba 1 ou amplie o período acima.</div>
         </div>
       `;
     }
@@ -14577,7 +14609,37 @@
       </table>
     `;
 
-    return `${headerHtml}${kpisHtml}${tabelaABC}${tabelaHistorico}`;
+    const tabelaOutras = outrasNFs.length === 0 ? '' : `
+      <div style="font-size: 11px; font-weight: 800; color: #4c1d95; text-transform: uppercase; margin: 18px 0 6px 0;">3. Demais Notas Fiscais, Serviços &amp; Fretes — NFS-e / CT-e / Sem Itens XML (${outrasNFs.length} • Total: ${formatarMoeda(totalOutras)})</div>
+      <table class="alterdata-grid" style="font-size: 10.5px;">
+        <thead>
+          <tr>
+            <th style="width: 78px;">Emissão</th>
+            <th style="width: 78px;">Vencim.</th>
+            <th style="width: 68px; text-align: center;">Tipo</th>
+            <th style="width: 86px;">Doc / NF</th>
+            <th>Fornecedor / Prestador</th>
+            <th>Categoria / Descrição</th>
+            <th style="width: 96px; text-align: right;">Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${outrasNFs.map(o => `
+            <tr>
+              <td>${o.emissao !== '-' ? formatarData(o.emissao) : '-'}</td>
+              <td>${o.vencimento !== '-' ? formatarData(o.vencimento) : '-'}</td>
+              <td style="text-align: center; font-size: 9.5px; font-weight: 700;">${escapeHtml(o.tipo)}</td>
+              <td style="font-family: monospace; font-weight: 700;">${escapeHtml(o.numero_nf)}</td>
+              <td style="font-weight: 700; color: #0f172a;">${escapeHtml(o.fornecedor)}</td>
+              <td style="font-size: 10px; color: #334155;"><strong>${escapeHtml(o.categoria)}</strong><br>${escapeHtml(o.descricao.slice(0, 90))}</td>
+              <td style="text-align: right; font-weight: 800; color: #4c1d95;">${formatarMoeda(o.valor)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    return `${headerHtml}${kpisHtml}${compras.length > 0 ? tabelaABC + tabelaHistorico : ''}${tabelaOutras}`;
   }
 
   function gerarHtmlRelatorioFaccao() {
