@@ -15559,7 +15559,7 @@
     const row = document.getElementById(rowId);
     if (!row) return;
     const aberto = row.style.display !== 'none';
-    row.style.display = aberto ? 'none' : 'table-row';
+    row.style.display = aberto ? 'none' : '';
     const ico = iconId ? document.getElementById(iconId) : null;
     if (ico) ico.textContent = aberto ? '▶' : '▼';
   }
@@ -15939,14 +15939,16 @@
         const acctDig = String(acctId || '').replace(/\D/g, '');
         if (acctDig.includes('987757') || acctDig.includes('98775')) return { nome: 'Matriz (98775-7)', ehMatriz: true };
         const base = `${nomeArq} ${acctId}`.toUpperCase();
-        if (base.includes('BARRA')) return { nome: `Boah - Barra (${acctId || '-'})`, ehMatriz: false };
-        if (base.includes('PASEO')) return { nome: `Boah - Paseo (${acctId || '-'})`, ehMatriz: false };
-        if (base.includes('HORTO')) return { nome: `Boah - Horto (${acctId || '-'})`, ehMatriz: false };
-        if (base.includes('SDB') || base.includes('SHOPPING DA BAHIA')) return { nome: `Boah - SDB (${acctId || '-'})`, ehMatriz: false };
-        if (base.includes('VILAS')) return { nome: `Boah - Vilas (${acctId || '-'})`, ehMatriz: false };
-        if (base.includes('SOLAR')) return { nome: `Solar (${acctId || '-'})`, ehMatriz: false };
-        const limpo = nomeArq.replace(/\.ofx$/i, '').replace(/[_-]+/g, ' ').trim();
-        return { nome: `${limpo || 'Filial'} (${acctId || '-'})`, ehMatriz: false };
+        const ccFmt = acctDig.length >= 10
+          ? `Ag ${acctDig.slice(0, 4)} • Cc ${acctDig.slice(4, -1)}-${acctDig.slice(-1)}`
+          : (acctId || '-');
+        if (base.includes('BARRA')) return { nome: `Boah - Barra (${ccFmt})`, ehMatriz: false };
+        if (base.includes('PASEO')) return { nome: `Boah - Paseo (${ccFmt})`, ehMatriz: false };
+        if (base.includes('HORTO')) return { nome: `Boah - Horto (${ccFmt})`, ehMatriz: false };
+        if (base.includes('SDB') || base.includes('SHOPPING DA BAHIA')) return { nome: `Boah - SDB (${ccFmt})`, ehMatriz: false };
+        if (base.includes('VILAS')) return { nome: `Boah - Vilas (${ccFmt})`, ehMatriz: false };
+        if (base.includes('SOLAR')) return { nome: `Solar (${ccFmt})`, ehMatriz: false };
+        return { nome: `Filial Itaú (${ccFmt})`, ehMatriz: false };
       };
 
       const lerTextoArquivo = (file, enc) => new Promise((resolve) => {
@@ -15978,7 +15980,8 @@
 
         const blocos = texto.split(/<STMTTRN>/i).slice(1);
         totalBrutoOFX += blocos.length;
-        arquivos.push({ arquivo: file.name, conta: acctId, filial: infoConta.nome, ehMatriz: infoConta.ehMatriz, saldoFinal, qtdLanc: blocos.length });
+        let somaEntradasArq = 0;
+        let somaSaidasArq = 0;
 
         for (const rawBloco of blocos) {
           const b = rawBloco.split(/<\/STMTTRN>/i)[0];
@@ -15998,6 +16001,9 @@
           const ehTransfKeyword = /TRANSF|PIX|TED|DOC|TEF|SISPAG|ENTRE\s*CONTAS|MESMA\s*TIT|ENVIO|REMESSA|98775|LALUA|BOAH|MATRIZ|CRED|PAG|MOV/.test(memoUp) || trnType === 'XFER';
           const ehMatrizKeyword = /98775|LALUA|BOAH|MATRIZ|MESMA\s*TIT|ENTRE\s*CONTAS|TEF\s+ENTRE/.test(memoUp);
           const ehDebito = (valor < 0) || (valor > 0 && (trnType === 'DEBIT' || trnType === 'PAYMENT' || trnType === 'FEE' || trnType === 'SRVCHG'));
+
+          if (ehDebito) somaSaidasArq += Math.abs(valor);
+          else if (valor > 0) somaEntradasArq += Math.abs(valor);
 
           if (infoConta.ehMatriz) {
             if (valor > 0 && !ehDebito) {
@@ -16026,6 +16032,16 @@
             });
           }
         }
+        arquivos.push({
+          arquivo: file.name,
+          conta: acctId,
+          filial: infoConta.nome,
+          ehMatriz: infoConta.ehMatriz,
+          saldoFinal,
+          entradas: somaEntradasArq,
+          saidas: somaSaidasArq,
+          qtdLanc: blocos.length
+        });
       }
 
       if (minData && maxData) {
@@ -16098,114 +16114,99 @@
     });
     const listaFiliais = Object.values(porFilial).sort((a, b) => b.total - a.total);
 
+    const arquivosFiliais = (dados.arquivos || []).filter(a => !a.ehMatriz && (!busca || a.filial.toUpperCase().includes(busca) || a.arquivo.toUpperCase().includes(busca)));
+    const arquivosMatriz = (dados.arquivos || []).filter(a => a.ehMatriz);
+    const totalSaldosFiliais = arquivosFiliais.reduce((acc, a) => acc + Number(a.saldoFinal || 0), 0);
+    const totalSaldoMatriz = arquivosMatriz.reduce((acc, a) => acc + Number(a.saldoFinal || 0), 0);
+
     html += `
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
-        <div style="background:#f8fafc;border:1px solid #cbd5e1;border-left:4px solid #004b87;padding:8px 10px;border-radius:4px;">
-          <div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;">Total Enviado pelas Filiais</div>
-          <div style="font-size:15px;font-weight:800;color:#004b87;">${formatarMoeda(totalEnviado)}</div>
-          <div style="font-size:9px;color:#64748b;">${saidasFiliais.length} transferência(s)</div>
+        <div style="background:#f0f9ff;border:1px solid #bae6fd;border-left:4px solid #004b87;padding:8px 10px;border-radius:4px;">
+          <div style="font-size:9px;font-weight:700;color:#0369a1;text-transform:uppercase;">Total Saldos Filiais (A Transferir)</div>
+          <div style="font-size:15px;font-weight:800;color:#004b87;">${formatarMoeda(totalSaldosFiliais)}</div>
+          <div style="font-size:9px;color:#0284c7;">${arquivosFiliais.length} conta(s) de filial</div>
         </div>
         <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-left:4px solid #059669;padding:8px 10px;border-radius:4px;">
-          <div style="font-size:9px;font-weight:700;color:#065f46;text-transform:uppercase;">Recebido na Matriz (98775-7)</div>
-          <div style="font-size:15px;font-weight:800;color:#059669;">${formatarMoeda(totalRecebidoMatriz)}</div>
-          <div style="font-size:9px;color:#047857;">${entradasMatriz.length} crédito(s) no OFX Matriz</div>
+          <div style="font-size:9px;font-weight:700;color:#065f46;text-transform:uppercase;">Saldo Matriz (98775-7)</div>
+          <div style="font-size:15px;font-weight:800;color:#059669;">${arquivosMatriz.length > 0 ? formatarMoeda(totalSaldoMatriz) : 'Não importado'}</div>
+          <div style="font-size:9px;color:#047857;">${arquivosMatriz.length > 0 ? `${entradasMatriz.length} crédito(s) no OFX` : 'Opcional (OFX Matriz)'}</div>
         </div>
-        <div style="background:#f0f9ff;border:1px solid #bae6fd;border-left:4px solid #0284c7;padding:8px 10px;border-radius:4px;">
-          <div style="font-size:9px;font-weight:700;color:#0369a1;text-transform:uppercase;">Filiais / Contas Lidas</div>
-          <div style="font-size:15px;font-weight:800;color:#0369a1;">${dados.arquivos.length}</div>
-          <div style="font-size:9px;color:#0284c7;">${dados.totalBrutoOFX || 0} lançamentos no(s) OFX</div>
+        <div style="background:#f8fafc;border:1px solid #cbd5e1;border-left:4px solid #334155;padding:8px 10px;border-radius:4px;">
+          <div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;">Total Consolidado (Matriz + Filiais)</div>
+          <div style="font-size:15px;font-weight:800;color:#0f172a;">${formatarMoeda(totalSaldosFiliais + totalSaldoMatriz)}</div>
+          <div style="font-size:9px;color:#64748b;">${dados.arquivos.length} OFX · ${dados.totalBrutoOFX || 0} lanç.</div>
         </div>
         <div style="background:#fffbeb;border:1px solid #fde68a;border-left:4px solid #d97706;padding:8px 10px;border-radius:4px;">
-          <div style="font-size:9px;font-weight:700;color:#92400e;text-transform:uppercase;">Filtro Aplicado</div>
-          <div style="font-size:12px;font-weight:800;color:#b45309;margin-top:2px;">${mostrarTodasSaidas ? 'Todas saídas PIX/TED' : 'Identificadas p/ Matriz'}</div>
+          <div style="font-size:9px;font-weight:700;color:#92400e;text-transform:uppercase;">Transferências Já Efetuadas</div>
+          <div style="font-size:15px;font-weight:800;color:#b45309;">${formatarMoeda(totalEnviado)}</div>
+          <div style="font-size:9px;color:#92400e;">${saidasFiliais.length} saída(s) no extrato</div>
         </div>
       </div>
     `;
 
     html += `
-      <div style="margin-bottom:14px;padding:8px 10px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;font-size:10px;color:#334155;">
-        <strong>Arquivos OFX Lidos (${dados.arquivos.length}):</strong>
-        ${dados.arquivos.map(a => `<span style="display:inline-block;margin:2px 6px 2px 0;padding:2px 6px;background:#e2e8f0;border-radius:3px;"><strong>${escapeHtml(a.filial)}</strong> · ${a.qtdLanc || 0} lanç.</span>`).join('')}
-      </div>
+      <div style="font-weight:800;font-size:11px;color:#004b87;text-transform:uppercase;margin-bottom:6px;">1. Saldos Disponíveis nas Filiais (Para Transferência → Matriz 98775-7)</div>
+      <table class="alterdata-grid" style="width:100%;border-collapse:collapse;font-size:10.5px;margin-bottom:16px;">
+        <thead>
+          <tr style="background:#0f172a;color:white;">
+            <th style="padding:6px 8px;text-align:left;">Filial / Conta Bancária</th>
+            <th style="padding:6px 8px;text-align:center;width:70px;">Lanç.</th>
+            <th style="padding:6px 8px;text-align:right;width:115px;">Entradas (+)</th>
+            <th style="padding:6px 8px;text-align:right;width:115px;">Saídas (−)</th>
+            <th style="padding:6px 8px;text-align:right;width:135px;">Saldo Final (OFX)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${arquivosFiliais.map((a, idx) => `
+            <tr style="${idx % 2 === 1 ? 'background:#f8fafc;' : 'background:#ffffff;'}">
+              <td style="padding:6px 8px;font-weight:800;color:#0f172a;">
+                ${escapeHtml(a.filial)}
+                <div style="font-size:8.5px;font-weight:500;color:#64748b;">Arquivo: ${escapeHtml(a.arquivo)}</div>
+              </td>
+              <td style="padding:6px 8px;text-align:center;">${a.qtdLanc || 0}</td>
+              <td style="padding:6px 8px;text-align:right;font-family:monospace;color:#059669;">${formatarMoeda(a.entradas || 0)}</td>
+              <td style="padding:6px 8px;text-align:right;font-family:monospace;color:#dc2626;">${formatarMoeda(a.saidas || 0)}</td>
+              <td style="padding:6px 8px;text-align:right;font-family:monospace;font-weight:800;font-size:11.5px;color:#004b87;">${formatarMoeda(a.saldoFinal || 0)}</td>
+            </tr>
+          `).join('')}
+          <tr style="background:#e0f2fe;font-weight:800;color:#004b87;border-top:2px solid #0284c7;">
+            <td style="padding:7px 8px;text-transform:uppercase;">TOTAL DISPONÍVEL NAS FILIAIS PARA MATRIZ</td>
+            <td style="padding:7px 8px;text-align:center;">${arquivosFiliais.reduce((acc, a) => acc + (a.qtdLanc || 0), 0)}</td>
+            <td style="padding:7px 8px;text-align:right;font-family:monospace;">${formatarMoeda(arquivosFiliais.reduce((acc, a) => acc + (a.entradas || 0), 0))}</td>
+            <td style="padding:7px 8px;text-align:right;font-family:monospace;">${formatarMoeda(arquivosFiliais.reduce((acc, a) => acc + (a.saidas || 0), 0))}</td>
+            <td style="padding:7px 8px;text-align:right;font-family:monospace;font-size:12.5px;">${formatarMoeda(totalSaldosFiliais)}</td>
+          </tr>
+        </tbody>
+      </table>
     `;
 
-    if (saidasFiliais.length === 0 && entradasMatriz.length === 0 && (dados.todosBrutos || []).length > 0) {
+    if ((dados.todosBrutos || []).length > 0) {
       html += `
-        <div style="font-weight:800;font-size:11px;color:#92400e;text-transform:uppercase;margin:8px 0 6px;">Movimentos Encontrados nos Arquivos OFX (${dados.todosBrutos.length})</div>
+        <div onclick="alternarBeneficiariosRelatorio('transf-ext-bruto', 'transf-ext-ico')" style="cursor:pointer;font-weight:800;font-size:10.5px;color:#475569;text-transform:uppercase;margin:6px 0;padding:6px 8px;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:4px;">
+          <span id="transf-ext-ico">▶</span> 2. Extrato Detalhado dos Lançamentos OFX (${dados.todosBrutos.length}) — clique para abrir/fechar antes de imprimir
+        </div>
         <table class="alterdata-grid" style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:16px;">
-          <thead>
-            <tr style="background:#78350f;color:white;">
-              <th style="padding:5px 6px;text-align:center;width:85px;">Data</th>
-              <th style="padding:5px 6px;text-align:left;width:190px;">Conta / Arquivo</th>
-              <th style="padding:5px 6px;text-align:left;">Histórico (MEMO)</th>
-              <th style="padding:5px 6px;text-align:center;width:75px;">TRNTYPE</th>
-              <th style="padding:5px 6px;text-align:right;width:100px;">TRNAMT</th>
+          <tbody id="transf-ext-bruto" style="display:none;">
+            <tr style="background:#334155;color:white;font-weight:700;">
+              <td style="padding:5px 6px;text-align:center;width:85px;">Data</td>
+              <td style="padding:5px 6px;text-align:left;width:190px;">Conta / Filial</td>
+              <td style="padding:5px 6px;text-align:left;">Histórico (MEMO)</td>
+              <td style="padding:5px 6px;text-align:center;width:75px;">Tipo</td>
+              <td style="padding:5px 6px;text-align:right;width:100px;">Valor</td>
             </tr>
-          </thead>
-          <tbody>
             ${dados.todosBrutos.map((x, idx) => `
-              <tr style="${idx % 2 === 1 ? 'background:#fffbeb;' : 'background:#ffffff;'}">
+              <tr style="${idx % 2 === 1 ? 'background:#f8fafc;' : 'background:#ffffff;'}">
                 <td style="padding:4px 6px;text-align:center;font-family:monospace;">${x.data ? formatarData(x.data) : '-'}</td>
                 <td style="padding:4px 6px;font-weight:700;">${escapeHtml(x.filial)}</td>
                 <td style="padding:4px 6px;">${escapeHtml(x.memo)}</td>
                 <td style="padding:4px 6px;text-align:center;font-family:monospace;">${escapeHtml(x.trnType)}</td>
-                <td style="padding:4px 6px;text-align:right;font-family:monospace;font-weight:700;">${escapeHtml(x.rawAmt)}</td>
+                <td style="padding:4px 6px;text-align:right;font-family:monospace;font-weight:700;color:${x.valor < 0 ? '#dc2626' : '#059669'};">${formatarMoeda(x.valor)}</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
       `;
     }
-
-    html += `
-      <div style="font-weight:800;font-size:11px;color:#004b87;text-transform:uppercase;margin-bottom:6px;">1. Resumo de Transferências por Filial de Origem</div>
-      <table class="alterdata-grid" style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:16px;">
-        <thead>
-          <tr style="background:#0f172a;color:white;">
-            <th style="padding:5px 6px;text-align:left;">Filial / Conta de Origem</th>
-            <th style="padding:5px 6px;text-align:center;width:110px;">Qtd. Transf.</th>
-            <th style="padding:5px 6px;text-align:right;width:140px;">Total Transferido</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${listaFiliais.length === 0
-            ? '<tr><td colspan="3" style="padding:10px;text-align:center;color:#64748b;">Nenhuma saída identificada com o filtro atual. Se o banco não citou "Lalua/Matriz/98775" no histórico, marque <strong>"Mostrar todas as saídas PIX/TED das filiais"</strong> acima.</td></tr>'
-            : listaFiliais.map((f, idx) => `
-              <tr style="${idx % 2 === 1 ? 'background:#f8fafc;' : 'background:#ffffff;'}">
-                <td style="padding:5px 6px;font-weight:800;color:#0f172a;">${escapeHtml(f.filial)}</td>
-                <td style="padding:5px 6px;text-align:center;">${f.qtd}</td>
-                <td style="padding:5px 6px;text-align:right;font-family:monospace;font-weight:800;color:#004b87;">${formatarMoeda(f.total)}</td>
-              </tr>
-            `).join('')}
-        </tbody>
-      </table>
-    `;
-
-    html += `
-      <div style="font-weight:800;font-size:11px;color:#004b87;text-transform:uppercase;margin-bottom:6px;">2. Extrato Detalhado das Transferências das Filiais (${saidasFiliais.length})</div>
-      <table class="alterdata-grid" style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:16px;">
-        <thead>
-          <tr style="background:#1e3a8a;color:white;">
-            <th style="padding:5px 6px;text-align:center;width:85px;">Data</th>
-            <th style="padding:5px 6px;text-align:left;width:190px;">Filial / Conta de Origem</th>
-            <th style="padding:5px 6px;text-align:left;">Histórico / Descrição do Banco (OFX)</th>
-            <th style="padding:5px 6px;text-align:center;width:70px;">Tipo</th>
-            <th style="padding:5px 6px;text-align:right;width:110px;">Valor</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${saidasFiliais.map((m, idx) => `
-            <tr style="${idx % 2 === 1 ? 'background:#f8fafc;' : 'background:#ffffff;'}">
-              <td style="padding:5px 6px;text-align:center;font-family:monospace;">${m.data ? formatarData(m.data) : '-'}</td>
-              <td style="padding:5px 6px;font-weight:700;color:#0f172a;">${escapeHtml(m.filial)}</td>
-              <td style="padding:5px 6px;color:#334155;">${escapeHtml(m.memo)}</td>
-              <td style="padding:5px 6px;text-align:center;font-size:9px;font-weight:700;">${escapeHtml(m.trnType || 'XFER')}</td>
-              <td style="padding:5px 6px;text-align:right;font-family:monospace;font-weight:800;color:#004b87;">${formatarMoeda(m.valor)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
 
     if (entradasMatriz.length > 0) {
       html += `
