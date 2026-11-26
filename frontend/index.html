@@ -2487,6 +2487,15 @@
 
             <div id="rel-filtro-pessoal-box" style="display: none; gap: 10px; align-items: center; flex-wrap: wrap;">
               <div>
+                <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Tipo de Visão:</label>
+                <select id="rel-filtro-pes-modo" onchange="renderizarRelatorioAtual()" style="padding: 4px 8px; font-size: 11px; font-weight: 700; border: 1.5px solid #4c1d95; border-radius: 3px; color: #4c1d95; background: #faf5ff;">
+                  <option value="SINTETICO">Sintético (Resumo Filial + Fornecedor)</option>
+                  <option value="ANALITICO">Analítico (Aberto por Lançamento)</option>
+                  <option value="CONSOLIDADO" selected>Consolidado por Colaborador</option>
+                  <option value="COMPLETO">Completo (Todas as Tabelas)</option>
+                </select>
+              </div>
+              <div>
                 <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Filial / Unidade:</label>
                 <select id="rel-filtro-pes-filial" onchange="renderizarRelatorioAtual()" style="padding: 4px 8px; font-size: 11px; font-weight: 600; border: 1px solid #cbd5e1; border-radius: 3px; color: #0f172a;">
                   <option value="TODAS">Todas as Filiais</option>
@@ -15448,6 +15457,7 @@
 
   function gerarHtmlRelatorioPessoal() {
     const { dataIni, dataFim, status } = obterFiltrosRelatorio();
+    const modoFiltro = (document.getElementById('rel-filtro-pes-modo')?.value || 'CONSOLIDADO').trim();
     const filialFiltro = (document.getElementById('rel-filtro-pes-filial')?.value || 'TODAS').trim();
     const catFiltro = (document.getElementById('rel-filtro-pes-cat')?.value || 'TODAS').trim();
     const buscaFiltro = (document.getElementById('rel-filtro-pes-busca')?.value || '').trim().toUpperCase();
@@ -15531,11 +15541,15 @@
     };
 
     const addBenef = (nome, cpf, filial, nat, val) => {
-      const key = `${nome.toUpperCase().trim()}|${cpf || ''}`;
+      const nomeLimpo = String(nome || '').trim();
+      const key = nomeLimpo.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
       if (!porBeneficiario[key]) {
-        porBeneficiario[key] = { nome: nome.trim(), cpf: cpf || '-', filial, salarios: 0, domingos: 0, vt: 0, alimentacao: 0, outros: 0, total: 0 };
+        porBeneficiario[key] = { nome: nomeLimpo, cpf: cpf || '-', filial, salarios: 0, domingos: 0, vt: 0, alimentacao: 0, outros: 0, total: 0 };
       }
       const b = porBeneficiario[key];
+      if ((!b.cpf || b.cpf === '-') && cpf && cpf !== '-') {
+        b.cpf = cpf;
+      }
       if ((!b.filial || b.filial === 'A Classificar' || b.filial === 'Boah - Matriz') && filial && filial !== 'A Classificar') {
         b.filial = filial;
       }
@@ -15606,10 +15620,15 @@
     });
 
     const listaFiliais = Object.values(porFilial).sort((a, b) => b.total - a.total);
-    const listaBeneficiarios = Object.values(porBeneficiario).sort((a, b) => b.total - a.total);
+    const listaBeneficiarios = Object.values(porBeneficiario).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+
+    const mostrarLancamentos = (modoFiltro === 'SINTETICO' || modoFiltro === 'ANALITICO' || modoFiltro === 'COMPLETO');
+    const abrirLancPorPadrao = (modoFiltro === 'ANALITICO');
+    const mostrarConsolidado = (modoFiltro === 'CONSOLIDADO' || modoFiltro === 'COMPLETO');
+    const modoNomeMap = { SINTETICO: 'Sintético', ANALITICO: 'Analítico', CONSOLIDADO: 'Consolidado por Colaborador', COMPLETO: 'Completo' };
 
     const periodLabel = (dataIni || dataFim) ? `${dataIni ? formatarData(dataIni) : 'Início'} até ${dataFim ? formatarData(dataFim) : 'Hoje'}` : 'Todo o Período';
-    const subtitulo = `Período: ${periodLabel} • Filial: ${filialFiltro} • Natureza: ${catFiltro}${buscaFiltro ? ` • Busca: "${escapeHtml(buscaFiltro)}"` : ''}`;
+    const subtitulo = `Visão: ${modoNomeMap[modoFiltro] || modoFiltro} • Período: ${periodLabel} • Filial: ${filialFiltro} • Natureza: ${catFiltro}${buscaFiltro ? ` • Busca: "${escapeHtml(buscaFiltro)}"` : ''}`;
 
     let html = gerarCabecalhoRelatorio('Relatório I — Despesas com Pessoal (Fornecedores, Filiais & Beneficiários)', subtitulo);
 
@@ -15673,7 +15692,8 @@
       </table>
     `;
 
-    html += `
+    if (mostrarLancamentos) {
+      html += `
       <div style="font-weight:800;font-size:11px;color:#004b87;text-transform:uppercase;margin-bottom:6px;">2. Lançamentos por Fornecedor / Operadora <span style="font-weight:600;color:#64748b;text-transform:none;">(clique no lançamento para abrir ou fechar os beneficiários antes de imprimir)</span></div>
       <table class="alterdata-grid" style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:16px;">
         <thead>
@@ -15695,7 +15715,7 @@
             let rowHtml = `
               <tr ${temBen ? `onclick="alternarBeneficiariosRelatorio('pes-ben-${l.uid}', 'pes-ico-${l.uid}')" title="Clique para abrir/fechar os beneficiários"` : ''} style="${idx % 2 === 1 ? 'background:#f8fafc;' : 'background:#ffffff;'} ${temBen ? 'cursor:pointer;' : ''}">
                 <td style="padding:5px 6px;font-weight:700;color:#0f172a;">
-                  ${temBen ? `<span id="pes-ico-${l.uid}" style="color:#5b21b6;margin-right:4px;">▶</span>` : ''}${escapeHtml(l.fornecedor)}
+                  ${temBen ? `<span id="pes-ico-${l.uid}" style="color:#5b21b6;margin-right:4px;">${abrirLancPorPadrao ? '▼' : '▶'}</span>` : ''}${escapeHtml(l.fornecedor)}
                   <div style="font-size:8.5px;font-weight:500;color:#64748b;">Doc: ${escapeHtml(l.doc)}</div>
                 </td>
                 <td style="padding:5px 6px;color:#475569;">${escapeHtml(l.categoria)}</td>
@@ -15707,7 +15727,7 @@
             `;
             if (temBen) {
               rowHtml += `
-                <tr id="pes-ben-${l.uid}" style="display:none;background:#faf5ff;">
+                <tr id="pes-ben-${l.uid}" style="display:${abrirLancPorPadrao ? 'table-row' : 'none'};background:#faf5ff;">
                   <td colspan="6" style="padding:6px 12px 10px 20px;border-bottom:2px solid #ddd6fe;">
                     <table style="width:100%;border-collapse:collapse;font-size:9.5px;background:#ffffff;border:1px solid #e9d5ff;">
                       <thead>
@@ -15737,10 +15757,12 @@
           }).join('')}
         </tbody>
       </table>
-    `;
+      `;
+    }
 
-    html += `
-      <div style="font-weight:800;font-size:11px;color:#5b21b6;text-transform:uppercase;margin-bottom:6px;">3. Consolidado Individual por Beneficiário / Colaborador (${listaBeneficiarios.length})</div>
+    if (mostrarConsolidado) {
+      html += `
+      <div style="font-weight:800;font-size:11px;color:#5b21b6;text-transform:uppercase;margin-bottom:6px;">${mostrarLancamentos ? '3.' : '2.'} Consolidado Individual por Beneficiário / Colaborador (${listaBeneficiarios.length})</div>
       <table class="alterdata-grid" style="width:100%;border-collapse:collapse;font-size:10px;">
         <thead>
           <tr style="background:#4c1d95;color:white;">
@@ -15771,7 +15793,8 @@
           `).join('')}
         </tbody>
       </table>
-    `;
+      `;
+    }
 
     return html;
   }
