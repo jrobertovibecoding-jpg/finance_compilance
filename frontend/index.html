@@ -2382,12 +2382,12 @@
 
         <!-- SELETOR ÚNICO DE RELATÓRIO (LISTA ORGANIZADA POR ÁREA) -->
         <div style="display: flex; gap: 12px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
-          <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 280px;">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <label for="rel-seletor-tipo" style="font-size: 11px; font-weight: 800; color: #004b87; white-space: nowrap; display: flex; align-items: center; gap: 5px;">
               <svg class="bimer-svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
               Escolher Relatório:
             </label>
-            <select id="rel-seletor-tipo" onchange="selecionarRelatorioBimer(this.value)" style="flex: 1; max-width: 440px; padding: 6px 10px; font-size: 12px; font-weight: 700; color: #0f172a; background: #f8fafc; border: 1.5px solid #004b87; border-radius: 5px; cursor: pointer;">
+            <select id="rel-seletor-tipo" onchange="selecionarRelatorioBimer(this.value)" style="min-width: 300px; max-width: 100%; padding: 6px 10px; font-size: 12px; font-weight: 700; color: #0f172a; background: #f8fafc; border: 1.5px solid #004b87; border-radius: 5px; cursor: pointer;">
               <optgroup label="Financeiro &amp; Caixa">
                 <option value="vencimento" selected>Contas a Pagar por Vencimento</option>
                 <option value="fluxo">Fluxo de Caixa (Previsto vs. Pago)</option>
@@ -15937,7 +15937,7 @@
 
       const detectarNomeFilialOFX = (nomeArq, acctId) => {
         const acctDig = String(acctId || '').replace(/\D/g, '');
-        if (acctDig.includes('987757')) return { nome: 'Matriz (98775-7)', ehMatriz: true };
+        if (acctDig.includes('987757') || acctDig.includes('98775')) return { nome: 'Matriz (98775-7)', ehMatriz: true };
         const base = `${nomeArq} ${acctId}`.toUpperCase();
         if (base.includes('BARRA')) return { nome: `Boah - Barra (${acctId || '-'})`, ehMatriz: false };
         if (base.includes('PASEO')) return { nome: `Boah - Paseo (${acctId || '-'})`, ehMatriz: false };
@@ -15994,9 +15994,10 @@
 
           const ehTransfKeyword = /TRANSF|PIX|TED|DOC|TEF|SISPAG|ENTRE\s*CONTAS|MESMA\s*TIT|ENVIO|REMESSA|98775|LALUA|BOAH|MATRIZ|CRED|PAG|MOV/.test(memoUp) || trnType === 'XFER';
           const ehMatrizKeyword = /98775|LALUA|BOAH|MATRIZ|MESMA\s*TIT|ENTRE\s*CONTAS|TEF\s+ENTRE/.test(memoUp);
+          const ehDebito = (valor < 0) || (valor > 0 && (trnType === 'DEBIT' || trnType === 'PAYMENT' || trnType === 'FEE' || trnType === 'SRVCHG'));
 
           if (infoConta.ehMatriz) {
-            if (valor > 0) {
+            if (valor > 0 && !ehDebito) {
               movimentos.push({
                 direcao: 'ENTRADA_MATRIZ',
                 filial: infoConta.nome,
@@ -16008,7 +16009,7 @@
                 ehProvavelMatriz: ehTransfKeyword
               });
             }
-          } else if (valor < 0) {
+          } else if (ehDebito) {
             movimentos.push({
               direcao: 'SAIDA_FILIAL',
               filial: infoConta.nome,
