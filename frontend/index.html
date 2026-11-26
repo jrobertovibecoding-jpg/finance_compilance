@@ -2530,7 +2530,7 @@
 
             <div id="rel-filtro-transf-box" style="display: none; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
               <div>
-                <input type="file" id="rel-transf-ofx-input" accept=".ofx" multiple style="display: none;" onchange="importarOFXTransferenciasMatriz(event)">
+                <input type="file" id="rel-transf-ofx-input" accept=".ofx,.OFX,.ofc" multiple style="display: none;" onchange="importarOFXTransferenciasMatriz(event)">
                 <button type="button" class="tool-btn" onclick="document.getElementById('rel-transf-ofx-input').click()" style="border-color: #0284c7; color: #0369a1; background: #e0f2fe; font-weight: 700; padding: 5px 10px; font-size: 11px;">
                   Importar Arquivos .OFX (Filiais / Matriz)
                 </button>
@@ -15962,24 +15962,25 @@
       totalBrutoOFX += blocos.length;
       arquivos.push({ arquivo: file.name, conta: acctId, filial: infoConta.nome, ehMatriz: infoConta.ehMatriz, saldoFinal, qtdLanc: blocos.length });
 
-      for (const b of blocos) {
+      for (const rawBloco of blocos) {
+        const b = rawBloco.split(/<\/STMTTRN>/i)[0];
         const rawDt = extrairTag(b, 'DTPOSTED').replace(/\D/g, '');
         const dataIso = rawDt.length >= 8 ? `${rawDt.slice(0, 4)}-${rawDt.slice(4, 6)}-${rawDt.slice(6, 8)}` : '';
         if (dataIso) {
           if (!minData || dataIso < minData) minData = dataIso;
           if (!maxData || dataIso > maxData) maxData = dataIso;
         }
-        const rawAmt = extrairTag(b, 'TRNAMT').replace(',', '.');
+        const rawAmt = extrairTag(b, 'TRNAMT').replace(/\s+/g, '').replace(',', '.');
         const valor = parseFloat(rawAmt) || 0;
         const trnType = extrairTag(b, 'TRNTYPE').toUpperCase();
         const memo = extrairTag(b, 'MEMO') || extrairTag(b, 'NAME') || '-';
         const memoUp = memo.toUpperCase();
 
-        const ehTransfKeyword = /TRANSF|PIX|TED|DOC|TEF|SISPAG|ENTRE\s*CONTAS|MESMA\s*TIT|ENVIO|REMESSA|98775|LALUA|BOAH|MATRIZ/.test(memoUp) || trnType === 'XFER';
+        const ehTransfKeyword = /TRANSF|PIX|TED|DOC|TEF|SISPAG|ENTRE\s*CONTAS|MESMA\s*TIT|ENVIO|REMESSA|98775|LALUA|BOAH|MATRIZ|CRED|PAG|MOV/.test(memoUp) || trnType === 'XFER';
         const ehMatrizKeyword = /98775|LALUA|BOAH|MATRIZ|MESMA\s*TIT|ENTRE\s*CONTAS|TEF\s+ENTRE/.test(memoUp);
 
         if (infoConta.ehMatriz) {
-          if (valor > 0 && ehTransfKeyword) {
+          if (valor > 0) {
             movimentos.push({
               direcao: 'ENTRADA_MATRIZ',
               filial: infoConta.nome,
@@ -15988,10 +15989,10 @@
               memo,
               trnType,
               valor: Math.abs(valor),
-              ehProvavelMatriz: true
+              ehProvavelMatriz: ehTransfKeyword
             });
           }
-        } else if (valor < 0 && ehTransfKeyword) {
+        } else if (valor < 0) {
           movimentos.push({
             direcao: 'SAIDA_FILIAL',
             filial: infoConta.nome,
@@ -16000,7 +16001,8 @@
             memo,
             trnType,
             valor: Math.abs(valor),
-            ehProvavelMatriz: ehMatrizKeyword
+            ehProvavelMatriz: ehMatrizKeyword,
+            ehTransfKeyword
           });
         }
       }
@@ -16014,7 +16016,7 @@
       if (elFim) elFim.value = maxData;
     }
 
-    // Se nenhuma saída citou explicitamente "Lalua/Matriz/98775", exibe todas as saídas PIX/TED automaticamente
+    // Se nenhuma saída citou explicitamente "Lalua/Matriz/98775", exibe todas as saídas automaticamente
     const temMatrizExplicita = movimentos.some(m => m.direcao === 'SAIDA_FILIAL' && m.ehProvavelMatriz);
     const chkTodas = document.getElementById('rel-filtro-transf-todas');
     if (chkTodas && !temMatrizExplicita && movimentos.some(m => m.direcao === 'SAIDA_FILIAL')) {
@@ -16023,6 +16025,9 @@
 
     window._relTransferenciasOFX = { arquivos, movimentos, totalBrutoOFX };
     if (event?.target) event.target.value = '';
+    if (arquivos.length === 0 || totalBrutoOFX === 0) {
+      alert(`Atenção: ${files.length} arquivo(s) selecionado(s), mas nenhum lançamento <STMTTRN> foi encontrado dentro do OFX.`);
+    }
     renderizarRelatorioAtual();
   }
 
