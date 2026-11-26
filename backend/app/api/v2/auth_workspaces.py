@@ -105,7 +105,8 @@ def register_tenant(
         raise HTTPException(status_code=422, detail="CNPJ da empresa inválido.")
 
     email_clean = req.admin_email.strip().lower()
-    if db.query(Usuario).filter(Usuario.email == email_clean).first():
+    usuario_existente = db.query(Usuario).filter(Usuario.email == email_clean).first()
+    if usuario_existente and not req.parent_bpo_tenant_id:
         raise HTTPException(status_code=409, detail="Já existe usuário cadastrado com este e-mail.")
 
     base_slug = slugify(req.nome_empresa)
@@ -148,14 +149,17 @@ def register_tenant(
     )
     db.add(ccusto)
 
-    usuario = Usuario(
-        nome=req.admin_nome.strip(),
-        email=email_clean,
-        senha_hash=gerar_hash_senha(req.admin_senha),
-        ativo=True,
-    )
-    db.add(usuario)
-    db.flush()
+    if usuario_existente:
+        usuario = usuario_existente
+    else:
+        usuario = Usuario(
+            nome=req.admin_nome.strip(),
+            email=email_clean,
+            senha_hash=gerar_hash_senha(req.admin_senha),
+            ativo=True,
+        )
+        db.add(usuario)
+        db.flush()
 
     db.add(
         UsuarioTenantRole(
