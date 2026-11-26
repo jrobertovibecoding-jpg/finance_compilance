@@ -15920,8 +15920,9 @@
     };
 
     const detectarNomeFilialOFX = (nomeArq, acctId) => {
+      const acctDig = String(acctId || '').replace(/\D/g, '');
+      if (acctDig.includes('987757')) return { nome: 'Matriz (98775-7)', ehMatriz: true };
       const base = `${nomeArq} ${acctId}`.toUpperCase();
-      if (base.replace(/\D/g, '').includes('987757') || base.includes('MATRIZ')) return { nome: 'Matriz (98775-7)', ehMatriz: true };
       if (base.includes('BARRA')) return { nome: `Boah - Barra (${acctId || '-'})`, ehMatriz: false };
       if (base.includes('PASEO')) return { nome: `Boah - Paseo (${acctId || '-'})`, ehMatriz: false };
       if (base.includes('HORTO')) return { nome: `Boah - Horto (${acctId || '-'})`, ehMatriz: false };
