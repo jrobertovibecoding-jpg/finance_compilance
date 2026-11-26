@@ -11946,7 +11946,8 @@
     try { t = JSON.parse(localStorage.getItem(AUTH_STORAGE_TENANT) || '{}'); } catch (_) {}
     const nome = String(t.nome || t.nome_fantasia || t.razao_social || '').trim();
     const up = nome.toUpperCase();
-    const ehLaluaBoah = !up || up.includes('LALUA') || up.includes('BOAH');
+    const ehSubClienteBpo = Boolean(t.via_bpo) || up.includes('SOLAR');
+    const ehLaluaBoah = !ehSubClienteBpo || up.includes('LALUA') || up.includes('BOAH');
     const nomeCurto = nome ? nome.split(' ').slice(0, 2).join(' ') : 'Empresa';
     return { ehLaluaBoah, nomeEmpresa: nome || 'Empresa Atual', nomeCurto };
   }
