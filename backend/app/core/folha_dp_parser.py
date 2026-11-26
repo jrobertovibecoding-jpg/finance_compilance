@@ -20,6 +20,8 @@ from typing import Any
 
 from pypdf import PdfReader
 
+from .colaboradores_filial import resolver_filial_colaborador
+
 
 FILIAL_POR_CNPJ = {
     "10436619000105": ("LALUA - Matriz", "Boah - Matriz"),
@@ -125,6 +127,7 @@ def parse_extrato_mensal_pdf(pdf_bytes: bytes, filename: str = "") -> dict[str, 
         colaboradores.append({
             "nome": nome,
             "cpf": cpf,
+            "filial": ccusto,
             "proventos": proventos,
             "descontos": descontos,
             "liquido": liquido,
@@ -171,6 +174,7 @@ def parse_relatorio_liquidos_pdf(pdf_bytes: bytes, filename: str = "") -> dict[s
                 colaboradores.append({
                     "nome": nome,
                     "cpf": "",
+                    "filial": ccusto,
                     "proventos": liq,
                     "descontos": 0.0,
                     "liquido": liq,
@@ -486,6 +490,10 @@ def parse_pacote_folha_dp(raw_bytes: bytes, filename: str) -> list[dict[str, Any
             if melhor_bol is None:
                 melhor_bol = bol
         if melhor_bol is not None and not melhor_bol["colaboradores"]:
+            fb_fil = "Solar - Geral" if melhor_bol["eh_solar"] else "A Classificar"
+            for c in rel["colaboradores"]:
+                if not c.get("filial"):
+                    c["filial"] = resolver_filial_colaborador(c["nome"], fallback=fb_fil)
             melhor_bol["colaboradores"] = rel["colaboradores"]
 
     resultado = list(extratos.values())

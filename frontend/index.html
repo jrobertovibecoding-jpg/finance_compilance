@@ -2406,6 +2406,9 @@
           <button class="btn-filtro-rapido" id="btn-rel-evolucao" onclick="selecionarRelatorioBimer('evolucao')" style="padding: 6px 12px; font-weight: 700; font-size: 11px;">
             <svg class="bimer-svg" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg> H) Evolução Mensal (MoM) &amp; Inflação
           </button>
+          <button class="btn-filtro-rapido" id="btn-rel-pessoal" onclick="selecionarRelatorioBimer('pessoal')" style="padding: 6px 12px; font-weight: 700; font-size: 11px;">
+            <svg class="bimer-svg" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> I) Despesas com Pessoal
+          </button>
         </div>
 
         <!-- BARRA DE FILTROS ESPECÍFICOS & BOTÕES DE AÇÃO -->
@@ -2482,6 +2485,39 @@
                   <button type="button" class="tool-btn raiox-zoom-btn" data-zoom="FRETES" onclick="definirZoomRaioX('FRETES')" style="padding: 4px 9px; font-size: 10.5px;">Fretes &amp; Logística</button>
                   <button type="button" class="tool-btn" onclick="abrirModalOrcamentoMetas()" style="padding: 4px 9px; font-size: 10.5px; border-color: #059669; color: #065f46; background: #ecfdf5; font-weight: 700;">Metas / Orçamento</button>
                 </div>
+              </div>
+            </div>
+
+            <div id="rel-filtro-pessoal-box" style="display: none; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <div>
+                <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Filial / Unidade:</label>
+                <select id="rel-filtro-pes-filial" onchange="renderizarRelatorioAtual()" style="padding: 4px 8px; font-size: 11px; font-weight: 600; border: 1px solid #cbd5e1; border-radius: 3px; color: #0f172a;">
+                  <option value="TODAS">Todas as Filiais</option>
+                  <option value="Boah - Matriz">Boah - Matriz</option>
+                  <option value="Boah - Barra">Boah - Barra</option>
+                  <option value="Boah - Paseo">Boah - Paseo</option>
+                  <option value="Boah - Horto">Boah - Horto</option>
+                  <option value="Boah - SDB">Boah - SDB</option>
+                  <option value="Boah - Vilas">Boah - Vilas</option>
+                  <option value="Solar - Geral">Solar - Geral</option>
+                  <option value="A Classificar">A Classificar</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Natureza / Categoria (214xx):</label>
+                <select id="rel-filtro-pes-cat" onchange="renderizarRelatorioAtual()" style="padding: 4px 8px; font-size: 11px; font-weight: 600; border: 1px solid #cbd5e1; border-radius: 3px; color: #0f172a;">
+                  <option value="TODAS">Todas (Salários, VT, VR, Encargos...)</option>
+                  <option value="SALARIOS">Salários &amp; Folha</option>
+                  <option value="DOMINGOS">Domingos &amp; Feriados</option>
+                  <option value="VT">Vale Transporte</option>
+                  <option value="ALIMENTACAO">Alimentação (Ticket)</option>
+                  <option value="FERIAS_RESC">Férias &amp; Rescisão</option>
+                  <option value="ENCARGOS">Encargos / FGTS / Exames / Outros</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Buscar Colaborador / Fornecedor:</label>
+                <input type="text" id="rel-filtro-pes-busca" oninput="renderizarRelatorioAtual()" placeholder="Ex: Adriana, Ticket, Salvadorcard..." style="padding: 4px 8px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 3px; min-width: 210px; color: #090d16;">
               </div>
             </div>
           </div>
@@ -13462,7 +13498,8 @@
       'itens': 'btn-rel-itens',
       'faccao': 'btn-rel-faccao',
       'raiox': 'btn-rel-raiox',
-      'evolucao': 'btn-rel-evolucao'
+      'evolucao': 'btn-rel-evolucao',
+      'pessoal': 'btn-rel-pessoal'
     };
     const activeBtn = document.getElementById(btnMap[tipo]);
     if (activeBtn) activeBtn.classList.add('active');
@@ -13473,11 +13510,13 @@
     const boxItem = document.getElementById('rel-filtro-item-box');
     const boxFaccao = document.getElementById('rel-filtro-faccao-box');
     const boxRaiox = document.getElementById('rel-filtro-raiox-box');
-    if (boxStatus) boxStatus.style.display = (tipo === 'vencimento' || tipo === 'retencoes' || tipo === 'faccao' || tipo === 'raiox') ? 'block' : 'none';
+    const boxPessoal = document.getElementById('rel-filtro-pessoal-box');
+    if (boxStatus) boxStatus.style.display = (tipo === 'vencimento' || tipo === 'retencoes' || tipo === 'faccao' || tipo === 'raiox' || tipo === 'pessoal') ? 'block' : 'none';
     if (boxCcusto) boxCcusto.style.display = (tipo === 'vencimento' || tipo === 'ccusto') ? 'block' : 'none';
     if (boxItem) boxItem.style.display = (tipo === 'itens') ? 'block' : 'none';
     if (boxFaccao) boxFaccao.style.display = (tipo === 'faccao') ? 'flex' : 'none';
     if (boxRaiox) boxRaiox.style.display = (tipo === 'raiox') ? 'flex' : 'none';
+    if (boxPessoal) boxPessoal.style.display = (tipo === 'pessoal') ? 'flex' : 'none';
 
     renderizarRelatorioAtual();
     atualizarBarraRodape();
@@ -13503,6 +13542,8 @@
       container.innerHTML = gerarHtmlRelatorioRaioX();
     } else if (relatorioAtivo === 'evolucao') {
       container.innerHTML = gerarHtmlRelatorioEvolucao();
+    } else if (relatorioAtivo === 'pessoal') {
+      container.innerHTML = gerarHtmlRelatorioPessoal();
     }
   }
 
@@ -15374,6 +15415,299 @@
         </table>
       `;
     }
+    return html;
+  }
+
+  function gerarHtmlRelatorioPessoal() {
+    const { dataIni, dataFim, status } = obterFiltrosRelatorio();
+    const filialFiltro = (document.getElementById('rel-filtro-pes-filial')?.value || 'TODAS').trim();
+    const catFiltro = (document.getElementById('rel-filtro-pes-cat')?.value || 'TODAS').trim();
+    const buscaFiltro = (document.getElementById('rel-filtro-pes-busca')?.value || '').trim().toUpperCase();
+
+    const ehTituloPessoal = (t) => {
+      const cc = String(t.ccusto || '');
+      const td = String(t.tipo_doc || '').toUpperCase();
+      if (/^(214|122)\d{2}/.test(cc)) return true;
+      if (['FOLHA', 'FOLHA_LOTE', 'DOMINGO_FERIADO', 'FERIAS', 'RESCISAO', 'PESSOAL_DP'].includes(td)) return true;
+      if (Array.isArray(t.itens) && t.itens.some(it => String(it.unidade || '').toUpperCase() === 'FOLHA_COLAB')) return true;
+      return false;
+    };
+
+    const classificarNatureza = (t) => {
+      const cc = String(t.ccusto || '').toUpperCase();
+      const td = String(t.tipo_doc || '').toUpperCase();
+      const desc = String(t.descricao || '').toUpperCase();
+      if (cc.includes('21404') || cc.includes('12203') || cc.includes('TRANSPORTE')) return 'VT';
+      if (cc.includes('21405') || cc.includes('12204') || cc.includes('ALIMENTA')) return 'ALIMENTACAO';
+      if (td === 'DOMINGO_FERIADO' || cc.includes('21419') || cc.includes('DOMINGO') || desc.includes('DOMINGO') || desc.includes('FERIADO')) return 'DOMINGOS';
+      if (td === 'FERIAS' || td === 'RESCISAO' || cc.includes('21407') || cc.includes('21408') || cc.includes('FÉRIAS') || cc.includes('FERIAS') || cc.includes('RESCIS')) return 'FERIAS_RESC';
+      if (cc.includes('21401') || cc.includes('12201') || cc.includes('21402') || cc.includes('21403') || cc.includes('SALÁRIO') || cc.includes('SALARIO') || cc.includes('PROLABORE') || td === 'FOLHA') return 'SALARIOS';
+      return 'ENCARGOS';
+    };
+
+    const normalizarFilialPessoal = (fil) => {
+      const f = String(fil || '').trim();
+      if (!f) return 'Boah - Matriz';
+      const up = f.toUpperCase();
+      if (up.includes('SOLAR')) return 'Solar - Geral';
+      if (up.includes('LALUA') && up.includes('MATRIZ')) return 'Boah - Matriz';
+      if (up.includes('BARRA')) return 'Boah - Barra';
+      if (up.includes('PASEO')) return 'Boah - Paseo';
+      if (up.includes('HORTO')) return 'Boah - Horto';
+      if (up.includes('SDB')) return 'Boah - SDB';
+      if (up.includes('VILAS')) return 'Boah - Vilas';
+      if (up.includes('MATRIZ')) return 'Boah - Matriz';
+      if (up.includes('CLASSIFICAR')) return 'A Classificar';
+      return f;
+    };
+
+    const inferirFilialTitulo = (t) => {
+      const texto = `${t.descricao || ''} ${t.historico || ''}`;
+      const m = texto.match(/(Boah\s*-\s*(?:Matriz|Barra|Paseo|Horto|SDB|Vilas)|Solar\s*-\s*Geral|LALUA\s*-\s*Matriz|SOLAR\s*-\s*Adm)/i);
+      if (m) return normalizarFilialPessoal(m[1]);
+      return 'Boah - Matriz';
+    };
+
+    const baseTitulos = (titulos || []).filter(t => {
+      if (!ehTituloPessoal(t)) return false;
+      const dt = t.vencimento || '';
+      if (dataIni && dt < dataIni) return false;
+      if (dataFim && dt > dataFim) return false;
+      const isPago = !!t.conciliada;
+      if (status === 'EM_ABERTO' && isPago) return false;
+      if (status === 'CONCILIADO' && !isPago) return false;
+      if (catFiltro !== 'TODAS' && classificarNatureza(t) !== catFiltro) return false;
+      return true;
+    });
+
+    const porFornecedor = {};
+    const porFilial = {};
+    const porBeneficiario = {};
+    let totalTitulosValor = 0;
+    let totalPagoValor = 0;
+    let totalAbertoValor = 0;
+    let qtdLancamentos = 0;
+
+    const addFilialBucket = (filial, nat, val) => {
+      if (!porFilial[filial]) {
+        porFilial[filial] = { filial, salarios: 0, domingos: 0, vt: 0, alimentacao: 0, feriasResc: 0, encargos: 0, total: 0 };
+      }
+      const f = porFilial[filial];
+      if (nat === 'SALARIOS') f.salarios += val;
+      else if (nat === 'DOMINGOS') f.domingos += val;
+      else if (nat === 'VT') f.vt += val;
+      else if (nat === 'ALIMENTACAO') f.alimentacao += val;
+      else if (nat === 'FERIAS_RESC') f.feriasResc += val;
+      else f.encargos += val;
+      f.total += val;
+    };
+
+    const addBenef = (nome, cpf, filial, nat, val) => {
+      const key = `${nome.toUpperCase().trim()}|${cpf || ''}`;
+      if (!porBeneficiario[key]) {
+        porBeneficiario[key] = { nome: nome.trim(), cpf: cpf || '-', filial, salarios: 0, domingos: 0, vt: 0, alimentacao: 0, outros: 0, total: 0 };
+      }
+      const b = porBeneficiario[key];
+      if ((!b.filial || b.filial === 'A Classificar' || b.filial === 'Boah - Matriz') && filial && filial !== 'A Classificar') {
+        b.filial = filial;
+      }
+      if (nat === 'SALARIOS') b.salarios += val;
+      else if (nat === 'DOMINGOS') b.domingos += val;
+      else if (nat === 'VT') b.vt += val;
+      else if (nat === 'ALIMENTACAO') b.alimentacao += val;
+      else b.outros += val;
+      b.total += val;
+    };
+
+    baseTitulos.forEach(t => {
+      const nat = classificarNatureza(t);
+      const valTitulo = Number(t.valor || 0);
+      const isPago = !!t.conciliada;
+      const favNome = String(t.favorecido || 'NÃO INFORMADO').trim();
+      const catLabel = String(t.ccusto || t.tipo_doc || '214 - Pessoal').trim();
+      const itensColab = Array.isArray(t.itens) ? t.itens.filter(it => String(it.unidade || '').toUpperCase() === 'FOLHA_COLAB') : [];
+
+      let somaTituloFiltrado = 0;
+      let matchedColab = false;
+
+      if (itensColab.length > 0) {
+        itensColab.forEach(it => {
+          const nomeColab = String(it.descricao || 'COLABORADOR').trim();
+          const cpfColab = String(it.codigo || '').trim();
+          const filColab = normalizarFilialPessoal(it.ncm || inferirFilialTitulo(t));
+          const valItem = Number(it.valor_total || 0);
+
+          if (filialFiltro !== 'TODAS' && filColab !== filialFiltro) return;
+          if (buscaFiltro && !nomeColab.toUpperCase().includes(buscaFiltro) && !favNome.toUpperCase().includes(buscaFiltro) && !catLabel.toUpperCase().includes(buscaFiltro)) return;
+
+          matchedColab = true;
+          somaTituloFiltrado += valItem;
+          addFilialBucket(filColab, nat, valItem);
+          addBenef(nomeColab, cpfColab, filColab, nat, valItem);
+        });
+      } else {
+        const filTit = inferirFilialTitulo(t);
+        if (filialFiltro !== 'TODAS' && filTit !== filialFiltro) return;
+        if (buscaFiltro && !favNome.toUpperCase().includes(buscaFiltro) && !catLabel.toUpperCase().includes(buscaFiltro) && !String(t.descricao || '').toUpperCase().includes(buscaFiltro)) return;
+
+        matchedColab = true;
+        somaTituloFiltrado = valTitulo;
+        addFilialBucket(filTit, nat, valTitulo);
+        if (['FOLHA', 'DOMINGO_FERIADO', 'FERIAS', 'RESCISAO'].includes(String(t.tipo_doc || '').toUpperCase())) {
+          addBenef(favNome, t.cnpj || '', filTit, nat, valTitulo);
+        }
+      }
+
+      if (!matchedColab) return;
+
+      const valorExibirForn = (filialFiltro === 'TODAS' && !buscaFiltro) ? valTitulo : somaTituloFiltrado;
+      totalTitulosValor += valorExibirForn;
+      if (isPago) totalPagoValor += valorExibirForn;
+      else totalAbertoValor += valorExibirForn;
+      qtdLancamentos += 1;
+
+      const fk = `${favNome.toUpperCase()}|${catLabel}`;
+      if (!porFornecedor[fk]) {
+        porFornecedor[fk] = { fornecedor: favNome, categoria: catLabel, qtd: 0, benefCount: 0, pago: 0, aberto: 0, total: 0 };
+      }
+      porFornecedor[fk].qtd += 1;
+      porFornecedor[fk].benefCount += (itensColab.length > 0 ? itensColab.length : 1);
+      if (isPago) porFornecedor[fk].pago += valorExibirForn;
+      else porFornecedor[fk].aberto += valorExibirForn;
+      porFornecedor[fk].total += valorExibirForn;
+    });
+
+    const listaFornecedores = Object.values(porFornecedor).sort((a, b) => b.total - a.total);
+    const listaFiliais = Object.values(porFilial).sort((a, b) => b.total - a.total);
+    const listaBeneficiarios = Object.values(porBeneficiario).sort((a, b) => b.total - a.total);
+
+    const periodLabel = (dataIni || dataFim) ? `${formatarDataBR(dataIni) || 'Início'} até ${formatarDataBR(dataFim) || 'Hoje'}` : 'Todo o Período';
+    const subtitulo = `Período: ${periodLabel} • Filial: ${filialFiltro} • Natureza: ${catFiltro}${buscaFiltro ? ` • Busca: "${escapeHtml(buscaFiltro)}"` : ''}`;
+
+    let html = gerarCabecalhoOficialRelatorio('RELATÓRIO I — DESPESAS COM PESSOAL (FORNECEDORES, FILIAIS & BENEFICIÁRIOS)', subtitulo);
+
+    html += `
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
+        <div style="background:#f8fafc;border:1px solid #cbd5e1;border-left:4px solid #004b87;padding:8px 10px;border-radius:4px;">
+          <div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;">Total Despesas com Pessoal</div>
+          <div style="font-size:15px;font-weight:800;color:#0f172a;">${formatarMoeda(totalTitulosValor)}</div>
+          <div style="font-size:9px;color:#64748b;">${qtdLancamentos} lançamento(s)</div>
+        </div>
+        <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-left:4px solid #059669;padding:8px 10px;border-radius:4px;">
+          <div style="font-size:9px;font-weight:700;color:#065f46;text-transform:uppercase;">Total Pago / Conciliado</div>
+          <div style="font-size:15px;font-weight:800;color:#059669;">${formatarMoeda(totalPagoValor)}</div>
+        </div>
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-left:4px solid #d97706;padding:8px 10px;border-radius:4px;">
+          <div style="font-size:9px;font-weight:700;color:#92400e;text-transform:uppercase;">Em Aberto / A Vencer</div>
+          <div style="font-size:15px;font-weight:800;color:#b45309;">${formatarMoeda(totalAbertoValor)}</div>
+        </div>
+        <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-left:4px solid #7c3aed;padding:8px 10px;border-radius:4px;">
+          <div style="font-size:9px;font-weight:700;color:#5b21b6;text-transform:uppercase;">Colaboradores / Beneficiários</div>
+          <div style="font-size:15px;font-weight:800;color:#5b21b6;">${listaBeneficiarios.length}</div>
+          <div style="font-size:9px;color:#6d28d9;">em ${listaFiliais.length} filial(is)</div>
+        </div>
+      </div>
+    `;
+
+    if (qtdLancamentos === 0) {
+      html += `<div style="padding:18px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:6px;text-align:center;color:#475569;font-size:11px;">Nenhum lançamento de pessoal (214xx / Folha / Benefícios) encontrado para os filtros selecionados.</div>`;
+      return html;
+    }
+
+    html += `
+      <div style="font-weight:800;font-size:11px;color:#004b87;text-transform:uppercase;margin-bottom:6px;">1. Rateio por Filial (Alocação Real por Beneficiário)</div>
+      <table class="alterdata-grid" style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:16px;">
+        <thead>
+          <tr style="background:#0f172a;color:white;">
+            <th style="padding:5px 6px;text-align:left;">Filial / Unidade</th>
+            <th style="padding:5px 6px;text-align:right;">Salários / Folha</th>
+            <th style="padding:5px 6px;text-align:right;">Domingos / Feriados</th>
+            <th style="padding:5px 6px;text-align:right;">Vale Transporte</th>
+            <th style="padding:5px 6px;text-align:right;">Alimentação</th>
+            <th style="padding:5px 6px;text-align:right;">Férias / Rescisão</th>
+            <th style="padding:5px 6px;text-align:right;">Encargos / Outros</th>
+            <th style="padding:5px 6px;text-align:right;">Total Filial</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${listaFiliais.map((f, idx) => `
+            <tr style="${idx % 2 === 1 ? 'background:#f8fafc;' : 'background:#ffffff;'}">
+              <td style="padding:5px 6px;font-weight:800;color:#0f172a;">${escapeHtml(f.filial)}</td>
+              <td style="padding:5px 6px;text-align:right;font-family:monospace;">${formatarMoeda(f.salarios)}</td>
+              <td style="padding:5px 6px;text-align:right;font-family:monospace;">${formatarMoeda(f.domingos)}</td>
+              <td style="padding:5px 6px;text-align:right;font-family:monospace;">${formatarMoeda(f.vt)}</td>
+              <td style="padding:5px 6px;text-align:right;font-family:monospace;">${formatarMoeda(f.alimentacao)}</td>
+              <td style="padding:5px 6px;text-align:right;font-family:monospace;">${formatarMoeda(f.feriasResc)}</td>
+              <td style="padding:5px 6px;text-align:right;font-family:monospace;">${formatarMoeda(f.encargos)}</td>
+              <td style="padding:5px 6px;text-align:right;font-family:monospace;font-weight:800;color:#004b87;">${formatarMoeda(f.total)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    html += `
+      <div style="font-weight:800;font-size:11px;color:#004b87;text-transform:uppercase;margin-bottom:6px;">2. Resumo por Fornecedor / Operadora &amp; Categoria Contábil</div>
+      <table class="alterdata-grid" style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:16px;">
+        <thead>
+          <tr style="background:#1e3a8a;color:white;">
+            <th style="padding:5px 6px;text-align:left;">Fornecedor / Operadora / Favorecido</th>
+            <th style="padding:5px 6px;text-align:left;">Categoria (214xx)</th>
+            <th style="padding:5px 6px;text-align:center;width:65px;">Lanç.</th>
+            <th style="padding:5px 6px;text-align:right;width:100px;">Pago</th>
+            <th style="padding:5px 6px;text-align:right;width:100px;">Em Aberto</th>
+            <th style="padding:5px 6px;text-align:right;width:105px;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${listaFornecedores.map((r, idx) => `
+            <tr style="${idx % 2 === 1 ? 'background:#f8fafc;' : 'background:#ffffff;'}">
+              <td style="padding:5px 6px;font-weight:700;color:#0f172a;">${escapeHtml(r.fornecedor)}</td>
+              <td style="padding:5px 6px;color:#475569;">${escapeHtml(r.categoria)}</td>
+              <td style="padding:5px 6px;text-align:center;">${r.qtd}</td>
+              <td style="padding:5px 6px;text-align:right;font-family:monospace;color:#059669;">${formatarMoeda(r.pago)}</td>
+              <td style="padding:5px 6px;text-align:right;font-family:monospace;color:#b45309;">${formatarMoeda(r.aberto)}</td>
+              <td style="padding:5px 6px;text-align:right;font-family:monospace;font-weight:800;">${formatarMoeda(r.total)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    html += `
+      <div style="font-weight:800;font-size:11px;color:#5b21b6;text-transform:uppercase;margin-bottom:6px;">3. Extrato Individual por Beneficiário / Colaborador (${listaBeneficiarios.length})</div>
+      <table class="alterdata-grid" style="width:100%;border-collapse:collapse;font-size:10px;">
+        <thead>
+          <tr style="background:#4c1d95;color:white;">
+            <th style="padding:5px 6px;text-align:left;">Colaborador / Beneficiário</th>
+            <th style="padding:5px 6px;text-align:left;width:105px;">CPF</th>
+            <th style="padding:5px 6px;text-align:left;width:110px;">Filial</th>
+            <th style="padding:5px 6px;text-align:right;width:90px;">Salários</th>
+            <th style="padding:5px 6px;text-align:right;width:85px;">Domingos</th>
+            <th style="padding:5px 6px;text-align:right;width:85px;">Vale Transp.</th>
+            <th style="padding:5px 6px;text-align:right;width:85px;">Alimentação</th>
+            <th style="padding:5px 6px;text-align:right;width:85px;">Outros</th>
+            <th style="padding:5px 6px;text-align:right;width:95px;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${listaBeneficiarios.map((b, idx) => `
+            <tr style="${idx % 2 === 1 ? 'background:#f8fafc;' : 'background:#ffffff;'}">
+              <td style="padding:5px 6px;font-weight:700;color:#0f172a;">${escapeHtml(b.nome)}</td>
+              <td style="padding:5px 6px;font-family:monospace;color:#475569;">${escapeHtml(b.cpf)}</td>
+              <td style="padding:5px 6px;font-weight:700;color:#0369a1;">${escapeHtml(b.filial)}</td>
+              <td style="padding:5px 6px;text-align:right;font-family:monospace;">${formatarMoeda(b.salarios)}</td>
+              <td style="padding:5px 6px;text-align:right;font-family:monospace;">${formatarMoeda(b.domingos)}</td>
+              <td style="padding:5px 6px;text-align:right;font-family:monospace;">${formatarMoeda(b.vt)}</td>
+              <td style="padding:5px 6px;text-align:right;font-family:monospace;">${formatarMoeda(b.alimentacao)}</td>
+              <td style="padding:5px 6px;text-align:right;font-family:monospace;">${formatarMoeda(b.outros)}</td>
+              <td style="padding:5px 6px;text-align:right;font-family:monospace;font-weight:800;color:#4c1d95;">${formatarMoeda(b.total)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
     return html;
   }
 

@@ -27,6 +27,7 @@ from ...core.cnab240_multibanco import (
     gerar_cnab240_multibanco,
     obter_perfil_banco,
 )
+from ...core.colaboradores_filial import resolver_filial_colaborador
 from ...core.folha_dp_parser import parse_pacote_folha_dp
 from ...core.itau_sispag import filtrar_titulos_cnab_validos, gerar_cnab240_sispag_itau
 from ...core.security import gerar_hash_senha, verificar_senha
@@ -2795,11 +2796,14 @@ async def compat_importar_favorecidos_itau(
                 .first()
             )
 
+        filial_colab = resolver_filial_colaborador(nome, fallback="")
         if forn:
             forn.tipo = "COLABORADOR"
             forn.dados_banco = dados_conta[:120]
             if not forn.forma_pgto_padrao:
                 forn.forma_pgto_padrao = "FOLHA ITAÚ (C/C)"
+            if filial_colab and not forn.categoria_padrao:
+                forn.categoria_padrao = filial_colab[:100]
             if cpf and not forn.cnpj_cpf:
                 forn.cnpj_cpf = cpf
             atualizados += 1
@@ -2811,6 +2815,7 @@ async def compat_importar_favorecidos_itau(
                 cnpj_cpf=cpf or None,
                 tipo="COLABORADOR",
                 forma_pgto_padrao="FOLHA ITAÚ (C/C)",
+                categoria_padrao=(filial_colab[:100] if filial_colab else None),
                 dados_banco=dados_conta[:120],
                 ativo=True,
             )
@@ -2922,12 +2927,16 @@ async def compat_parse_folha_dp(
 
     for lote in lotes:
         com_conta = 0
+        fb_fil = "Solar - Geral" if lote.get("eh_solar") else "A Classificar"
         for colab in lote["colaboradores"]:
             cpf_limpo = limpar_documento(colab.get("cpf") or "")
             f_obj = forn_by_cpf.get(cpf_limpo) or forn_by_nome.get(_norm_n(colab.get("nome") or ""))
             db_txt = (f_obj.dados_banco.strip() if f_obj and f_obj.dados_banco else "")
             colab["dados_banco"] = db_txt
             colab["conta_ok"] = bool(db_txt)
+            if not colab.get("filial") or colab.get("filial") in ("A Classificar", "LALUA - Matriz") and lote.get("tipo_pdf") == "BOLETO_DP":
+                fil_cad = (f_obj.categoria_padrao.strip() if f_obj and f_obj.categoria_padrao and f_obj.categoria_padrao.startswith(("Boah -", "Solar -")) else "")
+                colab["filial"] = fil_cad or resolver_filial_colaborador(colab.get("nome") or "", fallback=fb_fil)
             if not cpf_limpo and f_obj and f_obj.cnpj_cpf:
                 colab["cpf"] = f_obj.cnpj_cpf
             if db_txt:
