@@ -15908,7 +15908,7 @@
     return html;
   }
 
-  window._relTransferenciasOFX = { arquivos: [], movimentos: [] };
+  window._relTransferenciasOFX = { arquivos: [], movimentos: [], totalBrutoOFX: 0 };
 
   async function importarOFXTransferenciasMatriz(event) {
     const files = Array.from(event?.target?.files || []);
@@ -15932,35 +15932,50 @@
       return { nome: `${limpo || 'Filial'} (${acctId || '-'})`, ehMatriz: false };
     };
 
+    const lerTextoArquivo = (file, enc) => new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(String(e.target?.result || ''));
+      reader.onerror = () => resolve('');
+      reader.readAsText(file, enc);
+    });
+
     const arquivos = [];
     const movimentos = [];
+    let totalBrutoOFX = 0;
+    let minData = '';
+    let maxData = '';
 
     for (const file of files) {
-      const texto = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(String(e.target?.result || ''));
-        reader.onerror = () => resolve('');
-        reader.readAsText(file, 'ISO-8859-1');
-      });
+      let texto = await lerTextoArquivo(file, 'ISO-8859-1');
+      if (!texto || !/<STMTTRN>/i.test(texto)) {
+        const textoUtf8 = await lerTextoArquivo(file, 'UTF-8');
+        if (textoUtf8 && /<STMTTRN>/i.test(textoUtf8)) texto = textoUtf8;
+      }
       if (!texto) continue;
 
       const acctId = extrairTag(texto, 'ACCTID') || file.name;
       const infoConta = detectarNomeFilialOFX(file.name, acctId);
       const balMatch = texto.match(/<LEDGERBAL>[\s\S]*?<BALAMT>([^<\r\n]+)/i) || texto.match(/<BALAMT>([^<\r\n]+)/i);
       const saldoFinal = balMatch ? (parseFloat(balMatch[1].replace(',', '.')) || 0) : 0;
-      arquivos.push({ arquivo: file.name, conta: acctId, filial: infoConta.nome, ehMatriz: infoConta.ehMatriz, saldoFinal });
 
-      const blocos = texto.match(/<STMTTRN>[\s\S]*?(?:<\/STMTTRN>|(?=<STMTTRN>)|<\/BANKTRANLIST>)/gi) || [];
+      const blocos = texto.split(/<STMTTRN>/i).slice(1);
+      totalBrutoOFX += blocos.length;
+      arquivos.push({ arquivo: file.name, conta: acctId, filial: infoConta.nome, ehMatriz: infoConta.ehMatriz, saldoFinal, qtdLanc: blocos.length });
+
       for (const b of blocos) {
         const rawDt = extrairTag(b, 'DTPOSTED').replace(/\D/g, '');
         const dataIso = rawDt.length >= 8 ? `${rawDt.slice(0, 4)}-${rawDt.slice(4, 6)}-${rawDt.slice(6, 8)}` : '';
+        if (dataIso) {
+          if (!minData || dataIso < minData) minData = dataIso;
+          if (!maxData || dataIso > maxData) maxData = dataIso;
+        }
         const rawAmt = extrairTag(b, 'TRNAMT').replace(',', '.');
         const valor = parseFloat(rawAmt) || 0;
         const trnType = extrairTag(b, 'TRNTYPE').toUpperCase();
         const memo = extrairTag(b, 'MEMO') || extrairTag(b, 'NAME') || '-';
         const memoUp = memo.toUpperCase();
 
-        const ehTransfKeyword = /TRANSF|PIX|TED|DOC|TEF|ENTRE\s*CONTAS|MESMA\s*TIT|98775|LALUA|BOAH|MATRIZ/.test(memoUp) || trnType === 'XFER';
+        const ehTransfKeyword = /TRANSF|PIX|TED|DOC|TEF|SISPAG|ENTRE\s*CONTAS|MESMA\s*TIT|ENVIO|REMESSA|98775|LALUA|BOAH|MATRIZ/.test(memoUp) || trnType === 'XFER';
         const ehMatrizKeyword = /98775|LALUA|BOAH|MATRIZ|MESMA\s*TIT|ENTRE\s*CONTAS|TEF\s+ENTRE/.test(memoUp);
 
         if (infoConta.ehMatriz) {
@@ -15991,7 +16006,22 @@
       }
     }
 
-    window._relTransferenciasOFX = { arquivos, movimentos };
+    // Ajusta automaticamente o período do relatório para as datas reais encontradas nos OFX
+    if (minData && maxData) {
+      const elIni = document.getElementById('rel-data-ini');
+      const elFim = document.getElementById('rel-data-fim');
+      if (elIni) elIni.value = minData;
+      if (elFim) elFim.value = maxData;
+    }
+
+    // Se nenhuma saída citou explicitamente "Lalua/Matriz/98775", exibe todas as saídas PIX/TED automaticamente
+    const temMatrizExplicita = movimentos.some(m => m.direcao === 'SAIDA_FILIAL' && m.ehProvavelMatriz);
+    const chkTodas = document.getElementById('rel-filtro-transf-todas');
+    if (chkTodas && !temMatrizExplicita && movimentos.some(m => m.direcao === 'SAIDA_FILIAL')) {
+      chkTodas.checked = true;
+    }
+
+    window._relTransferenciasOFX = { arquivos, movimentos, totalBrutoOFX };
     if (event?.target) event.target.value = '';
     renderizarRelatorioAtual();
   }
@@ -16056,7 +16086,7 @@
         <div style="background:#f0f9ff;border:1px solid #bae6fd;border-left:4px solid #0284c7;padding:8px 10px;border-radius:4px;">
           <div style="font-size:9px;font-weight:700;color:#0369a1;text-transform:uppercase;">Filiais / Contas Lidas</div>
           <div style="font-size:15px;font-weight:800;color:#0369a1;">${dados.arquivos.length}</div>
-          <div style="font-size:9px;color:#0284c7;">arquivo(s) OFX carregado(s)</div>
+          <div style="font-size:9px;color:#0284c7;">${dados.totalBrutoOFX || 0} lançamentos no(s) OFX</div>
         </div>
         <div style="background:#fffbeb;border:1px solid #fde68a;border-left:4px solid #d97706;padding:8px 10px;border-radius:4px;">
           <div style="font-size:9px;font-weight:700;color:#92400e;text-transform:uppercase;">Filtro Aplicado</div>
