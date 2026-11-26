@@ -1052,7 +1052,12 @@ def compat_editar_titulo(
             ip=extrair_ip(request),
         )
         db.commit()
-        return {"success": True, "message": "Guia tributária atualizada com sucesso!"}
+        return {
+            "success": True,
+            "message": "Guia tributária atualizada com sucesso!",
+            "valor_bruto": float(to_dec(imp.valor)),
+            "valor_liquido": float(to_dec(imp.valor)),
+        }
 
     titulo = (
         db.query(Titulo)
@@ -1143,7 +1148,12 @@ def compat_editar_titulo(
         ip=extrair_ip(request),
     )
     db.commit()
-    return {"success": True, "message": "Título atualizado com sucesso!"}
+    return {
+        "success": True,
+        "message": "Título atualizado com sucesso!",
+        "valor_bruto": float(to_dec(titulo.valor_bruto)),
+        "valor_liquido": float(to_dec(titulo.valor_liquido)),
+    }
 
 
 @router.post("/titulos/{id_ref}/baixa")
