@@ -14401,10 +14401,12 @@
 
     (titulos || []).forEach(t => {
       if (!t.itens || !t.itens.length) return;
+      if (['FOLHA', 'FOLHA_LOTE', 'DOMINGO_FERIADO', 'FERIAS', 'RESCISAO', 'PESSOAL_DP'].includes(String(t.tipo_doc || '').toUpperCase())) return;
       const dtRef = (t.data_emissao || t.vencimento || '').slice(0, 10);
       if (dtRef && (dtRef < dataIni || dtRef > dataFim)) return;
 
       t.itens.forEach(it => {
+        if (String(it.unidade || '').toUpperCase() === 'FOLHA_COLAB') return;
         const desc = String(it.descricao || '').trim();
         const cod = String(it.codigo || '').trim();
         const ncm = String(it.ncm || '').trim();
@@ -15383,9 +15385,10 @@
       if (!catPorMes[cat]) catPorMes[cat] = {};
       catPorMes[cat][ym] = (catPorMes[cat][ym] || 0) + val;
 
-      // Coleta histórico de preços unitários de itens NF-e
-      if (Array.isArray(t.itens)) {
+      // Coleta histórico de preços unitários de itens NF-e (ignora colaboradores de folha/DP)
+      if (Array.isArray(t.itens) && !['FOLHA', 'FOLHA_LOTE', 'DOMINGO_FERIADO', 'FERIAS', 'RESCISAO', 'PESSOAL_DP'].includes(String(t.tipo_doc || '').toUpperCase())) {
         t.itens.forEach(it => {
+          if (String(it.unidade || '').toUpperCase() === 'FOLHA_COLAB') return;
           const desc = String(it.descricao || '').trim().toUpperCase();
           const vUnit = Number(it.valor_unitario || 0);
           if (!desc || vUnit <= 0) return;
@@ -16280,9 +16283,11 @@
       csv = 'Data_Emissao;NF_e;Fornecedor;Codigo;Produto;NCM;Unidade;Quantidade;Valor_Unitario;Valor_Total\n';
       (titulos || []).forEach(t => {
         if (!t.itens || !t.itens.length) return;
+        if (['FOLHA', 'FOLHA_LOTE', 'DOMINGO_FERIADO', 'FERIAS', 'RESCISAO', 'PESSOAL_DP'].includes(String(t.tipo_doc || '').toUpperCase())) return;
         const dtRef = (t.data_emissao || t.vencimento || '').slice(0, 10);
         if (dtRef && (dtRef < dataIni || dtRef > dataFim)) return;
         t.itens.forEach(it => {
+          if (String(it.unidade || '').toUpperCase() === 'FOLHA_COLAB') return;
           csv += `"${dtRef}";"${t.numero_doc || ''}";"${(t.favorecido || '').replace(/"/g, '""')}";"${it.codigo || ''}";"${(it.descricao || '').replace(/"/g, '""')}";"${it.ncm || ''}";"${it.unidade || 'UN'}";"${Number(it.quantidade || 0).toFixed(4)}";"${Number(it.valor_unitario || 0).toFixed(4)}";"${Number(it.valor_total || 0).toFixed(2)}"\n`;
         });
       });
