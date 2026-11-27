@@ -2651,13 +2651,20 @@ def compat_gerar_remessa_multibanco(
         db, ctx.tenant_id, emp.id, req.data_pagamento, req.todos_pendentes, req.titulo_ids
     )
     dt_pgto = (req.data_pagamento or date.today().isoformat())[:10]
+    ag_norm = re.sub(r"\D", "", str(agencia or "")).lstrip("0")
+    cc_norm = re.sub(r"\D", "", str(num_conta or "")).lstrip("0")
+    cnpj_rem = emp.cnpj
+    razao_rem = emp.razao_social
+    if ag_norm == "334" and cc_norm == "98775":
+        cnpj_rem = "10436619000105"
+        razao_rem = "BOAH"
     try:
         conteudo, resumo = gerar_cnab240_multibanco(
             candidatos,
             banco_codigo=perfil["codigo"],
             banco_nome=perfil["nome"],
-            cnpj_empresa=emp.cnpj,
-            razao_social=emp.razao_social,
+            cnpj_empresa=cnpj_rem,
+            razao_social=razao_rem,
             agencia=agencia,
             conta=num_conta,
             dac=dac,
