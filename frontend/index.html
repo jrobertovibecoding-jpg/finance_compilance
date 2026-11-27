@@ -15823,11 +15823,12 @@
       const cc = String(t.ccusto || '').toUpperCase();
       const td = String(t.tipo_doc || '').toUpperCase();
       const desc = String(t.descricao || '').toUpperCase();
-      if (cc.includes('21404') || cc.includes('12203') || cc.includes('TRANSPORTE')) return 'VT';
-      if (cc.includes('21405') || cc.includes('12204') || cc.includes('ALIMENTA')) return 'ALIMENTACAO';
+      const ctx = `${cc} ${td} ${desc} ${String(t.favorecido || '').toUpperCase()} ${String(t.numero_doc || '').toUpperCase()}`;
+      if (cc.includes('21404') || cc.includes('TRANSPORTE') || /SALVADOR|SALVARDOR|TRANSCARD|METROPASSE/.test(ctx) || (cc.includes('12203') && !cc.includes('PROLABORE') && !cc.includes('PRÓ-LABORE'))) return 'VT';
+      if (cc.includes('21405') || cc.includes('12204') || cc.includes('ALIMENTA') || ctx.includes('TICKET')) return 'ALIMENTACAO';
       if (td === 'DOMINGO_FERIADO' || cc.includes('21419') || cc.includes('DOMINGO') || desc.includes('DOMINGO') || desc.includes('FERIADO')) return 'DOMINGOS';
       if (td === 'FERIAS' || td === 'RESCISAO' || cc.includes('21407') || cc.includes('21408') || cc.includes('FÉRIAS') || cc.includes('FERIAS') || cc.includes('RESCIS')) return 'FERIAS_RESC';
-      if (cc.includes('21401') || cc.includes('12201') || cc.includes('21402') || cc.includes('21403') || cc.includes('SALÁRIO') || cc.includes('SALARIO') || cc.includes('PROLABORE') || td === 'FOLHA') return 'SALARIOS';
+      if (cc.includes('21401') || cc.includes('12201') || cc.includes('21402') || cc.includes('21403') || cc.includes('12203') || cc.includes('SALÁRIO') || cc.includes('SALARIO') || cc.includes('PROLABORE') || cc.includes('PRÓ-LABORE') || td === 'FOLHA') return 'SALARIOS';
       return 'ENCARGOS';
     };
 
@@ -15915,7 +15916,10 @@
       const valTitulo = Number(t.valor || 0);
       const isPago = !!t.conciliada;
       const favNome = String(t.favorecido || 'NÃO INFORMADO').trim();
-      const catLabel = String(t.ccusto || t.tipo_doc || '214 - Pessoal').trim();
+      let catLabel = String(t.ccusto || t.tipo_doc || '214 - Pessoal').trim();
+      if (nat === 'VT' && /12203|PROLABORE|PRÓ-LABORE/i.test(catLabel)) {
+        catLabel = '21404 - Vale Transporte';
+      }
       const itensColab = Array.isArray(t.itens) ? t.itens.filter(it => String(it.unidade || '').toUpperCase() === 'FOLHA_COLAB') : [];
 
       let somaTituloFiltrado = 0;
