@@ -2508,6 +2508,7 @@
                   <option value="SINTETICO">Sintético (Resumo Filial + Fornecedor)</option>
                   <option value="ANALITICO">Analítico (Aberto por Lançamento)</option>
                   <option value="CONSOLIDADO" selected>Consolidado por Colaborador</option>
+                  <option value="FICHA">Rastreabilidade por Colaborador (Extrato Completo)</option>
                   <option value="COMPLETO">Completo (Todas as Tabelas)</option>
                 </select>
               </div>
@@ -15854,11 +15855,11 @@
       f.total += val;
     };
 
-    const addBenef = (nome, cpf, filial, nat, val) => {
+    const addBenef = (nome, cpf, filial, nat, val, detalhe = null) => {
       const nomeLimpo = String(nome || '').trim();
       const key = nomeLimpo.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
       if (!porBeneficiario[key]) {
-        porBeneficiario[key] = { nome: nomeLimpo, cpf: cpf || '-', filial, salarios: 0, domingos: 0, vt: 0, alimentacao: 0, outros: 0, total: 0 };
+        porBeneficiario[key] = { nome: nomeLimpo, cpf: cpf || '-', filial, salarios: 0, domingos: 0, vt: 0, alimentacao: 0, outros: 0, total: 0, pagamentos: [] };
       }
       const b = porBeneficiario[key];
       if ((!b.cpf || b.cpf === '-') && cpf && cpf !== '-') {
@@ -15873,6 +15874,7 @@
       else if (nat === 'ALIMENTACAO') b.alimentacao += val;
       else b.outros += val;
       b.total += val;
+      if (detalhe) b.pagamentos.push(detalhe);
     };
 
     baseTitulos.forEach(t => {
@@ -15899,7 +15901,17 @@
           somaTituloFiltrado += valItem;
           benefsDoLanc.push({ nome: nomeColab, cpf: cpfColab || '-', filial: filColab, valor: valItem });
           addFilialBucket(filColab, nat, valItem);
-          addBenef(nomeColab, cpfColab, filColab, nat, valItem);
+          addBenef(nomeColab, cpfColab, filColab, nat, valItem, {
+            vencimento: t.vencimento || '',
+            dataBaixa: t.data_baixa || '',
+            doc: t.numero_doc || t.loteId || '-',
+            loteId: t.loteId || t.numero_id || '',
+            categoria: catLabel,
+            fornecedor: favNome,
+            filial: filColab,
+            isPago,
+            valor: valItem
+          });
         });
       } else {
         const filTit = inferirFilialTitulo(t);
@@ -15909,7 +15921,17 @@
         somaTituloFiltrado = valTitulo;
         addFilialBucket(filTit, nat, valTitulo);
         if (['FOLHA', 'DOMINGO_FERIADO', 'FERIAS', 'RESCISAO'].includes(String(t.tipo_doc || '').toUpperCase())) {
-          addBenef(favNome, t.cnpj || '', filTit, nat, valTitulo);
+          addBenef(favNome, t.cnpj || '', filTit, nat, valTitulo, {
+            vencimento: t.vencimento || '',
+            dataBaixa: t.data_baixa || '',
+            doc: t.numero_doc || t.loteId || '-',
+            loteId: t.loteId || t.numero_id || '',
+            categoria: catLabel,
+            fornecedor: favNome,
+            filial: filTit,
+            isPago,
+            valor: valTitulo
+          });
         }
       }
 
@@ -15938,8 +15960,9 @@
 
     const mostrarLancamentos = (modoFiltro === 'SINTETICO' || modoFiltro === 'ANALITICO' || modoFiltro === 'COMPLETO');
     const abrirLancPorPadrao = (modoFiltro === 'ANALITICO');
-    const mostrarConsolidado = (modoFiltro === 'CONSOLIDADO' || modoFiltro === 'COMPLETO');
-    const modoNomeMap = { SINTETICO: 'Sintético', ANALITICO: 'Analítico', CONSOLIDADO: 'Consolidado por Colaborador', COMPLETO: 'Completo' };
+    const mostrarConsolidado = (modoFiltro === 'CONSOLIDADO' || modoFiltro === 'FICHA' || modoFiltro === 'COMPLETO');
+    const abrirFichaPorPadrao = (modoFiltro === 'FICHA');
+    const modoNomeMap = { SINTETICO: 'Sintético', ANALITICO: 'Analítico', CONSOLIDADO: 'Consolidado por Colaborador', FICHA: 'Rastreabilidade por Colaborador', COMPLETO: 'Completo' };
 
     const periodLabel = (dataIni || dataFim) ? `${dataIni ? formatarData(dataIni) : 'Início'} até ${dataFim ? formatarData(dataFim) : 'Hoje'}` : 'Todo o Período';
     const subtitulo = `Visão: ${modoNomeMap[modoFiltro] || modoFiltro} • Período: ${periodLabel} • Filial: ${filialFiltro} • Natureza: ${catFiltro}${buscaFiltro ? ` • Busca: "${escapeHtml(buscaFiltro)}"` : ''}`;
@@ -16076,7 +16099,7 @@
 
     if (mostrarConsolidado) {
       html += `
-      <div style="font-weight:800;font-size:11px;color:#5b21b6;text-transform:uppercase;margin-bottom:6px;">${mostrarLancamentos ? '3.' : '2.'} Consolidado Individual por Beneficiário / Colaborador (${listaBeneficiarios.length})</div>
+      <div style="font-weight:800;font-size:11px;color:#5b21b6;text-transform:uppercase;margin-bottom:6px;">${mostrarLancamentos ? '3.' : '2.'} ${abrirFichaPorPadrao ? 'Rastreabilidade Individual por Colaborador' : 'Consolidado Individual por Beneficiário / Colaborador'} (${listaBeneficiarios.length}) <span style="font-weight:600;color:#64748b;text-transform:none;">(clique no colaborador para abrir/fechar o histórico detalhado de pagamentos)</span></div>
       <table class="alterdata-grid" style="width:100%;border-collapse:collapse;font-size:10px;">
         <thead>
           <tr style="background:#4c1d95;color:white;">
@@ -16092,9 +16115,15 @@
           </tr>
         </thead>
         <tbody>
-          ${listaBeneficiarios.map((b, idx) => `
-            <tr style="${idx % 2 === 1 ? 'background:#f8fafc;' : 'background:#ffffff;'}">
-              <td style="padding:5px 6px;font-weight:700;color:#0f172a;">${escapeHtml(b.nome)}</td>
+          ${listaBeneficiarios.map((b, idx) => {
+            const pags = (b.pagamentos || []).slice().sort((a, c) => (a.vencimento || '').localeCompare(c.vencimento || ''));
+            const temPags = pags.length > 0;
+            let outRow = `
+            <tr ${temPags ? `onclick="alternarBeneficiariosRelatorio('pes-ficha-${idx}', 'pes-ficha-ico-${idx}')" title="Clique para abrir/fechar todos os pagamentos deste colaborador"` : ''} style="${idx % 2 === 1 ? 'background:#f8fafc;' : 'background:#ffffff;'} ${temPags ? 'cursor:pointer;' : ''}">
+              <td style="padding:5px 6px;font-weight:700;color:#0f172a;">
+                ${temPags ? `<span id="pes-ficha-ico-${idx}" style="color:#5b21b6;margin-right:4px;">${abrirFichaPorPadrao ? '▼' : '▶'}</span>` : ''}${escapeHtml(b.nome)}
+                ${temPags ? `<span style="font-size:8.5px;font-weight:600;color:#64748b;margin-left:4px;">(${pags.length} reg.)</span>` : ''}
+              </td>
               <td style="padding:5px 6px;font-family:monospace;color:#475569;">${escapeHtml(b.cpf)}</td>
               <td style="padding:5px 6px;font-weight:700;color:#0369a1;">${escapeHtml(b.filial)}</td>
               <td style="padding:5px 6px;text-align:right;font-family:monospace;">${formatarMoeda(b.salarios)}</td>
@@ -16104,7 +16133,45 @@
               <td style="padding:5px 6px;text-align:right;font-family:monospace;">${formatarMoeda(b.outros)}</td>
               <td style="padding:5px 6px;text-align:right;font-family:monospace;font-weight:800;color:#4c1d95;">${formatarMoeda(b.total)}</td>
             </tr>
-          `).join('')}
+            `;
+            if (temPags) {
+              outRow += `
+              <tr id="pes-ficha-${idx}" style="display:${abrirFichaPorPadrao ? '' : 'none'};background:#faf5ff;">
+                <td colspan="9" style="padding:6px 12px 10px 22px;border-bottom:2px solid #ddd6fe;">
+                  <table style="width:100%;border-collapse:collapse;font-size:9.5px;background:#ffffff;border:1px solid #e9d5ff;">
+                    <thead>
+                      <tr style="background:#ede9fe;color:#4c1d95;">
+                        <th style="padding:3px 6px;text-align:center;width:78px;">Vencim.</th>
+                        <th style="padding:3px 6px;text-align:center;width:78px;">Pago em</th>
+                        <th style="padding:3px 6px;text-align:left;width:110px;">Doc / ID</th>
+                        <th style="padding:3px 6px;text-align:left;">Categoria Contábil</th>
+                        <th style="padding:3px 6px;text-align:left;">Origem / Fornecedor</th>
+                        <th style="padding:3px 6px;text-align:left;width:95px;">Filial</th>
+                        <th style="padding:3px 6px;text-align:center;width:70px;">Situação</th>
+                        <th style="padding:3px 6px;text-align:right;width:85px;">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${pags.map(p => `
+                        <tr style="border-top:1px solid #f3e8ff;">
+                          <td style="padding:3px 6px;text-align:center;font-family:monospace;">${p.vencimento ? formatarData(p.vencimento) : '-'}</td>
+                          <td style="padding:3px 6px;text-align:center;font-family:monospace;color:#059669;">${p.dataBaixa ? formatarData(p.dataBaixa) : '-'}</td>
+                          <td style="padding:3px 6px;font-family:monospace;color:#4338ca;">${escapeHtml(p.doc)}${p.loteId ? ` <span style="color:#64748b;">(${escapeHtml(p.loteId)})</span>` : ''}</td>
+                          <td style="padding:3px 6px;font-weight:600;color:#1e293b;">${escapeHtml(p.categoria)}</td>
+                          <td style="padding:3px 6px;color:#475569;">${escapeHtml(p.fornecedor)}</td>
+                          <td style="padding:3px 6px;font-weight:700;color:#0369a1;">${escapeHtml(p.filial)}</td>
+                          <td style="padding:3px 6px;text-align:center;">${p.isPago ? '<span style="color:#059669;font-weight:700;">Pago</span>' : '<span style="color:#b45309;font-weight:700;">Aberto</span>'}</td>
+                          <td style="padding:3px 6px;text-align:right;font-family:monospace;font-weight:700;color:#4c1d95;">${formatarMoeda(p.valor)}</td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+              `;
+            }
+            return outRow;
+          }).join('')}
         </tbody>
       </table>
       `;
