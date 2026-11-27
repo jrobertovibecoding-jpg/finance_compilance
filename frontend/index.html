@@ -15920,7 +15920,9 @@
 
         somaTituloFiltrado = valTitulo;
         addFilialBucket(filTit, nat, valTitulo);
-        if (['FOLHA', 'DOMINGO_FERIADO', 'FERIAS', 'RESCISAO'].includes(String(t.tipo_doc || '').toUpperCase())) {
+        const favUp = favNome.toUpperCase();
+        const ehOperadoraOuGuia = /TICKET|SALVADOR|TRANSCARD|METROPASSE|CAIXA|FGTS|INSS|DARF|GPS|SINDICATO|SINDECOLF|BEM MAIS|SST MAIS|PREFEITURA|SOLAR|LALUA|BOAH/.test(favUp);
+        if (!ehOperadoraOuGuia && (['SALARIOS', 'DOMINGOS', 'FERIAS_RESC'].includes(nat) || ['FOLHA', 'DOMINGO_FERIADO', 'FERIAS', 'RESCISAO', 'PESSOAL_DP', 'RECIBO', 'PIX'].includes(String(t.tipo_doc || '').toUpperCase()))) {
           addBenef(favNome, t.cnpj || '', filTit, nat, valTitulo, {
             vencimento: t.vencimento || '',
             dataBaixa: t.data_baixa || '',
