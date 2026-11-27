@@ -13246,10 +13246,15 @@
     document.getElementById('modal-vinc-extrato-valor').textContent = `- ${formatarMoeda(ext.valor)}`;
     document.getElementById('modal-vinc-valor-ext').textContent = formatarMoeda(ext.valor);
 
-    // Carregar títulos pendentes
-    const pendentes = titulos.filter(t =>
-      t.situacao !== 'BAIXADO' && t.status !== 'CONCILIADO' && !t.conciliado_com_extrato && Number(t.valor) > 0
-    );
+    // Carregar títulos pendentes (inclui títulos órfãos cuja linha do extrato não está marcada como conciliada)
+    const idsExtratoConc = new Set(extratoBancario.filter(e => e.conciliado && e.titulo_id).map(e => String(e.titulo_id)));
+    const pendentes = titulos.filter(t => {
+      if (Number(t.valor) <= 0) return false;
+      const jaVinculadoOutro = idsExtratoConc.has(String(t.id));
+      if (jaVinculadoOutro) return false;
+      if (t.conciliado_com_extrato && String(t.conciliado_com_extrato) === String(extId)) return true;
+      return t.situacao !== 'BAIXADO' && t.status !== 'CONCILIADO' && !t.conciliado_com_extrato;
+    });
     renderizarTitulosModal(pendentes);
     document.getElementById('modal-vinc-contador').textContent = `${pendentes.length} títulos pendentes`;
     atualizarTotalizadorModal();
@@ -13454,6 +13459,14 @@
       extratoBancario.forEach(item => {
         if (item.tipo === 'TARIFA' && /boleto\s+pago|pix\s+enviado/i.test(item.memo || '')) {
           item.tipo = 'DEBITO';
+        }
+        if (!item.conciliado) {
+          const titOrfao = (titulos || []).find(t => t.conciliado_com_extrato && String(t.conciliado_com_extrato) === String(item.id));
+          if (titOrfao) {
+            item.conciliado = true;
+            item.titulo_id = titOrfao.id;
+            item.titulo_numero_id = titOrfao.numero_id || titOrfao.numero_doc;
+          }
         }
         const grupoInfo = item.grupo_ids ? ` (${item.grupo_ids.length} títulos)` : '';
         const jurosInfo = item.juros_valor && item.juros_valor > 0 ? `<div style="font-size: 9px; color: #dc2626; font-weight: 700; margin-top: 1px;">Juros: +${formatarMoeda(item.juros_valor)}</div>` : '';
