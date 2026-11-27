@@ -18110,34 +18110,86 @@
       document.getElementById('rem-qtd-validos').textContent = String(data.totais?.qtd_validos || 0);
       document.getElementById('rem-qtd-rejeitados').textContent = String(data.totais?.qtd_rejeitados || 0);
 
+      const _inferirFilialRemessa = (v) => {
+        const raw = String(v.filial || '').trim();
+        const up = `${raw} ${v.numero_doc || ''}`.toUpperCase();
+        if (up.includes('SOLAR')) return 'Solar - Geral';
+        if (up.includes('BARRA')) return 'Boah - Barra';
+        if (up.includes('PASEO')) return 'Boah - Paseo';
+        if (up.includes('HORTO')) return 'Boah - Horto';
+        if (up.includes('SDB')) return 'Boah - SDB';
+        if (up.includes('VILAS')) return 'Boah - Vilas';
+        if (up.includes('MATRIZ') || up.includes('TRIZ')) return 'Boah - Matriz';
+        return raw || 'Outras Despesas / Geral';
+      };
+
+      const validos = data.validos || [];
+      const gruposFilialMap = new Map();
+      validos.forEach(v => {
+        const fil = _inferirFilialRemessa(v);
+        if (!gruposFilialMap.has(fil)) gruposFilialMap.set(fil, { filial: fil, itens: [], total: 0 });
+        const g = gruposFilialMap.get(fil);
+        g.itens.push(v);
+        g.total += Number(v.valor || 0);
+      });
+      const gruposFilial = Array.from(gruposFilialMap.values()).sort((a, b) => {
+        if (a.filial === 'Outras Despesas / Geral') return 1;
+        if (b.filial === 'Outras Despesas / Geral') return -1;
+        return a.filial.localeCompare(b.filial, 'pt-BR');
+      });
+
       const lotes = data.lotes || [];
       if (lotes.length > 0) {
-        boxLotes.innerHTML = lotes.map(l => `
+        const cardsLotes = lotes.map(l => `
           <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;padding:7px 11px;min-width:170px;">
             <div style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase;">${escapeHtml(l.rotulo)}</div>
             <div style="font-size:13px;font-weight:800;color:#0c4a6e;">${l.qtd} título(s) • ${formatarMoeda(l.valor)}</div>
           </div>
         `).join('');
+        const cardsFiliais = gruposFilial.length > 1 || (gruposFilial.length === 1 && gruposFilial[0].filial !== 'Outras Despesas / Geral')
+          ? gruposFilial.map(g => `
+            <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;padding:7px 11px;min-width:135px;">
+              <div style="font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;">🏢 ${escapeHtml(g.filial)}</div>
+              <div style="font-size:12.5px;font-weight:800;color:#0f172a;">${g.itens.length} • ${formatarMoeda(g.total)}</div>
+            </div>
+          `).join('')
+          : '';
+        boxLotes.innerHTML = cardsLotes + cardsFiliais;
       } else {
         boxLotes.innerHTML = '<div style="font-size:11px;color:#64748b;">Nenhum lote montado para os filtros atuais.</div>';
       }
 
-      const validos = data.validos || [];
       if (validos.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:18px;color:#64748b;">Nenhum título apto (com código de barras ou Chave PIX) encontrado nesta data. Marque "Todos os pendentes" ou confira os títulos ignorados abaixo.</td></tr>';
       } else {
-        tbody.innerHTML = validos.map(v => {
-          const dtBr = v.dt_vencimento ? v.dt_vencimento.split('-').reverse().join('/') : '-';
-          return `
-            <tr style="border-top:1px solid #e2e8f0;">
-              <td style="padding:6px 8px;"><input type="checkbox" class="rem-item-chk" value="${escapeHtml(v.id)}" data-valor="${Number(v.valor || 0)}" checked onchange="recalcularTotalSelecionadoRemessa()"></td>
-              <td style="padding:6px 8px;white-space:nowrap;">${escapeHtml(dtBr)}</td>
-              <td style="padding:6px 8px;font-family:monospace;">${escapeHtml(v.numero_doc || '-')}</td>
-              <td style="padding:6px 8px;font-weight:600;color:#0f172a;">${escapeHtml(v.fornecedor || '-')}</td>
-              <td style="padding:6px 8px;"><span style="background:#e0f2fe;color:#0369a1;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;">${escapeHtml(v.identificador_pgto || v.rotulo_lote)}</span></td>
-              <td style="padding:6px 8px;text-align:right;font-weight:700;">${formatarMoeda(v.valor)}</td>
+        tbody.innerHTML = gruposFilial.map((g, gIdx) => {
+          g.itens.sort((a, b) => String(a.fornecedor || '').localeCompare(String(b.fornecedor || ''), 'pt-BR'));
+          const hdrFilial = `
+            <tr style="background:#f1f5f9;border-top:2px solid #cbd5e1;">
+              <td style="padding:7px 8px;">
+                <input type="checkbox" class="rem-filial-chk" data-filidx="${gIdx}" checked onchange="toggleFilialRemessa(${gIdx}, this.checked)" title="Marcar/desmarcar toda a filial">
+              </td>
+              <td colspan="4" style="padding:7px 8px;font-weight:800;font-size:11.5px;color:#1e293b;">
+                🏢 ${escapeHtml(g.filial)}
+                <span style="margin-left:6px;background:#e2e8f0;color:#334155;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:700;">${g.itens.length} colaborador(es)</span>
+              </td>
+              <td style="padding:7px 8px;text-align:right;font-weight:800;font-size:11.5px;color:#0f172a;white-space:nowrap;">${formatarMoeda(g.total)}</td>
             </tr>
           `;
+          const rowsFilial = g.itens.map(v => {
+            const dtBr = v.dt_vencimento ? v.dt_vencimento.split('-').reverse().join('/') : '-';
+            return `
+              <tr style="border-top:1px solid #e2e8f0;">
+                <td style="padding:6px 8px;"><input type="checkbox" class="rem-item-chk" data-filidx="${gIdx}" value="${escapeHtml(v.id)}" data-valor="${Number(v.valor || 0)}" checked onchange="recalcularTotalSelecionadoRemessa()"></td>
+                <td style="padding:6px 8px;white-space:nowrap;">${escapeHtml(dtBr)}</td>
+                <td style="padding:6px 8px;font-family:monospace;">${escapeHtml(v.numero_doc || '-')}</td>
+                <td style="padding:6px 8px;font-weight:600;color:#0f172a;">${escapeHtml(v.fornecedor || '-')}</td>
+                <td style="padding:6px 8px;"><span style="background:#e0f2fe;color:#0369a1;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;">${escapeHtml(v.identificador_pgto || v.rotulo_lote)}</span></td>
+                <td style="padding:6px 8px;text-align:right;font-weight:700;">${formatarMoeda(v.valor)}</td>
+              </tr>
+            `;
+          }).join('');
+          return hdrFilial + rowsFilial;
         }).join('');
       }
 
@@ -18159,7 +18211,12 @@
   }
 
   function toggleTodosTitulosRemessa(marcar) {
-    document.querySelectorAll('.rem-item-chk').forEach(cb => { cb.checked = marcar; });
+    document.querySelectorAll('.rem-item-chk, .rem-filial-chk').forEach(cb => { cb.checked = marcar; });
+    recalcularTotalSelecionadoRemessa();
+  }
+
+  function toggleFilialRemessa(filIdx, marcar) {
+    document.querySelectorAll(`.rem-item-chk[data-filidx="${filIdx}"]`).forEach(cb => { cb.checked = marcar; });
     recalcularTotalSelecionadoRemessa();
   }
 

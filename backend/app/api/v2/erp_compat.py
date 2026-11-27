@@ -2396,6 +2396,11 @@ def _carregar_candidatos_remessa(
                     "cod_barras": "",
                     "pix_chave": (forn_c.pix_chave.strip() if forn_c and forn_c.pix_chave else ""),
                     "dados_banco": db_c,
+                    "filial": (
+                        (it.ncm or "").strip()
+                        or (forn_c.categoria_padrao.strip() if forn_c and forn_c.categoria_padrao and forn_c.categoria_padrao.startswith(("Boah -", "Solar -")) else "")
+                        or resolver_filial_colaborador(nome_it, fallback="")
+                    ),
                 })
             continue
 
@@ -2596,6 +2601,7 @@ def compat_preview_remessa_multibanco(
             "tipo_lote": tp,
             "rotulo_lote": rotulos.get(tp, tp),
             "identificador_pgto": v.get("_identificador_pgto", ""),
+            "filial": v.get("filial", ""),
         })
 
     return {
