@@ -2358,6 +2358,56 @@ def _vincular_comprovantes_pdf_folha(
 
             if escolhido:
                 paginas_por_titulo.setdefault(escolhido.id, []).append(p_idx)
+            else:
+                # Fallback para pagamento consolidado (soma de várias NFs/romaneios do mesmo fornecedor ou faccionista)
+                mesmo_fav = [
+                    tx for tx, doc_tx, nome_tx, toks_tx, _ in alvos_t
+                    if _match_texto_comprovante(txt, digs, txt_norm, txt_toks, doc_tx, nome_tx, toks_tx)
+                ]
+                if mesmo_fav:
+                    m_val = (
+                        re.search(r"(?:Valor do pagamento|valor|Valor do documento)\s*(?:\(R\$\))?\s*[:\r\n\s]*(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})", txt, re.IGNORECASE)
+                    )
+                    vals_pag = []
+                    if m_val:
+                        vals_pag.append(round(float(m_val.group(1).replace(".", "").replace(",", ".")), 2))
+                    else:
+                        vals_pag = [
+                            round(float(v.replace(".", "").replace(",", ".")), 2)
+                            for v in re.findall(r"(?<!\d)\d{1,3}(?:\.\d{3})*,\d{2}", txt)
+                        ]
+                        vals_pag = [v for v in vals_pag if v > 0]
+                    if vals_pag:
+                        mesmo_fav.sort(key=lambda tx: (0 if (dp_p and tx.dt_pagamento == dp_p) else 1, abs((tx.dt_vencimento - (dv_p or titulo.dt_vencimento)).days)))
+                        cand_sub = mesmo_fav[:16]
+                        achado_sub = []
+                        alvos_soma = list(vals_pag)
+                        # Se o comprovante foi anexado dentro de uma das NFs da soma, também testa (valor_recibo - valor_titulo_atual)
+                        fav_pai_ok = _match_texto_comprovante(
+                            txt, digs, txt_norm, txt_toks,
+                            limpar_documento(titulo.favorecido_doc or ""),
+                            _norm_nome_forn(titulo.favorecido_nome or ""),
+                            _norm_nome_forn(titulo.favorecido_nome or "").split(),
+                        )
+                        if fav_pai_ok:
+                            v_pai = round(float(titulo.valor_liquido or 0), 2)
+                            for vp in vals_pag:
+                                if vp > v_pai + 0.01:
+                                    alvos_soma.append(round(vp - v_pai, 2))
+                        for alvo_v in alvos_soma:
+                            if achado_sub:
+                                break
+                            max_k = min(8, len(cand_sub))
+                            for k in range(1 if fav_pai_ok else 2, max_k + 1):
+                                for comb in combinations(cand_sub, k):
+                                    soma_c = round(sum(float(x.valor_liquido or 0) for x in comb), 2)
+                                    if abs(soma_c - alvo_v) <= 0.02:
+                                        achado_sub = list(comb)
+                                        break
+                                if achado_sub:
+                                    break
+                        for tx in achado_sub:
+                            paginas_por_titulo.setdefault(tx.id, []).append(p_idx)
 
         tits_by_id = {tx.id: tx for tx in tits_cand}
         for tx_id, page_idxs in paginas_por_titulo.items():
