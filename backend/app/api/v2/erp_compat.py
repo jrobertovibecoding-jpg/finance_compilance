@@ -3044,6 +3044,9 @@ def compat_gerar_remessa_multibanco(
     if ag_norm == "334" and cc_norm == "98775":
         cnpj_rem = "10436619000105"
         razao_rem = "BOAH"
+    elif ag_norm == "334" and cc_norm == "98936":
+        cnpj_rem = "26607445000128"
+        razao_rem = "SOLAR SERVICOS DE APOIO ADMINISTRATIVO LTDA"
     try:
         conteudo, resumo = gerar_cnab240_multibanco(
             candidatos,
