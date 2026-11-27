@@ -12810,7 +12810,7 @@
           const dataFmt = dataMatch ? `${dataMatch[1]}-${dataMatch[2]}-${dataMatch[3]}` : new Date().toISOString().split('T')[0];
           const memo = memoMatch ? memoMatch[1].trim() : 'Lançamento Bancário';
           const fitid = fitidMatch ? fitidMatch[1].trim() : 'OFX_' + Date.now() + '_' + i;
-          const isTarifa = memo.toLowerCase().includes('tar') || memo.toLowerCase().includes('iof') || memo.toLowerCase().includes('cesta');
+          const isTarifa = /\b(tar|tarifa|tarifas|iof|cesta|pacote)\b/i.test(memo) && !/boleto\s+pago|pix\s+enviado/i.test(memo);
 
           transacoes.push({
             id: 'EXT_OFX_' + Date.now() + '_' + i,
@@ -13465,7 +13465,7 @@
         if (item.conciliado) {
           acaoBtn = `<button class="tool-btn" onclick="desvincularConciliacao('${escapeHtml(item.id)}')" style="padding: 2px 6px; font-size: 10px;" title="Desfazer conciliação deste item"><svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Desvincular</button>`;
         } else if (item.tipo === 'TARIFA') {
-          acaoBtn = `<button class="tool-btn primary" onclick="lancarTarifaRapida('${escapeHtml(item.id)}')" style="padding: 2px 6px; font-size: 10px; background: #004b87;" title="Criar título no Contas a Pagar e conciliar na hora"><svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Criar</button>`;
+          acaoBtn = `<div style="display:flex;gap:3px;justify-content:center;"><button class="tool-btn primary" onclick="lancarTarifaRapida('${escapeHtml(item.id)}')" style="padding: 2px 6px; font-size: 10px; background: #004b87;" title="Criar título no Contas a Pagar e conciliar na hora"><svg class="bimer-svg bimer-svg-xs" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Criar</button><button class="tool-btn" onclick="abrirModalVincular('${escapeHtml(item.id)}')" style="padding: 2px 5px; font-size: 10px;" title="Vincular manualmente a um título existente">Vincular</button></div>`;
         } else {
           const sug = encontrarMelhorSugestaoConciliacao(item);
           if (sug) {
