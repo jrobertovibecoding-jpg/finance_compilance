@@ -2132,10 +2132,35 @@ def _match_texto_comprovante(txt: str, digs: str, txt_norm: str, txt_toks: set[s
         return True
     if nome_norm and len(nome_norm) >= 8 and nome_norm in txt_norm:
         return True
+    # Remove sufixos societários (LTDA, SA, ME, EPP, EIRELI) que podem ser truncados nos boletos Itaú (ex: 'LT')
+    toks_sig = [t for t in toks if t not in {"LTDA", "LT", "SA", "S", "A", "ME", "EPP", "EIRELI", "CIA"}]
+    if len(toks_sig) >= 2 and all(t in txt_toks for t in toks_sig[:3]) and len(toks_sig[0]) >= 2:
+        if len(toks_sig) <= 3 or toks_sig[-1] in txt_toks:
+            return True
     if len(toks) >= 2 and toks[0] in txt_toks and toks[-1] in txt_toks and len(toks[0]) >= 3 and len(toks[-1]) >= 3:
         if len(toks) == 2 or toks[1] in txt_toks:
             return True
     return False
+
+
+def _extrair_datas_pagina_comprovante(txt: str) -> tuple[Optional[date], Optional[date]]:
+    """Extrai (data_vencimento, data_pagamento) de páginas de comprovante Itaú."""
+    def _to_d(m):
+        if not m:
+            return None
+        try:
+            d, mo, y = int(m.group(1)), int(m.group(2)), int(m.group(3))
+            return date(y, mo, d)
+        except Exception:
+            return None
+
+    m_venc = re.search(r"Data de vencimento:\s*(\d{2})/(\d{2})/(\d{4})", txt, re.IGNORECASE)
+    m_pgto = (
+        re.search(r"Data de pagamento:\s*(\d{2})/(\d{2})/(\d{4})", txt, re.IGNORECASE)
+        or re.search(r"data da transfer[êe]ncia:\s*(\d{2})/(\d{2})/(\d{4})", txt, re.IGNORECASE)
+        or re.search(r"Opera[çc][ãa]o efetuada em\s*(\d{2})/(\d{2})/(\d{4})", txt, re.IGNORECASE)
+    )
+    return _to_d(m_venc), _to_d(m_pgto)
 
 
 def _valor_no_texto(txt: str, valor_dec: Decimal) -> bool:
@@ -2155,7 +2180,7 @@ def _vincular_comprovantes_pdf_folha(
     titulo: Titulo,
     pdf_bytes: bytes,
 ) -> list[dict[str, Any]]:
-    """Separa páginas de um PDF multi-comprovantes e vincula automaticamente a colaboradores (FOLHA_COLAB) e títulos individuais (PIX/Boleto/Guia)."""
+    """Separa páginas de um PDF multi-comprovantes e vincula automaticamente a colaboradores (FOLHA_COLAB) e títulos (Boletos/PIX/Guias)."""
     from pypdf import PdfReader, PdfWriter
 
     try:
@@ -2166,6 +2191,8 @@ def _vincular_comprovantes_pdf_folha(
         return []
 
     pages_cache = []
+    datas_pgto_pdf: set[date] = set()
+    datas_venc_pdf: set[date] = set()
     for p_idx, page in enumerate(reader.pages):
         txt = page.extract_text() or ""
         if not txt.strip():
@@ -2173,7 +2200,12 @@ def _vincular_comprovantes_pdf_folha(
         digs = re.sub(r"\D", "", txt)
         txt_norm = _norm_nome_forn(txt)
         txt_toks = set(txt_norm.split())
-        pages_cache.append((p_idx, txt, digs, txt_norm, txt_toks))
+        dv_p, dp_p = _extrair_datas_pagina_comprovante(txt)
+        if dv_p:
+            datas_venc_pdf.add(dv_p)
+        if dp_p:
+            datas_pgto_pdf.add(dp_p)
+        pages_cache.append((p_idx, txt, digs, txt_norm, txt_toks, dv_p, dp_p))
     if not pages_cache:
         return []
 
@@ -2190,13 +2222,14 @@ def _vincular_comprovantes_pdf_folha(
         )
         .all()
     )
+    datas_folha = {titulo.dt_vencimento} | datas_venc_pdf | datas_pgto_pdf
     itens_mesma_data = (
         db.query(TituloItem)
         .join(Titulo, TituloItem.titulo_id == Titulo.id)
         .filter(
             TituloItem.tenant_id == ctx.tenant_id,
             Titulo.tenant_id == ctx.tenant_id,
-            Titulo.dt_vencimento == titulo.dt_vencimento,
+            Titulo.dt_vencimento.in_(list(datas_folha)),
             TituloItem.titulo_id != titulo.id,
             TituloItem.unidade == "FOLHA_COLAB",
         )
@@ -2211,7 +2244,7 @@ def _vincular_comprovantes_pdf_folha(
             alvos_c.append((it, cpf_it if len(cpf_it) == 11 else "", nome_norm, nome_norm.split()))
 
         paginas_por_item: dict[str, list[int]] = {}
-        for p_idx, txt, digs, txt_norm, txt_toks in pages_cache:
+        for p_idx, txt, digs, txt_norm, txt_toks, _, _ in pages_cache:
             for it, cpf_it, nome_norm, toks in alvos_c:
                 if _match_texto_comprovante(txt, digs, txt_norm, txt_toks, cpf_it, nome_norm, toks):
                     paginas_por_item.setdefault(it.id, []).append(p_idx)
@@ -2256,107 +2289,116 @@ def _vincular_comprovantes_pdf_folha(
                 "paginas": len(page_idxs),
             })
 
-    # 2) Títulos individuais avulsos (PIX, Boletos, Recibos, Guias) com vencimento próximo (± 3 dias)
-    dt_ini = titulo.dt_vencimento - timedelta(days=3)
-    dt_fim = titulo.dt_vencimento + timedelta(days=3)
-    tits_prox = (
+    # 2) Títulos do tenant (Boletos, PIX, Recibos, Guias, Ticket, Salvadorcard, Metropasse)
+    # Busca títulos pagos/pendentes em janela ampla para cobrir títulos vencidos pagos no mesmo lote
+    ref_dt = max([titulo.dt_vencimento] + list(datas_venc_pdf) + list(datas_pgto_pdf))
+    tits_cand = (
         db.query(Titulo)
         .filter(
             Titulo.tenant_id == ctx.tenant_id,
             Titulo.id != titulo.id,
-            Titulo.dt_vencimento.between(dt_ini, dt_fim),
+            Titulo.dt_vencimento >= ref_dt - timedelta(days=120),
+            Titulo.dt_vencimento <= ref_dt + timedelta(days=60),
         )
         .all()
     )
-    if tits_prox:
-        prox_ids = [tx.id for tx in tits_prox]
-        lote_parent_ids = {
-            r[0]
-            for r in db.query(TituloItem.titulo_id)
+    if tits_cand:
+        shas_existentes = {
+            (r[0], r[1])
+            for r in db.query(DocumentoAnexo.entidade_id, DocumentoAnexo.sha256)
             .filter(
-                TituloItem.tenant_id == ctx.tenant_id,
-                TituloItem.titulo_id.in_(prox_ids),
-                TituloItem.unidade == "FOLHA_COLAB",
+                DocumentoAnexo.tenant_id == ctx.tenant_id,
+                DocumentoAnexo.entidade_tipo == "TITULO",
+                DocumentoAnexo.entidade_id.in_([tx.id for tx in tits_cand]),
             )
-            .distinct()
             .all()
         }
-        tits_indiv = [tx for tx in tits_prox if tx.id not in lote_parent_ids]
-        if tits_indiv:
-            shas_existentes = {
-                (r[0], r[1])
-                for r in db.query(DocumentoAnexo.entidade_id, DocumentoAnexo.sha256)
-                .filter(
-                    DocumentoAnexo.tenant_id == ctx.tenant_id,
-                    DocumentoAnexo.entidade_tipo == "TITULO",
-                    DocumentoAnexo.entidade_id.in_([tx.id for tx in tits_indiv]),
-                )
-                .all()
-            }
-            alvos_t = []
-            for tx in tits_indiv:
-                doc_tx = limpar_documento(tx.favorecido_doc or "")
-                nome_tx = _norm_nome_forn(tx.favorecido_nome or "")
-                barras_tx = re.sub(r"\D", "", tx.cod_barras or "")
-                alvos_t.append((tx, doc_tx, nome_tx, nome_tx.split(), barras_tx))
+        alvos_t = []
+        for tx in tits_cand:
+            doc_tx = limpar_documento(tx.favorecido_doc or "")
+            nome_tx = _norm_nome_forn(tx.favorecido_nome or "")
+            barras_tx = re.sub(r"\D", "", tx.cod_barras or "")
+            alvos_t.append((tx, doc_tx, nome_tx, nome_tx.split(), barras_tx))
 
-            paginas_por_titulo: dict[str, list[int]] = {}
-            for p_idx, txt, digs, txt_norm, txt_toks in pages_cache:
-                if p_idx in pages_usadas_colab:
+        paginas_por_titulo: dict[str, list[int]] = {}
+        for p_idx, txt, digs, txt_norm, txt_toks, dv_p, dp_p in pages_cache:
+            if p_idx in pages_usadas_colab:
+                continue
+            melhores_barras = []
+            melhores_exatos = []
+            for tx, doc_tx, nome_tx, toks_tx, barras_tx in alvos_t:
+                if barras_tx and len(barras_tx) >= 20 and barras_tx[:20] in digs:
+                    melhores_barras.append(tx)
                     continue
-                cands_pag = []
-                for tx, doc_tx, nome_tx, toks_tx, barras_tx in alvos_t:
-                    if barras_tx and len(barras_tx) >= 20 and barras_tx[:20] in digs:
-                        cands_pag.append((tx, True))
-                    elif _match_texto_comprovante(txt, digs, txt_norm, txt_toks, doc_tx, nome_tx, toks_tx):
-                        cands_pag.append((tx, _valor_no_texto(txt, tx.valor_liquido)))
-                if len(cands_pag) == 1:
-                    paginas_por_titulo.setdefault(cands_pag[0][0].id, []).append(p_idx)
-                elif len(cands_pag) > 1:
-                    exatos = [tx for tx, val_ok in cands_pag if val_ok]
-                    for tx in exatos:
-                        paginas_por_titulo.setdefault(tx.id, []).append(p_idx)
-
-            tits_by_id = {tx.id: tx for tx in tits_indiv}
-            for tx_id, page_idxs in paginas_por_titulo.items():
-                tx = tits_by_id[tx_id]
-                writer = PdfWriter()
-                for p_idx in page_idxs:
-                    writer.add_page(reader.pages[p_idx])
-                buf = io.BytesIO()
-                writer.write(buf)
-                indiv_bytes = buf.getvalue()
-                if not indiv_bytes:
+                val_ok = _valor_no_texto(txt, tx.valor_liquido) or (tx.valor_pago and _valor_no_texto(txt, tx.valor_pago))
+                if not val_ok:
                     continue
-                sha_ind = hashlib.sha256(indiv_bytes).hexdigest()
-                if (tx.id, sha_ind) in shas_existentes:
-                    continue
+                if _match_texto_comprovante(txt, digs, txt_norm, txt_toks, doc_tx, nome_tx, toks_tx):
+                    score = 0
+                    if dv_p and tx.dt_vencimento == dv_p:
+                        score += 10
+                    if dp_p and tx.dt_pagamento == dp_p:
+                        score += 5
+                    melhores_exatos.append((score, tx))
 
-                indiv_uid = str(uuid.uuid4())
-                safe_fav = re.sub(r"[^A-Za-z0-9._-]+", "_", (tx.favorecido_nome or "FAVORECIDO").strip())[:55]
-                nome_indiv = f"COMPROVANTE_{safe_fav}.pdf"
-                rel_key_indiv = f"{ctx.tenant_id}/{tx.id}/{indiv_uid}_{nome_indiv}"
-                _salvar_bytes_anexo(rel_key_indiv, indiv_bytes, "application/pdf")
+            escolhido = None
+            if melhores_barras:
+                escolhido = melhores_barras[0]
+            elif melhores_exatos:
+                melhores_exatos.sort(key=lambda x: -x[0])
+                escolhido = melhores_exatos[0][1]
+            elif dv_p:
+                # Fallback para guias/tributos sem nome no comprovante: mesmo vencimento + valor exato não-inteiro único
+                iguais_val = [
+                    tx for tx, _, _, _, _ in alvos_t
+                    if tx.dt_vencimento == dv_p and _valor_no_texto(txt, tx.valor_liquido)
+                ]
+                if len(iguais_val) == 1:
+                    escolhido = iguais_val[0]
 
-                db.add(DocumentoAnexo(
-                    id=indiv_uid,
-                    tenant_id=ctx.tenant_id,
-                    empresa_id=tx.empresa_id,
-                    entidade_tipo="TITULO",
-                    entidade_id=tx.id,
-                    storage_key=rel_key_indiv,
-                    nome_original=nome_indiv,
-                    mime_type="application/pdf",
-                    tamanho_bytes=len(indiv_bytes),
-                    sha256=sha_ind,
-                    uploaded_by=ctx.usuario.id,
-                ))
-                vinculados.append({
-                    "titulo_id": tx.id,
-                    "nome": tx.favorecido_nome,
-                    "anexo_id": indiv_uid,
-                    "paginas": len(page_idxs),
-                })
+            if escolhido:
+                paginas_por_titulo.setdefault(escolhido.id, []).append(p_idx)
+
+        tits_by_id = {tx.id: tx for tx in tits_cand}
+        for tx_id, page_idxs in paginas_por_titulo.items():
+            tx = tits_by_id[tx_id]
+            writer = PdfWriter()
+            for p_idx in page_idxs:
+                writer.add_page(reader.pages[p_idx])
+            buf = io.BytesIO()
+            writer.write(buf)
+            indiv_bytes = buf.getvalue()
+            if not indiv_bytes:
+                continue
+            sha_ind = hashlib.sha256(indiv_bytes).hexdigest()
+            if (tx.id, sha_ind) in shas_existentes:
+                continue
+
+            indiv_uid = str(uuid.uuid4())
+            safe_fav = re.sub(r"[^A-Za-z0-9._-]+", "_", (tx.favorecido_nome or "FAVORECIDO").strip())[:55]
+            nome_indiv = f"COMPROVANTE_{safe_fav}.pdf"
+            rel_key_indiv = f"{ctx.tenant_id}/{tx.id}/{indiv_uid}_{nome_indiv}"
+            _salvar_bytes_anexo(rel_key_indiv, indiv_bytes, "application/pdf")
+
+            db.add(DocumentoAnexo(
+                id=indiv_uid,
+                tenant_id=ctx.tenant_id,
+                empresa_id=tx.empresa_id,
+                entidade_tipo="TITULO",
+                entidade_id=tx.id,
+                storage_key=rel_key_indiv,
+                nome_original=nome_indiv,
+                mime_type="application/pdf",
+                tamanho_bytes=len(indiv_bytes),
+                sha256=sha_ind,
+                uploaded_by=ctx.usuario.id,
+            ))
+            vinculados.append({
+                "titulo_id": tx.id,
+                "nome": tx.favorecido_nome,
+                "anexo_id": indiv_uid,
+                "paginas": len(page_idxs),
+            })
 
     return vinculados
 
