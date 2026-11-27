@@ -3577,10 +3577,25 @@
       </details>
     </div>
 
-    <div style="padding: 10px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+    <div style="padding: 10px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
       <span id="rem-status-msg" style="font-size: 11px; color: #475569; font-weight: 600;"></span>
-      <div style="display: flex; gap: 8px;">
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
         <button type="button" class="tool-btn" onclick="fecharModalRemessaCNAB()" style="font-size: 11.5px;">Fechar</button>
+        <select id="rem-itau-finalidade" title="Finalidade Itaú RH (Coluna F da planilha)" style="padding: 6px 8px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 5px; background: #fff; font-weight: 600; color: #0f172a;">
+          <option value="6">6 - 13º Salário</option>
+          <option value="1">1 - Salário</option>
+          <option value="2">2 - Férias</option>
+          <option value="3">3 - Vale Transporte</option>
+          <option value="4">4 - Vale Alimentação</option>
+          <option value="5">5 - Comissão</option>
+          <option value="9">9 - Adiantamento Salarial</option>
+          <option value="10">10 - Rescisão Contratual</option>
+          <option value="13">13 - Em Conta Corrente</option>
+          <option value="14">14 - Remuneração</option>
+        </select>
+        <button type="button" id="btn-baixar-planilha-itau-rh" class="tool-btn primary" onclick="gerarPlanilhaItauSalarios()" style="background: #0f766e; border-color: #115e59; color: #fff; font-weight: 800; font-size: 11.5px; padding: 7px 14px;">
+          📊 Baixar Planilha Itaú RH (.xlsx)
+        </button>
         <button type="button" id="btn-baixar-remessa-cnab" class="tool-btn primary" onclick="gerarArquivoRemessaCNAB()" style="background: #ea580c; border-color: #c2410c; color: #fff; font-weight: 800; font-size: 11.5px; padding: 7px 16px;">
           ⬇️ Gerar e Baixar Arquivo .REM (CNAB 240)
         </button>
@@ -18276,6 +18291,58 @@
       window.URL.revokeObjectURL(url);
 
       if (statusEl) statusEl.textContent = `✅ Arquivo ${filename} baixado com sucesso (${ids.length} título(s))!`;
+    } catch (e) {
+      if (statusEl) statusEl.textContent = `❌ ${e.message}`;
+      alert('Atenção: ' + e.message);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async function gerarPlanilhaItauSalarios() {
+    const ids = Array.from(new Set(Array.from(document.querySelectorAll('.rem-item-chk:checked')).map(cb => cb.value)));
+    if (ids.length === 0) {
+      alert('Selecione pelo menos um lançamento para gerar a planilha do Itaú RH.');
+      return;
+    }
+    const statusEl = document.getElementById('rem-status-msg');
+    const btn = document.getElementById('btn-baixar-planilha-itau-rh');
+    if (statusEl) statusEl.textContent = 'Gerando planilha Excel Itaú Salários (.xlsx)...';
+    if (btn) btn.disabled = true;
+
+    try {
+      const payload = {
+        conta_bancaria_id: document.getElementById('rem-conta-select')?.value || null,
+        data_pagamento: document.getElementById('rem-data-pgto')?.value || null,
+        titulo_ids: ids,
+        finalidade_itau: Number(document.getElementById('rem-itau-finalidade')?.value || 6),
+      };
+      const resp = await apiFetch(`${API_BASE}/remessa/itau-planilha-salarios`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ detail: 'Erro ao gerar planilha Itaú RH' }));
+        throw new Error(err.detail || 'Erro ao gerar planilha Itaú RH');
+      }
+
+      const cd = resp.headers.get('Content-Disposition') || '';
+      const mFn = cd.match(/filename="?([^"]+)"?/i);
+      const dt = (payload.data_pagamento || new Date().toISOString().slice(0, 10)).replace(/-/g, '');
+      const filename = mFn ? mFn[1] : `ItauSalarios_${dt.slice(6, 8)}${dt.slice(4, 6)}.xlsx`;
+
+      const blob = await resp.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      if (statusEl) statusEl.textContent = `✅ Planilha ${filename} baixada no layout oficial Itaú Salários & RH!`;
     } catch (e) {
       if (statusEl) statusEl.textContent = `❌ ${e.message}`;
       alert('Atenção: ' + e.message);

@@ -2251,6 +2251,7 @@ class RemessaMultibancoRequest(BaseModel):
     data_pagamento: Optional[str] = None
     todos_pendentes: bool = False
     titulo_ids: Optional[List[str]] = None
+    finalidade_itau: int = 6
 
 
 def _norm_nome_forn(s: str) -> str:
@@ -2698,6 +2699,85 @@ def compat_gerar_remessa_multibanco(
     return Response(
         content=conteudo,
         media_type="text/plain",
+        headers={
+            "Content-Disposition": f'attachment; filename="{nome_arquivo}"',
+            "Access-Control-Expose-Headers": "Content-Disposition",
+        },
+    )
+
+
+@router.post("/remessa/itau-planilha-salarios")
+def compat_gerar_planilha_itau_salarios(
+    req: RemessaMultibancoRequest,
+    request: Request,
+    ctx: TenantContext = Depends(require_v2_roles("OWNER", "DIRETOR_APROVADOR", "FINANCEIRO")),
+    db: Session = Depends(get_db),
+):
+    """Gera planilha Excel (.xlsx) no layout oficial Itaú BBA 'Salários e RH - inclusão de pagamento por arquivo' (7 colunas A-G, sem cabeçalho)."""
+    import openpyxl
+
+    emp = _resolver_empresa_padrao(db, ctx.tenant_id)
+    candidatos = _carregar_candidatos_remessa(
+        db, ctx.tenant_id, emp.id, req.data_pagamento, req.todos_pendentes, req.titulo_ids
+    )
+    finalidade = req.finalidade_itau if 1 <= int(req.finalidade_itau or 0) <= 14 else 6
+    dt_pgto = (req.data_pagamento or date.today().isoformat())[:10]
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Salarios"
+
+    qtd_linhas = 0
+    total_valor = 0.0
+    for c in candidatos:
+        conta_info = parse_dados_conta_bancaria(c.get("dados_banco") or "", banco_padrao="341")
+        if not conta_info:
+            continue
+        val_num = round(float(c.get("valor_liquido") or c.get("valor_bruto") or 0), 2)
+        if val_num <= 0:
+            continue
+
+        ag = re.sub(r"\D", "", conta_info["agencia"]).zfill(4)[-4:]
+        cc = re.sub(r"\D", "", conta_info["conta"]).zfill(5)[-5:]
+        dac = (re.sub(r"[^0-9Xx]", "", conta_info["dac"]) or "0")[0].upper()
+        nome = re.sub(r"\s+", " ", str(c.get("fornecedor") or "")).strip()[:60]
+        cpf = limpar_documento(c.get("favorecido_doc") or "").zfill(11)[-11:]
+
+        qtd_linhas += 1
+        total_valor = round(total_valor + val_num, 2)
+        ws.append([ag, cc, dac, nome, cpf, int(finalidade), val_num])
+        r = qtd_linhas
+        ws.cell(row=r, column=1).number_format = "@"
+        ws.cell(row=r, column=2).number_format = "@"
+        ws.cell(row=r, column=3).number_format = "@"
+        ws.cell(row=r, column=5).number_format = "@"
+        ws.cell(row=r, column=6).number_format = "0"
+        ws.cell(row=r, column=7).number_format = "0.00"
+
+    if qtd_linhas == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Nenhum colaborador com agência/conta bancária encontrada para gerar a planilha Itaú Salários.",
+        )
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    nome_arquivo = f"ItauSalarios_{dt_pgto[8:10]}{dt_pgto[5:7]}.xlsx"
+    registrar_audit_v2(
+        db,
+        ctx.tenant_id,
+        ctx.usuario,
+        "EXPORTAR_PLANILHA_ITAU_SALARIOS",
+        "titulos",
+        nome_arquivo,
+        dados_depois={"qtd": qtd_linhas, "total": total_valor, "finalidade": finalidade},
+        ip=extrair_ip(request),
+    )
+    db.commit()
+    return Response(
+        content=buf.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={
             "Content-Disposition": f'attachment; filename="{nome_arquivo}"',
             "Access-Control-Expose-Headers": "Content-Disposition",
