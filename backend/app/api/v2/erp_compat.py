@@ -27,6 +27,7 @@ from ...core.cnab240_multibanco import (
     classificar_titulos_cnab,
     gerar_cnab240_multibanco,
     obter_perfil_banco,
+    parse_dados_conta_bancaria,
 )
 from ...core.colaboradores_filial import resolver_filial_colaborador
 from ...core.folha_dp_parser import parse_pacote_folha_dp
