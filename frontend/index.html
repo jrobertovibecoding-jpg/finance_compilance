@@ -15528,6 +15528,7 @@
     const files = Array.from(event?.target?.files || []);
     if (!files.length || !_anexoTituloIdAtual) return;
     const elStatus = document.getElementById('modal-anexos-status');
+    let totalVinculados = 0;
     for (let i = 0; i < files.length; i++) {
       if (elStatus) elStatus.innerText = `Enviando ${i + 1}/${files.length}: ${files[i].name}...`;
       const fd = new FormData();
@@ -15537,17 +15538,24 @@
           method: 'POST',
           body: fd
         });
+        const upData = await resp.json().catch(() => ({}));
         if (!resp.ok) {
-          const err = await resp.json().catch(() => ({}));
-          alert(`Erro ao anexar "${files[i].name}": ${err.detail || 'Falha no upload'}`);
+          alert(`Erro ao anexar "${files[i].name}": ${upData.detail || 'Falha no upload'}`);
+        } else {
+          totalVinculados += Number(upData.comprovantes_vinculados || 0);
         }
       } catch (e) {
         alert(`Erro ao anexar "${files[i].name}": ${e.message}`);
       }
     }
-    if (elStatus) elStatus.innerText = 'Upload concluído ✓';
+    if (elStatus) {
+      elStatus.innerText = totalVinculados > 0
+        ? `Upload concluído ✓ (${totalVinculados} comprovante(s) vinculados automaticamente aos colaboradores!)`
+        : 'Upload concluído ✓';
+    }
     if (event?.target) event.target.value = '';
     await carregarListaAnexosTitulo();
+    if (typeof carregarDadosIniciais === 'function') carregarDadosIniciais();
   }
 
   async function baixarAnexoTitulo(anexoId, nomeArquivo) {
@@ -15962,7 +15970,9 @@
             fornecedor: favNome,
             filial: filColab,
             isPago,
-            valor: valItem
+            valor: valItem,
+            comprovanteId: it.comprovante_id || t.primeiro_anexo_id || '',
+            comprovanteNome: it.comprovante_nome || t.primeiro_anexo_nome || ''
           });
         });
       } else {
@@ -15984,7 +15994,9 @@
             fornecedor: favNome,
             filial: filTit,
             isPago,
-            valor: valTitulo
+            valor: valTitulo,
+            comprovanteId: t.primeiro_anexo_id || '',
+            comprovanteNome: t.primeiro_anexo_nome || ''
           });
         }
       }
@@ -16327,6 +16339,7 @@
                         <th style="padding:3px 6px;text-align:left;width:95px;">Filial</th>
                         <th style="padding:3px 6px;text-align:center;width:70px;">Situação</th>
                         <th style="padding:3px 6px;text-align:right;width:85px;">Valor</th>
+                        <th class="no-print" style="padding:3px 6px;text-align:center;width:82px;">Comprov.</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -16340,6 +16353,7 @@
                           <td style="padding:3px 6px;font-weight:700;color:#0369a1;">${escapeHtml(p.filial)}</td>
                           <td style="padding:3px 6px;text-align:center;">${p.isPago ? '<span style="color:#059669;font-weight:700;">Pago</span>' : '<span style="color:#b45309;font-weight:700;">Aberto</span>'}</td>
                           <td style="padding:3px 6px;text-align:right;font-family:monospace;font-weight:700;color:#4c1d95;">${formatarMoeda(p.valor)}</td>
+                          <td class="no-print" style="padding:3px 6px;text-align:center;">${p.comprovanteId ? `<button type="button" onclick="event.stopPropagation(); baixarAnexoTitulo('${escapeHtml(p.comprovanteId)}', '${escapeHtml(p.comprovanteNome || 'comprovante.pdf').replace(/'/g, '')}')" style="background:#e0f2fe;border:1px solid #7dd3fc;color:#0369a1;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700;cursor:pointer;">📎 Abrir</button>` : '<span style="color:#cbd5e1;">-</span>'}</td>
                         </tr>
                       `).join('')}
                     </tbody>

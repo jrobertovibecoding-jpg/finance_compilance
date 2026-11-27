@@ -682,6 +682,40 @@ def compat_listar_titulos(
         ):
             anexos_count[tid] = cnt
 
+    colab_item_ids = [
+        it.id
+        for lista_it in itens_map.values()
+        for it in lista_it
+        if str(it.unidade or "").upper() == "FOLHA_COLAB"
+    ]
+    comprovante_colab_map: dict[str, tuple[str, str]] = {}
+    if colab_item_ids:
+        for ax in (
+            db.query(DocumentoAnexo)
+            .filter(
+                DocumentoAnexo.tenant_id == ctx.tenant_id,
+                DocumentoAnexo.entidade_tipo == "TITULO_COLAB",
+                DocumentoAnexo.entidade_id.in_(colab_item_ids),
+            )
+            .order_by(DocumentoAnexo.criado_em.asc())
+            .all()
+        ):
+            comprovante_colab_map[ax.entidade_id] = (ax.id, ax.nome_original)
+
+    primeiro_anexo_map: dict[str, tuple[str, str]] = {}
+    if tit_ids:
+        for ax in (
+            db.query(DocumentoAnexo)
+            .filter(
+                DocumentoAnexo.tenant_id == ctx.tenant_id,
+                DocumentoAnexo.entidade_tipo == "TITULO",
+                DocumentoAnexo.entidade_id.in_(tit_ids),
+            )
+            .order_by(DocumentoAnexo.criado_em.asc())
+            .all()
+        ):
+            primeiro_anexo_map[ax.entidade_id] = (ax.id, ax.nome_original)
+
     garantir_seed_plano_contas_padrao(db, ctx.tenant_id)
     cc_map = {
         c.id: c.nome
@@ -708,6 +742,8 @@ def compat_listar_titulos(
             "plano_conta_id": t.plano_conta_id,
             "rateios_count": rateios_count.get(t.id, 0),
             "anexos_count": anexos_count.get(t.id, 0),
+            "primeiro_anexo_id": (primeiro_anexo_map.get(t.id) or ("", ""))[0],
+            "primeiro_anexo_nome": (primeiro_anexo_map.get(t.id) or ("", ""))[1],
             "origem": "NOTA",
             "tipo": "FORNECEDOR",
             "tipo_doc": t.tipo_documento or "NFSE",
@@ -749,6 +785,8 @@ def compat_listar_titulos(
                     "quantidade": float(it.quantidade or 0),
                     "valor_unitario": float(it.valor_unitario or 0),
                     "valor_total": float(it.valor_total or 0),
+                    "comprovante_id": (comprovante_colab_map.get(it.id) or ("", ""))[0],
+                    "comprovante_nome": (comprovante_colab_map.get(it.id) or ("", ""))[1],
                 }
                 for it in itens_map.get(t.id, [])
             ],
@@ -2067,6 +2105,140 @@ def compat_listar_anexos_titulo(
     }
 
 
+def _salvar_bytes_anexo(rel_key: str, conteudo: bytes, mime_final: str) -> None:
+    sb_url, sb_key, sb_bucket = _supabase_storage_cfg()
+    if sb_url and sb_key:
+        up_resp = requests.post(
+            f"{sb_url}/storage/v1/object/{sb_bucket}/{rel_key}",
+            headers={
+                "Authorization": f"Bearer {sb_key}",
+                "apikey": sb_key,
+                "Content-Type": mime_final,
+                "x-upsert": "true",
+            },
+            data=conteudo,
+            timeout=25,
+        )
+        if up_resp.status_code >= 400:
+            raise HTTPException(status_code=502, detail=f"Falha ao gravar no Supabase Storage: {up_resp.text[:200]}")
+    else:
+        dest = _diretorio_anexos_base() / rel_key
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(conteudo)
+
+
+def _vincular_comprovantes_pdf_folha(
+    db: Session,
+    ctx: TenantContext,
+    titulo: Titulo,
+    pdf_bytes: bytes,
+) -> list[dict[str, Any]]:
+    """Separa páginas de um PDF multi-comprovantes e vincula automaticamente aos colaboradores (FOLHA_COLAB) do título e dos demais lotes da mesma data."""
+    itens_proprios = (
+        db.query(TituloItem)
+        .filter(
+            TituloItem.tenant_id == ctx.tenant_id,
+            TituloItem.titulo_id == titulo.id,
+            TituloItem.unidade == "FOLHA_COLAB",
+        )
+        .all()
+    )
+    itens_mesma_data = (
+        db.query(TituloItem)
+        .join(Titulo, TituloItem.titulo_id == Titulo.id)
+        .filter(
+            TituloItem.tenant_id == ctx.tenant_id,
+            Titulo.tenant_id == ctx.tenant_id,
+            Titulo.dt_vencimento == titulo.dt_vencimento,
+            TituloItem.titulo_id != titulo.id,
+            TituloItem.unidade == "FOLHA_COLAB",
+        )
+        .all()
+    )
+    itens_colab = itens_proprios + itens_mesma_data
+    if not itens_colab:
+        return []
+
+    from pypdf import PdfReader, PdfWriter
+
+    try:
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+    except Exception:
+        return []
+    if len(reader.pages) == 0:
+        return []
+
+    alvos = []
+    for it in itens_colab:
+        cpf_it = limpar_documento(it.codigo_produto or "")
+        nome_norm = _norm_nome_forn(it.descricao or "")
+        toks = nome_norm.split()
+        alvos.append((it, cpf_it if len(cpf_it) == 11 else "", nome_norm, toks))
+
+    paginas_por_item: dict[str, list[int]] = {}
+    for p_idx, page in enumerate(reader.pages):
+        txt = page.extract_text() or ""
+        if not txt.strip():
+            continue
+        digs = re.sub(r"\D", "", txt)
+        txt_norm = _norm_nome_forn(txt)
+        txt_toks = set(txt_norm.split())
+        for it, cpf_it, nome_norm, toks in alvos:
+            matched = False
+            if cpf_it and cpf_it in digs:
+                matched = True
+            elif nome_norm and len(nome_norm) >= 8 and nome_norm in txt_norm:
+                matched = True
+            elif len(toks) >= 2 and toks[0] in txt_toks and toks[-1] in txt_toks and len(toks[0]) >= 3 and len(toks[-1]) >= 3:
+                # Confirma também o segundo nome quando houver 3+ palavras para evitar homônimos
+                if len(toks) == 2 or toks[1] in txt_toks:
+                    matched = True
+            if matched:
+                paginas_por_item.setdefault(it.id, []).append(p_idx)
+
+    vinculados: list[dict[str, Any]] = []
+    itens_by_id = {it.id: it for it in itens_colab}
+    for it_id, page_idxs in paginas_por_item.items():
+        it = itens_by_id[it_id]
+        writer = PdfWriter()
+        for p_idx in page_idxs:
+            writer.add_page(reader.pages[p_idx])
+        buf = io.BytesIO()
+        writer.write(buf)
+        indiv_bytes = buf.getvalue()
+        if not indiv_bytes:
+            continue
+
+        indiv_uid = str(uuid.uuid4())
+        safe_colab = re.sub(r"[^A-Za-z0-9._-]+", "_", (it.descricao or "COLABORADOR").strip())[:70]
+        nome_indiv = f"COMPROVANTE_{safe_colab}.pdf"
+        rel_key_indiv = f"{ctx.tenant_id}/{it.titulo_id}/colab/{it.id}/{indiv_uid}_{nome_indiv}"
+        _salvar_bytes_anexo(rel_key_indiv, indiv_bytes, "application/pdf")
+
+        anexo_indiv = DocumentoAnexo(
+            id=indiv_uid,
+            tenant_id=ctx.tenant_id,
+            empresa_id=titulo.empresa_id,
+            entidade_tipo="TITULO_COLAB",
+            entidade_id=it.id,
+            storage_key=rel_key_indiv,
+            nome_original=nome_indiv,
+            mime_type="application/pdf",
+            tamanho_bytes=len(indiv_bytes),
+            sha256=hashlib.sha256(indiv_bytes).hexdigest(),
+            uploaded_by=ctx.usuario.id,
+        )
+        db.add(anexo_indiv)
+        vinculados.append({
+            "item_id": it.id,
+            "titulo_id": it.titulo_id,
+            "nome": it.descricao,
+            "anexo_id": indiv_uid,
+            "paginas": len(page_idxs),
+        })
+    return vinculados
+
+
 @router.post("/titulos/{id_ref}/anexos")
 async def compat_upload_anexo_titulo(
     id_ref: str,
@@ -2097,25 +2269,7 @@ async def compat_upload_anexo_titulo(
     rel_key = f"{ctx.tenant_id}/{titulo.id}/{anexo_uid}_{safe_name}"
     mime_final = (file.content_type or "application/octet-stream").lower()[:120]
 
-    sb_url, sb_key, sb_bucket = _supabase_storage_cfg()
-    if sb_url and sb_key:
-        up_resp = requests.post(
-            f"{sb_url}/storage/v1/object/{sb_bucket}/{rel_key}",
-            headers={
-                "Authorization": f"Bearer {sb_key}",
-                "apikey": sb_key,
-                "Content-Type": mime_final,
-                "x-upsert": "true",
-            },
-            data=conteudo,
-            timeout=25,
-        )
-        if up_resp.status_code >= 400:
-            raise HTTPException(status_code=502, detail=f"Falha ao gravar no Supabase Storage: {up_resp.text[:200]}")
-    else:
-        dest = _diretorio_anexos_base() / rel_key
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_bytes(conteudo)
+    _salvar_bytes_anexo(rel_key, conteudo, mime_final)
 
     anexo = DocumentoAnexo(
         id=anexo_uid,
@@ -2131,6 +2285,9 @@ async def compat_upload_anexo_titulo(
         uploaded_by=ctx.usuario.id,
     )
     db.add(anexo)
+
+    vinculados = _vincular_comprovantes_pdf_folha(db, ctx, titulo, conteudo) if ext == ".pdf" else []
+
     registrar_audit_v2(
         db,
         ctx.tenant_id,
@@ -2138,12 +2295,19 @@ async def compat_upload_anexo_titulo(
         "UPLOAD_ANEXO_TITULO",
         "documentos_anexos",
         anexo.id,
-        dados_depois={"titulo_id": titulo.id, "nome_original": nome_orig, "tamanho_bytes": len(conteudo)},
+        dados_depois={
+            "titulo_id": titulo.id,
+            "nome_original": nome_orig,
+            "tamanho_bytes": len(conteudo),
+            "comprovantes_vinculados": len(vinculados),
+        },
         ip=extrair_ip(request),
     )
     db.commit()
     return {
         "success": True,
+        "comprovantes_vinculados": len(vinculados),
+        "colaboradores_vinculados": vinculados,
         "anexo": {
             "id": anexo.id,
             "nome_original": anexo.nome_original,
