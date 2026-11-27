@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 from typing import Any, List, Optional, Union
+import unicodedata
 import uuid
 
 import ofxparse
@@ -2252,6 +2253,69 @@ class RemessaMultibancoRequest(BaseModel):
     titulo_ids: Optional[List[str]] = None
 
 
+def _norm_nome_forn(s: str) -> str:
+    nfkd = unicodedata.normalize("NFKD", str(s or ""))
+    sem = "".join(c for c in nfkd if not unicodedata.combining(c))
+    toks = [t for t in re.sub(r"[^A-Za-z0-9\s]", " ", sem).upper().split() if t not in {"DE", "DA", "DO", "DOS", "DAS"}]
+    return " ".join(toks)
+
+
+def _indexar_fornecedores(forn_all: list[Fornecedor]):
+    """Indexa fornecedores/colaboradores priorizando cadastros que possuem dados bancários ou PIX."""
+    def _tem_pgto(f: Fornecedor) -> bool:
+        return bool((f.dados_banco or "").strip() or (f.pix_chave or "").strip())
+
+    ordenadas = sorted(forn_all, key=lambda f: (0 if _tem_pgto(f) else 1))
+    by_id = {f.id: f for f in forn_all}
+    by_doc: dict[str, Fornecedor] = {}
+    by_nome: dict[str, Fornecedor] = {}
+    lista_norm: list[tuple[str, list[str], Fornecedor]] = []
+    for f in ordenadas:
+        doc = limpar_documento(f.cnpj_cpf or "")
+        if doc and doc not in by_doc:
+            by_doc[doc] = f
+        if f.razao_social:
+            kn = _norm_nome_forn(f.razao_social)
+            if kn:
+                if kn not in by_nome:
+                    by_nome[kn] = f
+                lista_norm.append((kn, kn.split(), f))
+    lista_norm.sort(key=lambda x: (0 if _tem_pgto(x[2]) else 1, -len(x[0])))
+    return by_id, by_doc, by_nome, lista_norm
+
+
+def _buscar_forn_colaborador(
+    nome: str,
+    cpf: str,
+    by_doc: dict[str, Fornecedor],
+    by_nome: dict[str, Fornecedor],
+    lista_norm: list[tuple[str, list[str], Fornecedor]],
+) -> Optional[Fornecedor]:
+    """Busca colaborador por CPF, nome exato ou prefixo/subconjunto de tokens (ex.: 'LUANA SILVEIRA' <-> 'LUANA SILVEIRA SANTOS')."""
+    if cpf and cpf in by_doc:
+        f_doc = by_doc[cpf]
+        if (f_doc.dados_banco or "").strip() or (f_doc.pix_chave or "").strip():
+            return f_doc
+    kn = _norm_nome_forn(nome)
+    if kn and kn in by_nome:
+        f_ex = by_nome[kn]
+        if (f_ex.dados_banco or "").strip() or (f_ex.pix_chave or "").strip():
+            return f_ex
+    toks = kn.split()
+    if len(toks) >= 2 and len(kn) >= 10:
+        tok_set = set(toks)
+        for k_norm, k_toks, f in lista_norm:
+            if len(k_toks) < 2 or len(k_norm) < 10:
+                continue
+            if kn.startswith(k_norm + " ") or k_norm.startswith(kn + " "):
+                return f
+            if k_toks[0] == toks[0] and (set(k_toks).issubset(tok_set) or tok_set.issubset(set(k_toks))):
+                return f
+    if cpf and cpf in by_doc:
+        return by_doc[cpf]
+    return by_nome.get(kn) if kn else None
+
+
 def _carregar_candidatos_remessa(
     db: Session,
     tenant_id: str,
@@ -2283,17 +2347,8 @@ def _carregar_candidatos_remessa(
     titulos_db = q.order_by(Titulo.dt_vencimento.asc(), Titulo.favorecido_nome.asc()).all()
 
     # Mapa de fornecedores/colaboradores (Chave PIX + Dados Bancários) por ID, CPF/CNPJ ou Nome
-    def _norm_nome_chave(s: str) -> str:
-        import unicodedata
-        nfkd = unicodedata.normalize("NFKD", str(s or ""))
-        sem = "".join(c for c in nfkd if not unicodedata.combining(c))
-        toks = [t for t in re.sub(r"[^A-Za-z0-9\s]", " ", sem).upper().split() if t not in {"DE", "DA", "DO", "DOS", "DAS"}]
-        return " ".join(toks)
-
     forn_all = db.query(Fornecedor).filter(Fornecedor.tenant_id == tenant_id).all()
-    forn_by_id = {f.id: f for f in forn_all}
-    forn_by_doc = {limpar_documento(f.cnpj_cpf): f for f in forn_all if f.cnpj_cpf}
-    forn_by_nome = {_norm_nome_chave(f.razao_social): f for f in forn_all if f.razao_social}
+    forn_by_id, forn_by_doc, forn_by_nome, forn_lista_norm = _indexar_fornecedores(forn_all)
 
     # Itens de lote de pessoal (unidade == 'FOLHA_COLAB') para desmembramento automático na remessa
     tit_ids_list = [t.id for t in titulos_db]
@@ -2319,10 +2374,7 @@ def _carregar_candidatos_remessa(
             for it in itens_colab:
                 cpf_it = limpar_documento(it.codigo_produto or "")
                 nome_it = (it.descricao or "").strip()
-                forn_c = (
-                    forn_by_doc.get(cpf_it)
-                    or forn_by_nome.get(_norm_nome_chave(nome_it))
-                )
+                forn_c = _buscar_forn_colaborador(nome_it, cpf_it, forn_by_doc, forn_by_nome, forn_lista_norm)
                 db_c = (
                     (forn_c.dados_banco.strip() if forn_c and forn_c.dados_banco else "")
                     or (it.fornecedor_nome or "").strip()
@@ -2350,7 +2402,7 @@ def _carregar_candidatos_remessa(
         forn_obj = (
             forn_by_id.get(t.fornecedor_id or "")
             or forn_by_doc.get(limpar_documento(t.favorecido_doc or ""))
-            or forn_by_nome.get(_norm_nome_chave(t.favorecido_nome or ""))
+            or forn_by_nome.get(_norm_nome_forn(t.favorecido_nome or ""))
         )
         pix_final = (t.pix_chave or "").strip() or (forn_obj.pix_chave.strip() if forn_obj and forn_obj.pix_chave else "")
         dados_banco_final = (forn_obj.dados_banco.strip() if forn_obj and forn_obj.dados_banco else "")
@@ -2925,22 +2977,15 @@ async def compat_parse_folha_dp(
             detail="Nenhum colaborador/valor encontrado. Envie o .ZIP ou PDF de 'Extrato Mensal' / 'Relatório de Líquidos' do DP.",
         )
 
-    def _norm_n(s: str) -> str:
-        nfkd = unicodedata.normalize("NFKD", str(s or ""))
-        sem = "".join(c for c in nfkd if not unicodedata.combining(c))
-        toks = [t for t in re.sub(r"[^A-Za-z0-9\s]", " ", sem).upper().split() if t not in {"DE", "DA", "DO", "DOS", "DAS"}]
-        return " ".join(toks)
-
     forn_all = db.query(Fornecedor).filter(Fornecedor.tenant_id == ctx.tenant_id).all()
-    forn_by_cpf = {limpar_documento(f.cnpj_cpf): f for f in forn_all if f.cnpj_cpf}
-    forn_by_nome = {_norm_n(f.razao_social): f for f in forn_all if f.razao_social}
+    _, forn_by_cpf, forn_by_nome, forn_lista_norm = _indexar_fornecedores(forn_all)
 
     for lote in lotes:
         com_conta = 0
         fb_fil = "Solar - Geral" if lote.get("eh_solar") else "A Classificar"
         for colab in lote["colaboradores"]:
             cpf_limpo = limpar_documento(colab.get("cpf") or "")
-            f_obj = forn_by_cpf.get(cpf_limpo) or forn_by_nome.get(_norm_n(colab.get("nome") or ""))
+            f_obj = _buscar_forn_colaborador(colab.get("nome") or "", cpf_limpo, forn_by_cpf, forn_by_nome, forn_lista_norm)
             db_txt = (f_obj.dados_banco.strip() if f_obj and f_obj.dados_banco else "")
             colab["dados_banco"] = db_txt
             colab["conta_ok"] = bool(db_txt)
