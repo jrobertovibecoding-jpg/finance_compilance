@@ -13157,10 +13157,11 @@
     if (!ext) return;
 
     if (ext.titulo_id) {
-      const tit = titulos.find(t => t.id === ext.titulo_id);
+      const tit = titulos.find(t => String(t.id) === String(ext.titulo_id));
       if (tit) {
         tit.situacao = 'ABERTO';
         tit.status = 'PENDENTE';
+        tit.conciliada = false;
         delete tit.conciliado;
         delete tit.conciliado_com_extrato;
         delete tit.data_baixa;
@@ -13367,7 +13368,7 @@
       const val = Number(cb.dataset.valor || 0);
       tituloIds.push(id);
       soma += val;
-      const tit = titulos.find(t => t.id === id);
+      const tit = titulos.find(t => String(t.id) === String(id));
       if (tit) titulosRef.push(tit);
     });
 
@@ -13451,6 +13452,9 @@
     } else {
       let htmlExt = '';
       extratoBancario.forEach(item => {
+        if (item.tipo === 'TARIFA' && /boleto\s+pago|pix\s+enviado/i.test(item.memo || '')) {
+          item.tipo = 'DEBITO';
+        }
         const grupoInfo = item.grupo_ids ? ` (${item.grupo_ids.length} títulos)` : '';
         const jurosInfo = item.juros_valor && item.juros_valor > 0 ? `<div style="font-size: 9px; color: #dc2626; font-weight: 700; margin-top: 1px;">Juros: +${formatarMoeda(item.juros_valor)}</div>` : '';
         const descontoInfo = item.desconto_valor && item.desconto_valor > 0 ? `<div style="font-size: 9px; color: #059669; font-weight: 700; margin-top: 1px;">Desc: -${formatarMoeda(item.desconto_valor)}</div>` : '';
