@@ -1939,7 +1939,7 @@ def compat_exportar_lote_itau(
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
 
-    nome_arquivo = f"LOTE_ITAU_{dt_pgto.replace('-', '')}.REM"
+    nome_arquivo = f"R{dt_pgto[8:10]}{dt_pgto[5:7]}{datetime.now().strftime('%M')}.REM"
     registrar_audit_v2(
         db,
         ctx.tenant_id,
@@ -2677,7 +2677,7 @@ def compat_gerar_remessa_multibanco(
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
 
-    nome_arquivo = f"REM_{resumo['banco_codigo']}_{resumo['banco_sigla']}_{dt_pgto.replace('-', '')}.REM"
+    nome_arquivo = f"R{dt_pgto[8:10]}{dt_pgto[5:7]}{datetime.now().strftime('%M')}.REM"
     registrar_audit_v2(
         db,
         ctx.tenant_id,

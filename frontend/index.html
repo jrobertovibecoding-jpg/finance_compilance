@@ -18206,7 +18206,7 @@
       const cd = resp.headers.get('Content-Disposition') || '';
       const mFn = cd.match(/filename="?([^"]+)"?/i);
       const dt = (payload.data_pagamento || new Date().toISOString().slice(0, 10)).replace(/-/g, '');
-      const filename = mFn ? mFn[1] : `REM_CNAB240_${dt}.REM`;
+      const filename = mFn ? mFn[1] : `R${dt.slice(8, 10)}${dt.slice(5, 7)}.REM`;
 
       const blob = await resp.blob();
       const url = window.URL.createObjectURL(blob);
