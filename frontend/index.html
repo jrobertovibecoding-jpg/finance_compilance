@@ -2434,16 +2434,31 @@
             </div>
 
             <div id="rel-filtro-ccusto-box">
-              <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Centro de Custo / Loja:</label>
-              <select id="rel-filtro-ccusto" onchange="renderizarRelatorioAtual()" style="padding: 4px 8px; font-size: 11px; font-weight: 600; border: 1px solid #cbd5e1; border-radius: 3px; color: #0f172a;">
-                <option value="TODOS">Todos os Centros de Custo & Lojas</option>
-                <option value="Operacional / Produção">Operacional / Produção (Tecidos, Malharia, Confecção)</option>
-                <option value="Lojas / Ocupação">Lojas / Ocupação (Horto, SDB, Vilas, Paseo, Barra)</option>
-                <option value="Administrativo / Consultoria">Administrativo & Financeiro / Consultorias</option>
-                <option value="Marketing / Eventos">Marketing / Eventos</option>
-                <option value="Tributário / Fiscal">Tributário / Fiscal (ISS, DARF, GNRE)</option>
-                <option value="Despesas Bancárias / Administrativo">Despesas Bancárias / Tarifas Itaú</option>
+              <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Categoria Contábil:</label>
+              <select id="rel-filtro-ccusto" onchange="renderizarRelatorioAtual()" style="padding: 4px 8px; font-size: 11px; font-weight: 600; border: 1px solid #cbd5e1; border-radius: 3px; color: #0f172a; max-width: 220px;">
+                <option value="TODOS">Todas as Categorias</option>
               </select>
+            </div>
+
+            <div id="rel-filtro-venc-extras" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <div>
+                <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Tipo de Pagamento:</label>
+                <select id="rel-filtro-pgto" onchange="renderizarRelatorioAtual()" style="padding: 4px 8px; font-size: 11px; font-weight: 600; border: 1px solid #cbd5e1; border-radius: 3px; color: #0f172a;">
+                  <option value="TODOS">Todos os Pagamentos</option>
+                  <option value="PIX">PIX (CPF / CNPJ / Chave)</option>
+                  <option value="BOLETO">Boletos (Itaú / Outros)</option>
+                  <option value="TRANSFERENCIA">Transferência / Folha</option>
+                  <option value="GUIA_DARF">Guias / DARF / Débito</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 10px; font-weight: 700; color: #1e293b; display: block; margin-bottom: 2px;">Classificar / Agrupar por:</label>
+                <select id="rel-filtro-agrupar" onchange="renderizarRelatorioAtual()" style="padding: 4px 8px; font-size: 11px; font-weight: 700; border: 1.5px solid #004b87; border-radius: 3px; color: #004b87; background: #f0f9ff;">
+                  <option value="VENCIMENTO">Data de Vencimento</option>
+                  <option value="CATEGORIA">Categoria Contábil</option>
+                  <option value="FORMA_PGTO">Tipo de Pagamento</option>
+                </select>
+              </div>
             </div>
 
             <div id="rel-filtro-item-box" style="display: none;">
@@ -13642,8 +13657,10 @@
     const boxRaiox = document.getElementById('rel-filtro-raiox-box');
     const boxPessoal = document.getElementById('rel-filtro-pessoal-box');
     const boxTransf = document.getElementById('rel-filtro-transf-box');
+    const boxVencExtras = document.getElementById('rel-filtro-venc-extras');
     if (boxStatus) boxStatus.style.display = (tipo === 'vencimento' || tipo === 'retencoes' || tipo === 'faccao' || tipo === 'raiox' || tipo === 'pessoal') ? 'block' : 'none';
     if (boxCcusto) boxCcusto.style.display = (tipo === 'vencimento' || tipo === 'ccusto') ? 'block' : 'none';
+    if (boxVencExtras) boxVencExtras.style.display = (tipo === 'vencimento') ? 'flex' : 'none';
     if (boxItem) boxItem.style.display = (tipo === 'itens') ? 'block' : 'none';
     if (boxFaccao) boxFaccao.style.display = (tipo === 'faccao') ? 'flex' : 'none';
     if (boxRaiox) boxRaiox.style.display = (tipo === 'raiox') ? 'flex' : 'none';
@@ -13740,8 +13757,34 @@
 
   // 1. RELATÓRIO A: TÍTULOS A PAGAR POR VENCIMENTO (POSIÇÃO ANALÍTICA & DIÁRIA)
   function gerarHtmlRelatorioVencimento() {
+    // Atualiza opções reais de Categoria Contábil preservando a seleção atual
+    const selCatEl = document.getElementById('rel-filtro-ccusto');
+    if (selCatEl) {
+      const catAt = selCatEl.value || 'TODOS';
+      const catsSet = new Set();
+      (titulos || []).forEach(t => { if (t.ccusto) catsSet.add(String(t.ccusto).trim()); });
+      const catsOrd = Array.from(catsSet).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      const optsHtml = '<option value="TODOS">Todas as Categorias</option>' + catsOrd.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+      if (selCatEl.innerHTML !== optsHtml) {
+        selCatEl.innerHTML = optsHtml;
+        selCatEl.value = catsOrd.includes(catAt) ? catAt : 'TODOS';
+      }
+    }
+
     const { dataIni, dataFim, status, ccusto } = obterFiltrosRelatorio();
+    const pgtoFiltro = document.getElementById('rel-filtro-pgto')?.value || 'TODOS';
+    const agruparPor = document.getElementById('rel-filtro-agrupar')?.value || 'VENCIMENTO';
     const hojeStr = new Date().toISOString().split('T')[0];
+
+    const matchTipoPgto = (forma) => {
+      if (pgtoFiltro === 'TODOS') return true;
+      const up = String(forma || '').toUpperCase();
+      if (pgtoFiltro === 'PIX') return up.includes('PIX');
+      if (pgtoFiltro === 'BOLETO') return up.includes('BOLETO');
+      if (pgtoFiltro === 'TRANSFERENCIA') return up.includes('TRANSFER') || up.includes('FOLHA') || up.includes('TED') || up.includes('DOC');
+      if (pgtoFiltro === 'GUIA_DARF') return up.includes('GUIA') || up.includes('DARF') || up.includes('DEBITO') || up.includes('DÉBITO');
+      return up === pgtoFiltro.toUpperCase();
+    };
 
     const filtrados = (titulos || []).filter(t => {
       const dt = t.vencimento;
@@ -13750,8 +13793,17 @@
       if ((status === 'ABERTO' || status === 'EM_ABERTO') && isConc) return false;
       if (status === 'CONCILIADO' && !isConc) return false;
       if (ccusto !== 'TODOS' && t.ccusto !== ccusto) return false;
+      if (!matchTipoPgto(t.forma_pgto)) return false;
       return true;
-    }).sort((a, b) => (a.vencimento || '').localeCompare(b.vencimento || ''));
+    }).sort((a, b) => {
+      if (agruparPor === 'CATEGORIA') {
+        return String(a.ccusto || '').localeCompare(String(b.ccusto || ''), 'pt-BR') || (a.vencimento || '').localeCompare(b.vencimento || '');
+      }
+      if (agruparPor === 'FORMA_PGTO') {
+        return String(a.forma_pgto || '').localeCompare(String(b.forma_pgto || ''), 'pt-BR') || (a.vencimento || '').localeCompare(b.vencimento || '');
+      }
+      return (a.vencimento || '').localeCompare(b.vencimento || '');
+    });
 
     const gruposPorDia = {};
     let totBruto = 0, totLiq = 0, totVencido = 0, totHoje = 0, totAVencer = 0, totProx7d = 0;
@@ -13761,8 +13813,11 @@
 
     filtrados.forEach(t => {
       const dia = t.vencimento || 'Sem Vencimento';
-      if (!gruposPorDia[dia]) gruposPorDia[dia] = [];
-      gruposPorDia[dia].push(t);
+      const chaveGrupo = agruparPor === 'CATEGORIA'
+        ? (t.ccusto || 'Sem Categoria')
+        : (agruparPor === 'FORMA_PGTO' ? (t.forma_pgto || 'Não Informado') : dia);
+      if (!gruposPorDia[chaveGrupo]) gruposPorDia[chaveGrupo] = [];
+      gruposPorDia[chaveGrupo].push(t);
 
       const isImposto = t.tipo === 'IMPOSTO' || String(t.id || '').startsWith('IMP_');
       const vLiq = Number(t.valor || 0);
@@ -13780,8 +13835,9 @@
     });
 
     const totRet = Math.max(0, totBruto - totLiq);
+    const titAgr = agruparPor === 'CATEGORIA' ? 'por Categoria Contábil' : (agruparPor === 'FORMA_PGTO' ? 'por Tipo de Pagamento' : 'por Vencimento');
 
-    let html = gerarCabecalhoRelatorio('Relatório de Títulos a Pagar por Vencimento', 'Posição Analítica Diária do Contas a Pagar com Detalhamento de Fornecedores e Impostos');
+    let html = gerarCabecalhoRelatorio(`Relatório de Títulos a Pagar ${titAgr}`, 'Posição Analítica do Contas a Pagar com Detalhamento de Fornecedores, Categorias e Pagamentos');
 
     html += `
       <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;">
@@ -13839,15 +13895,20 @@
       }, 0);
       const subTotRet = Math.max(0, subTotBruto - subTotLiq);
 
+      const labelGrupo = agruparPor === 'CATEGORIA'
+        ? `CATEGORIA: <strong>${escapeHtml(dia)}</strong>`
+        : (agruparPor === 'FORMA_PGTO' ? `PAGAMENTO: <strong>${escapeHtml(dia)}</strong>` : `VENCIMENTO: <strong>${formatarData(dia)}</strong>`);
+      const subGrupoLabel = agruparPor === 'VENCIMENTO' ? 'Subtotal Dia' : 'Subtotal Grupo';
+
       html += `
         <tr style="background: #e2e8f0; font-weight: 700; color: #004b87; border-top: 2px solid #cbd5e1;">
           <td colspan="4" style="padding: 5px 6px;">
-            VENCIMENTO: <strong>${formatarData(dia)}</strong> (${listaDia.length} ${listaDia.length === 1 ? 'título' : 'títulos'})
+            ${labelGrupo} (${listaDia.length} ${listaDia.length === 1 ? 'título' : 'títulos'})
           </td>
           <td style="padding: 5px 6px; text-align: right; white-space: nowrap;">${formatarMoeda(subTotBruto)}</td>
           <td style="padding: 5px 6px; text-align: right; color: #991b1b; white-space: nowrap;">${subTotRet > 0 ? `- ${formatarMoeda(subTotRet)}` : '-'}</td>
           <td style="padding: 5px 6px; text-align: right; font-weight: 800; color: #004b87; white-space: nowrap;">${formatarMoeda(subTotLiq)}</td>
-          <td style="padding: 5px 6px; text-align: center; font-size: 9px; white-space: nowrap;">Subtotal Dia</td>
+          <td style="padding: 5px 6px; text-align: center; font-size: 9px; white-space: nowrap;">${subGrupoLabel}</td>
         </tr>
       `;
 
