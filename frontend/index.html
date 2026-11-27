@@ -13237,6 +13237,25 @@
   // ==================== MODAL: VINCULAÇÃO MANUAL DE TÍTULOS ====================
   let modalVincExtId = null;
 
+  function _obterTitulosParaVincularModal(extId, busca = '') {
+    const idsExtratoConc = new Set(extratoBancario.filter(e => e.conciliado && e.titulo_id).map(e => String(e.titulo_id)));
+    const q = String(busca || '').trim().toLowerCase();
+    return (titulos || []).filter(t => {
+      if (Number(t.valor) <= 0) return false;
+      if (idsExtratoConc.has(String(t.id))) return false;
+      const ehOrfao = (t.status === 'CONCILIADO' || t.situacao === 'BAIXADO');
+      if (ehOrfao) {
+        const ext = extratoBancario.find(e => String(e.id) === String(extId));
+        const mesmoValor = ext && Math.abs(Number(t.valor) - Number(ext.valor)) < 0.06;
+        const mesmoExt = t.conciliado_com_extrato && String(t.conciliado_com_extrato) === String(extId);
+        if (!mesmoValor && !mesmoExt && !q) return false;
+      }
+      if (!q) return true;
+      const texto = `${t.favorecido || ''} ${t.fornecedor || ''} ${t.numero_doc || ''} ${t.numero_id || ''} ${t.loteId || ''} ${t.descricao || ''} ${t.numero_nf || ''}`.toLowerCase();
+      return texto.includes(q);
+    });
+  }
+
   function abrirModalVincular(extId) {
     const ext = extratoBancario.find(e => e.id === extId);
     if (!ext) return;
@@ -13246,17 +13265,9 @@
     document.getElementById('modal-vinc-extrato-valor').textContent = `- ${formatarMoeda(ext.valor)}`;
     document.getElementById('modal-vinc-valor-ext').textContent = formatarMoeda(ext.valor);
 
-    // Carregar títulos pendentes (inclui títulos órfãos cuja linha do extrato não está marcada como conciliada)
-    const idsExtratoConc = new Set(extratoBancario.filter(e => e.conciliado && e.titulo_id).map(e => String(e.titulo_id)));
-    const pendentes = titulos.filter(t => {
-      if (Number(t.valor) <= 0) return false;
-      const jaVinculadoOutro = idsExtratoConc.has(String(t.id));
-      if (jaVinculadoOutro) return false;
-      if (t.conciliado_com_extrato && String(t.conciliado_com_extrato) === String(extId)) return true;
-      return t.situacao !== 'BAIXADO' && t.status !== 'CONCILIADO' && !t.conciliado_com_extrato;
-    });
+    const pendentes = _obterTitulosParaVincularModal(extId, '');
     renderizarTitulosModal(pendentes);
-    document.getElementById('modal-vinc-contador').textContent = `${pendentes.length} títulos pendentes`;
+    document.getElementById('modal-vinc-contador').textContent = `${pendentes.length} títulos disponíveis`;
     atualizarTotalizadorModal();
 
     const modal = document.getElementById('modal-vincular-titulos');
@@ -13302,16 +13313,10 @@
   }
 
   function filtrarTitulosModal() {
-    const busca = (document.getElementById('modal-vinc-busca').value || '').toLowerCase();
-    const pendentes = titulos.filter(t => {
-      if (t.situacao === 'BAIXADO' || t.status === 'CONCILIADO' || t.conciliado_com_extrato) return false;
-      if (Number(t.valor) <= 0) return false;
-      if (!busca) return true;
-      const texto = `${t.favorecido || ''} ${t.fornecedor || ''} ${t.numero_doc || ''} ${t.descricao || ''} ${t.numero_nf || ''}`.toLowerCase();
-      return texto.includes(busca);
-    });
+    const busca = (document.getElementById('modal-vinc-busca').value || '').trim();
+    const pendentes = _obterTitulosParaVincularModal(modalVincExtId, busca);
     renderizarTitulosModal(pendentes);
-    document.getElementById('modal-vinc-contador').textContent = `${pendentes.length} títulos pendentes`;
+    document.getElementById('modal-vinc-contador').textContent = `${pendentes.length} títulos disponíveis`;
   }
 
   function atualizarTotalizadorModal() {
