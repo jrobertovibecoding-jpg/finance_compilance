@@ -28,8 +28,8 @@ FILIAL_POR_CNPJ = {
     "10436619000288": ("LALUA - Barra", "Boah - Barra"),
     "10436619000369": ("LALUA - Paseo", "Boah - Paseo"),
     "10436619000440": ("LALUA - Horto", "Boah - Horto"),
-    "10436619000520": ("LALUA - SDB", "Boah - SDB"),
-    "10436619000601": ("LALUA - Vilas", "Boah - Vilas"),
+    "10436619000520": ("LALUA - Vilas", "Boah - Vilas"),
+    "10436619000601": ("LALUA - SDB", "Boah - SDB"),
     "10436619000792": ("LALUA - Horto", "Boah - Horto"),
     "26607445000128": ("SOLAR - Adm", "Solar - Geral"),
 }
