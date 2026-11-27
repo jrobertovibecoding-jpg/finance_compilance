@@ -14283,6 +14283,7 @@
 
   // 4. RELATÓRIO D: FLUXO DE CAIXA (REALIZADO VS. PREVISTO)
   function gerarHtmlRelatorioFluxoCaixa() {
+    const { dataIni, dataFim } = obterFiltrosRelatorio();
     let totPrevisto = 0;
     let totRealizado = 0;
 
@@ -14291,6 +14292,8 @@
       totPrevisto += vPrev;
 
       const match = (titulos || []).find(t => {
+        const dt = (t.vencimento || '').slice(0, 10);
+        if (dt && ((dataIni && dt < dataIni) || (dataFim && dt > dataFim))) return false;
         const descMatch = (t.descricao || t.historico || '').toLowerCase().includes((prev.categoria || '').toLowerCase());
         const fornMatch = (t.favorecido || '').toLowerCase().includes((prev.favorecido || '').toLowerCase());
         return descMatch || fornMatch;
@@ -14322,6 +14325,104 @@
         status: statusStr
       };
     });
+
+    // Quando não há previsões fixas cadastradas, calcula o Fluxo Diário real do Contas a Pagar no período
+    if (listaComparativo.length === 0) {
+      const porDia = {};
+      let totLanc = 0, totPago = 0, totAberto = 0, qtdPago = 0, qtdAberto = 0;
+
+      (titulos || []).forEach(t => {
+        const dt = (t.vencimento || '').slice(0, 10);
+        if (dt && ((dataIni && dt < dataIni) || (dataFim && dt > dataFim))) return;
+        const dia = dt || 'Sem Data';
+        const val = Number(t.valor || 0);
+        const isPago = t.situacao === 'CONCILIADO' || t.status === 'CONCILIADO' || Boolean(t.conciliada);
+
+        if (!porDia[dia]) porDia[dia] = { dia, qtd: 0, previsto: 0, pago: 0, aberto: 0 };
+        porDia[dia].qtd += 1;
+        porDia[dia].previsto += val;
+        totLanc += val;
+        if (isPago) {
+          porDia[dia].pago += val;
+          totPago += val;
+          qtdPago += 1;
+        } else {
+          porDia[dia].aberto += val;
+          totAberto += val;
+          qtdAberto += 1;
+        }
+      });
+
+      const diasOrd = Object.values(porDia).sort((a, b) => a.dia.localeCompare(b.dia));
+      const pctPago = totLanc > 0 ? ((totPago / totLanc) * 100).toFixed(1) : '0.0';
+
+      let html = gerarCabecalhoRelatorio('Fluxo de Caixa: Previsto vs. Pago (Contas a Pagar)', 'Posição Diária de Saídas Previstas (Lançadas) vs. Efetivamente Pagas / Conciliadas');
+      html += `
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;">
+          <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid #004b87; padding: 8px 12px; border-radius: 4px;">
+            <div style="font-size: 9.5px; font-weight: 800; color: #1e40af; text-transform: uppercase;">1. Total Previsto (Lançado)</div>
+            <div style="font-size: 15px; font-weight: 800; color: #004b87;">${formatarMoeda(totLanc)}</div>
+            <div style="font-size: 9.5px; color: #1d4ed8;">${qtdPago + qtdAberto} título(s) no período</div>
+          </div>
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #10b981; padding: 8px 12px; border-radius: 4px;">
+            <div style="font-size: 9.5px; font-weight: 800; color: #065f46; text-transform: uppercase;">2. Total Pago / Conciliado</div>
+            <div style="font-size: 15px; font-weight: 800; color: #059669;">${formatarMoeda(totPago)}</div>
+            <div style="font-size: 9.5px; color: #047857;">${qtdPago} título(s) liquidado(s)</div>
+          </div>
+          <div style="background: #fffbeb; border: 1px solid #fde68a; border-left: 4px solid #d97706; padding: 8px 12px; border-radius: 4px;">
+            <div style="font-size: 9.5px; font-weight: 800; color: #92400e; text-transform: uppercase;">3. A Vencer / Em Aberto</div>
+            <div style="font-size: 15px; font-weight: 800; color: #b45309;">${formatarMoeda(totAberto)}</div>
+            <div style="font-size: 9.5px; color: #92400e;">${qtdAberto} título(s) pendente(s)</div>
+          </div>
+          <div style="background: #faf5ff; border: 1px solid #e9d5ff; border-left: 4px solid #a855f7; padding: 8px 12px; border-radius: 4px;">
+            <div style="font-size: 9.5px; font-weight: 800; color: #7e22ce; text-transform: uppercase;">4. % Liquidado no Período</div>
+            <div style="font-size: 15px; font-weight: 800; color: #6b21a8;">${pctPago}%</div>
+            <div style="font-size: 9.5px; color: #9333ea;">Pago sobre o previsto</div>
+          </div>
+        </div>
+
+        <table class="alterdata-grid" style="width: 100%; border-collapse: collapse; font-size: 10.5px;">
+          <thead>
+            <tr style="background: #0f172a; color: white;">
+              <th style="padding: 6px 8px; text-align: center; width: 100px;">Data Venc.</th>
+              <th style="padding: 6px 8px; text-align: center; width: 70px;">Títulos</th>
+              <th style="padding: 6px 8px; text-align: right;">Previsto / Lançado</th>
+              <th style="padding: 6px 8px; text-align: right;">Pago / Realizado</th>
+              <th style="padding: 6px 8px; text-align: right;">Em Aberto</th>
+              <th style="padding: 6px 8px; text-align: center; width: 85px;">% Pago</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${diasOrd.length === 0
+              ? '<tr><td colspan="6" style="padding: 20px; text-align: center; color: #64748b;">Nenhum título encontrado no período selecionado.</td></tr>'
+              : diasOrd.map((d, idx) => {
+                const pDia = d.previsto > 0 ? ((d.pago / d.previsto) * 100).toFixed(1) : '0.0';
+                return `
+                  <tr style="${idx % 2 === 1 ? 'background: #f8fafc;' : 'background: #ffffff;'}">
+                    <td style="padding: 5px 8px; text-align: center; font-weight: 700;">${d.dia !== 'Sem Data' ? formatarData(d.dia) : '-'}</td>
+                    <td style="padding: 5px 8px; text-align: center;">${d.qtd}</td>
+                    <td style="padding: 5px 8px; text-align: right; font-family: monospace; font-weight: 700;">${formatarMoeda(d.previsto)}</td>
+                    <td style="padding: 5px 8px; text-align: right; font-family: monospace; font-weight: 700; color: #059669;">${formatarMoeda(d.pago)}</td>
+                    <td style="padding: 5px 8px; text-align: right; font-family: monospace; font-weight: 700; color: #b45309;">${formatarMoeda(d.aberto)}</td>
+                    <td style="padding: 5px 8px; text-align: center; font-weight: 700;">${pDia}%</td>
+                  </tr>
+                `;
+              }).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="background: #e2e8f0; font-weight: 800; color: #0f172a;">
+              <td style="padding: 7px 8px; text-align: center;">TOTAL</td>
+              <td style="padding: 7px 8px; text-align: center;">${qtdPago + qtdAberto}</td>
+              <td style="padding: 7px 8px; text-align: right; font-family: monospace;">${formatarMoeda(totLanc)}</td>
+              <td style="padding: 7px 8px; text-align: right; font-family: monospace; color: #059669;">${formatarMoeda(totPago)}</td>
+              <td style="padding: 7px 8px; text-align: right; font-family: monospace; color: #b45309;">${formatarMoeda(totAberto)}</td>
+              <td style="padding: 7px 8px; text-align: center;">${pctPago}%</td>
+            </tr>
+          </tfoot>
+        </table>
+      `;
+      return html;
+    }
 
     const diferencaGeral = totRealizado - totPrevisto;
 
