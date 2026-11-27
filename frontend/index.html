@@ -13981,7 +13981,10 @@
               ${item.juros_multa > 0 ? `<div style="font-size: 8.5px; color: #dc2626; margin-top: 2px;">+ Juros: ${formatarMoeda(Number(item.juros_multa))}</div>` : ''}
               ${item.desconto > 0 ? `<div style="font-size: 8.5px; color: #059669; margin-top: 2px;">- Desc: ${formatarMoeda(Number(item.desconto))}</div>` : ''}
             </td>
-            <td style="padding: 4px 6px; text-align: center; white-space: nowrap;">${sitBadge}</td>
+            <td style="padding: 4px 6px; text-align: center; white-space: nowrap;">
+              ${sitBadge}
+              ${(item.anexos_count > 0 || item.primeiro_anexo_id) ? `<div class="no-print" style="margin-top:3px;"><button type="button" onclick="event.stopPropagation(); ${item.anexos_count === 1 && item.primeiro_anexo_id ? `baixarAnexoTitulo('${escapeHtml(item.primeiro_anexo_id)}', '${escapeHtml(item.primeiro_anexo_nome || 'comprovante.pdf').replace(/'/g, '')}')` : `abrirModalAnexosTitulo('${escapeHtml(item.id)}', 'Doc: ${escapeHtml(item.numero_doc || '-').replace(/'/g, '')} • ${escapeHtml(item.favorecido || '-').replace(/'/g, '')}')`}" style="background:#e0f2fe;border:1px solid #7dd3fc;color:#0369a1;border-radius:3px;padding:1px 5px;font-size:8.5px;font-weight:700;cursor:pointer;">📎 ${item.anexos_count > 1 ? `Dossiê (${item.anexos_count})` : 'Comprovante'}</button></div>` : ''}
+            </td>
           </tr>
         `;
         if (benefs.length > 0) {
@@ -13995,6 +13998,7 @@
                       <th style="padding: 3px 6px; text-align: left; width: 110px;">CPF</th>
                       <th style="padding: 3px 6px; text-align: left; width: 120px;">Filial</th>
                       <th style="padding: 3px 6px; text-align: right; width: 95px;">Valor</th>
+                      <th class="no-print" style="padding: 3px 6px; text-align: center; width: 80px;">Comprov.</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -14004,6 +14008,7 @@
                         <td style="padding: 3px 6px; font-family: monospace; color: #475569;">${escapeHtml(b.codigo || '-')}</td>
                         <td style="padding: 3px 6px; font-weight: 700; color: #0369a1;">${escapeHtml(b.ncm || '-')}</td>
                         <td style="padding: 3px 6px; text-align: right; font-family: monospace; font-weight: 700;">${formatarMoeda(Number(b.valor_total || 0))}</td>
+                        <td class="no-print" style="padding: 3px 6px; text-align: center;">${b.comprovante_id ? `<button type="button" onclick="event.stopPropagation(); baixarAnexoTitulo('${escapeHtml(b.comprovante_id)}', '${escapeHtml(b.comprovante_nome || 'comprovante.pdf').replace(/'/g, '')}')" style="background:#e0f2fe;border:1px solid #7dd3fc;color:#0369a1;border-radius:3px;padding:1px 6px;font-size:8.5px;font-weight:700;cursor:pointer;">📎 Abrir</button>` : '<span style="color:#cbd5e1;">-</span>'}</td>
                       </tr>
                     `).join('')}
                   </tbody>
